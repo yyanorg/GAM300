@@ -8,9 +8,11 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\Engine.h" />
+    <ClInclude Include="include\TestScene.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Engine.cpp" />
     <ClCompile Include="src\glad.c" />
+    <ClCompile Include="src\TestScene.cpp" />
   </ItemGroup>
 </Project>

@@ -36,10 +36,12 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\Engine.h" />
+    <ClInclude Include="include\TestScene.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Engine.cpp" />
     <ClCompile Include="src\glad.c" />
+    <ClCompile Include="src\TestScene.cpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>17.0</VCProjectVersion>
@@ -211,7 +213,7 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>$(SolutionDir)Libraries\GLFW\lib-vc2022;$(SolutionDir)Libraries\assimp\lib\x64;$(SolutionDir)Libraries\freetype\release_dll\win64</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(SolutionDir)Libraries\GLFW\lib-vc2022;$(SolutionDir)Libraries\assimp\lib\x64;$(SolutionDir)Libraries\freetype\release_static\vs2015-2022\win64</AdditionalLibraryDirectories>
       <AdditionalDependencies>$(CoreLibraryDependencies);%(AdditionalDependencies);glfw3.lib;assimp-vc143-mt.lib;freetype.lib;opengl32.lib</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
@@ -227,7 +229,7 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>$(SolutionDir)Libraries\GLFW\lib-vc2022;$(SolutionDir)Libraries\assimp\lib\x64;$(SolutionDir)Libraries\freetype\release_dll\win64</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(SolutionDir)Libraries\GLFW\lib-vc2022;$(SolutionDir)Libraries\assimp\lib\x64;$(SolutionDir)Libraries\freetype\release_static\vs2015-2022\win64</AdditionalLibraryDirectories>
       <AdditionalDependencies>$(CoreLibraryDependencies);%(AdditionalDependencies);glfw3.lib;assimp-vc143-mt.lib;freetype.lib;opengl32.lib</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
@@ -245,7 +247,7 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>$(SolutionDir)Libraries\GLFW\lib-vc2022;$(SolutionDir)Libraries\assimp\lib\x64;$(SolutionDir)Libraries\freetype\release_dll\win64</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(SolutionDir)Libraries\GLFW\lib-vc2022;$(SolutionDir)Libraries\assimp\lib\x64;$(SolutionDir)Libraries\freetype\release_static\vs2015-2022\win64</AdditionalLibraryDirectories>
       <AdditionalDependencies>$(CoreLibraryDependencies);%(AdditionalDependencies);glfw3.lib;assimp-vc143-mt.lib;freetype.lib;opengl32.lib</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
@@ -263,7 +265,7 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>$(SolutionDir)Libraries\GLFW\lib-vc2022;$(SolutionDir)Libraries\assimp\lib\x64;$(SolutionDir)Libraries\freetype\release_dll\win64</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(SolutionDir)Libraries\GLFW\lib-vc2022;$(SolutionDir)Libraries\assimp\lib\x64;$(SolutionDir)Libraries\freetype\release_static\vs2015-2022\win64</AdditionalLibraryDirectories>
       <AdditionalDependencies>$(CoreLibraryDependencies);%(AdditionalDependencies);glfw3.lib;assimp-vc143-mt.lib;freetype.lib;opengl32.lib</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
