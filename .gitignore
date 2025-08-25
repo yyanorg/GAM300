@@ -1,2 +1,5 @@
 # Ignore Visual Studio generated files
 .vs/
+
+# Ignore build folder
+/Build
