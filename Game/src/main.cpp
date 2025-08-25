@@ -26,7 +26,6 @@
 #include <thread>
 #include <chrono>
 //#include <glad/glad.h>
-//#include <GLFW/glfw3.h>
 
 int main() {
     std::cout << "Starting Game..." << std::endl;
