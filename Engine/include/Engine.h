@@ -13,7 +13,7 @@ public:
     static void Shutdown();
     static bool IsRunning();
 
+    static struct GLFWwindow* window;
 private:
-    static class GLFWwindow* window;
     static bool running;
 };
