@@ -12,4 +12,8 @@ public:
     static void Update();
     static void Shutdown();
     static bool IsRunning();
+
+private:
+    static class GLFWwindow* window;
+    static bool running;
 };

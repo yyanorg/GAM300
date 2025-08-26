@@ -2,9 +2,12 @@
 
 class TestScene {
 public:
-    static bool Initialize();
-    static void Update();
-    static void Render();
-    static void Shutdown();
-    static bool IsRunning();
+    static void RunAllTests();
+
+private:
+    static void TestGLFW();
+    static void TestGLAD();
+    static void TestGLM();
+    static void TestFreeType();
+    static void TestAssimp();
 };

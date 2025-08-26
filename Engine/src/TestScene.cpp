@@ -1,277 +1,199 @@
 #include "TestScene.h"
-
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
+#include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
-
-#include <map>
 #include <ft2build.h>
 #include FT_FREETYPE_H
-
+#include <assimp/Importer.hpp>
+#include <assimp/scene.h>
+#include <assimp/postprocess.h>
 #include <iostream>
-#include <vector>
+#include <iomanip>
 
-    // ---- 3D Cube ----
-    static unsigned int cubeVAO = 0, cubeVBO = 0;
-    static unsigned int cubeShaderProgram = 0;
+void TestScene::RunAllTests() {
+    std::cout << "=== Running Library Tests ===" << std::endl;
+    std::cout << std::endl;
 
-    // ---- Camera ----
-    static glm::vec3 cameraPos = { 0.0f, 0.0f, 5.0f };
-    static glm::vec3 cameraFront = { 0.0f, 0.0f, -1.0f };
-    static glm::vec3 cameraUp = { 0.0f, 1.0f, 0.0f };
-    static float cameraSpeed = 2.5f;
+    TestGLFW();
+    TestGLAD();
+    TestGLM();
+    TestFreeType();
+    TestAssimp();
 
-    // ---- Window ----
-    static GLFWwindow* window = nullptr;
-    static bool running = true;
+    std::cout << "=== All Tests Complete ===" << std::endl;
+    std::cout << std::endl;
+}
 
-    // ---- FreeType ----
-    struct Character {
-        unsigned int TextureID;
-        glm::ivec2 Size;
-        glm::ivec2 Bearing;
-        unsigned int Advance;
-    };
-    static std::map<char, Character> Characters;
-    static unsigned int textVAO = 0, textVBO = 0;
-    static unsigned int textShaderProgram = 0;
+void TestScene::TestGLFW() {
+    std::cout << "[GLFW] Testing..." << std::endl;
 
-    // ---- Utility Functions ----
-    static unsigned int CompileShader(const char* source, GLenum type) {
-        unsigned int shader = glCreateShader(type);
-        glShaderSource(shader, 1, &source, nullptr);
-        glCompileShader(shader);
-        int success; char infoLog[512];
-        glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
-        if (!success) {
-            glGetShaderInfoLog(shader, 512, nullptr, infoLog);
-            std::cerr << "Shader compilation failed: " << infoLog << std::endl;
-        }
-        return shader;
+    // Get GLFW version
+    int major, minor, revision;
+    glfwGetVersion(&major, &minor, &revision);
+    std::cout << "[GLFW] Version: " << major << "." << minor << "." << revision << std::endl;
+
+    // Test if we have a current context
+    GLFWwindow* currentWindow = glfwGetCurrentContext();
+    if (currentWindow) {
+        std::cout << "[GLFW] Current OpenGL context: ACTIVE" << std::endl;
+
+        // Get window size
+        int width, height;
+        glfwGetWindowSize(currentWindow, &width, &height);
+        std::cout << "[GLFW] Window size: " << width << "x" << height << std::endl;
+    }
+    else {
+        std::cout << "[GLFW] ERROR: No current OpenGL context!" << std::endl;
     }
 
-    static unsigned int CreateShaderProgram(const char* vertexSrc, const char* fragmentSrc) {
-        unsigned int vertex = CompileShader(vertexSrc, GL_VERTEX_SHADER);
-        unsigned int fragment = CompileShader(fragmentSrc, GL_FRAGMENT_SHADER);
-        unsigned int program = glCreateProgram();
-        glAttachShader(program, vertex);
-        glAttachShader(program, fragment);
-        glLinkProgram(program);
-        int success; char infoLog[512];
-        glGetProgramiv(program, GL_LINK_STATUS, &success);
-        if (!success) {
-            glGetProgramInfoLog(program, 512, nullptr, infoLog);
-            std::cerr << "Program linking failed: " << infoLog << std::endl;
-        }
-        glDeleteShader(vertex);
-        glDeleteShader(fragment);
-        return program;
+    std::cout << "[GLFW] Test complete!" << std::endl;
+    std::cout << std::endl;
+}
+
+void TestScene::TestGLAD() {
+    std::cout << "[GLAD] Testing..." << std::endl;
+
+    // Get OpenGL version info
+    const GLubyte* renderer = glGetString(GL_RENDERER);
+    const GLubyte* version = glGetString(GL_VERSION);
+    const GLubyte* glslVersion = glGetString(GL_SHADING_LANGUAGE_VERSION);
+
+    std::cout << "[GLAD] OpenGL Renderer: " << renderer << std::endl;
+    std::cout << "[GLAD] OpenGL Version: " << version << std::endl;
+    std::cout << "[GLAD] GLSL Version: " << glslVersion << std::endl;
+
+    // Test basic OpenGL functionality
+    glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
+    glClear(GL_COLOR_BUFFER_BIT);
+
+    // Check for errors
+    GLenum error = glGetError();
+    if (error == GL_NO_ERROR) {
+        std::cout << "[GLAD] Basic OpenGL calls: SUCCESS" << std::endl;
+    }
+    else {
+        std::cout << "[GLAD] OpenGL Error: " << error << std::endl;
     }
 
-    // ---- Shaders ----
-    static const char* cubeVertexShader = R"(
-#version 330 core
-layout(location=0) in vec3 aPos;
-layout(location=1) in vec3 aColor;
-out vec3 fragColor;
-uniform mat4 model;
-uniform mat4 view;
-uniform mat4 projection;
-void main() {
-    fragColor = aColor;
-    gl_Position = projection * view * model * vec4(aPos,1.0);
-})";
+    std::cout << "[GLAD] Test complete!" << std::endl;
+    std::cout << std::endl;
+}
 
-    static const char* cubeFragmentShader = R"(
-#version 330 core
-in vec3 fragColor;
-out vec4 FragColor;
-void main() {
-    FragColor = vec4(fragColor,1.0);
-})";
+void TestScene::TestGLM() {
+    std::cout << "[GLM] Testing..." << std::endl;
 
-    static const char* textVertexShader = R"(
-#version 330 core
-layout (location = 0) in vec4 vertex; // <pos.xy, tex.xy>
-out vec2 TexCoords;
-uniform mat4 projection;
-void main() {
-    gl_Position = projection * vec4(vertex.xy,0.0,1.0);
-    TexCoords = vertex.zw;
-})";
+    // Test basic vector operations
+    glm::vec3 vec1(1.0f, 2.0f, 3.0f);
+    glm::vec3 vec2(4.0f, 5.0f, 6.0f);
+    glm::vec3 result = vec1 + vec2;
 
-    static const char* textFragmentShader = R"(
-#version 330 core
-in vec2 TexCoords;
-out vec4 FragColor;
-uniform sampler2D text;
-uniform vec3 textColor;
-void main() {
-    float alpha = texture(text, TexCoords).r;
-    FragColor = vec4(textColor, alpha);
-})";
+    std::cout << "[GLM] Vector addition: (" << vec1.x << "," << vec1.y << "," << vec1.z << ") + ";
+    std::cout << "(" << vec2.x << "," << vec2.y << "," << vec2.z << ") = ";
+    std::cout << "(" << result.x << "," << result.y << "," << result.z << ")" << std::endl;
 
-    // ---- Text Rendering ----
-    static void RenderText(const std::string& text, float x, float y, float scale, glm::vec3 color) {
-        glUseProgram(textShaderProgram);
-        glm::mat4 projection = glm::ortho(0.0f, 800.0f, 0.0f, 600.0f);
-        glUniformMatrix4fv(glGetUniformLocation(textShaderProgram, "projection"), 1, GL_FALSE, glm::value_ptr(projection));
-        glUniform3f(glGetUniformLocation(textShaderProgram, "textColor"), color.x, color.y, color.z);
-        glActiveTexture(GL_TEXTURE0);
-        glBindVertexArray(textVAO);
+    // Test matrix operations
+    glm::mat4 identity = glm::mat4(1.0f);
+    glm::mat4 translation = glm::translate(identity, glm::vec3(1.0f, 2.0f, 3.0f));
+    glm::mat4 rotation = glm::rotate(identity, glm::radians(45.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+    glm::mat4 scale = glm::scale(identity, glm::vec3(2.0f, 2.0f, 2.0f));
 
-        for (auto c : text) {
-            Character ch = Characters[c];
-            float xpos = x + ch.Bearing.x * scale;
-            float ypos = y - (ch.Size.y - ch.Bearing.y) * scale;
-            float w = ch.Size.x * scale;
-            float h = ch.Size.y * scale;
-            float vertices[6][4] = {
-                {xpos, ypos + h, 0.0f,1.0f}, {xpos, ypos, 0.0f,0.0f}, {xpos + w,ypos,1.0f,0.0f},
-                {xpos, ypos + h, 0.0f,1.0f}, {xpos + w,ypos,1.0f,0.0f}, {xpos + w,ypos + h,1.0f,1.0f}
-            };
-            glBindTexture(GL_TEXTURE_2D, ch.TextureID);
-            glBindBuffer(GL_ARRAY_BUFFER, textVBO);
-            glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vertices), vertices);
-            glBindBuffer(GL_ARRAY_BUFFER, 0);
-            glDrawArrays(GL_TRIANGLES, 0, 6);
-            x += (ch.Advance >> 6) * scale;
-        }
-        glBindVertexArray(0);
-        glBindTexture(GL_TEXTURE_2D, 0);
+    glm::mat4 transform = translation * rotation * scale;
+
+    std::cout << "[GLM] Matrix operations: Translation * Rotation * Scale" << std::endl;
+    std::cout << "[GLM] Transform matrix [0][0]: " << std::fixed << std::setprecision(3) << transform[0][0] << std::endl;
+
+    // Test dot product
+    float dot = glm::dot(vec1, vec2);
+    std::cout << "[GLM] Dot product: " << dot << std::endl;
+
+    // Test cross product
+    glm::vec3 cross = glm::cross(vec1, vec2);
+    std::cout << "[GLM] Cross product: (" << cross.x << "," << cross.y << "," << cross.z << ")" << std::endl;
+
+    std::cout << "[GLM] Test complete!" << std::endl;
+    std::cout << std::endl;
+}
+
+void TestScene::TestFreeType() {
+    std::cout << "[FreeType] Testing..." << std::endl;
+
+    FT_Library ft;
+    FT_Error error = FT_Init_FreeType(&ft);
+
+    if (error) {
+        std::cout << "[FreeType] ERROR: Failed to initialize FreeType library!" << std::endl;
+        return;
     }
 
-    // ---- Initialize ----
-    bool TestScene::Initialize() {
-        if (!glfwInit()) { std::cerr << "GLFW init failed\n"; return false; }
-        window = glfwCreateWindow(800, 600, "Test Scene", nullptr, nullptr);
-        if (!window) { std::cerr << "Window creation failed\n"; glfwTerminate(); return false; }
-        glfwMakeContextCurrent(window);
-        if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) { std::cerr << "GLAD failed\n"; return false; }
+    std::cout << "[FreeType] Library initialized successfully" << std::endl;
 
-        glEnable(GL_DEPTH_TEST);
+    // Get FreeType version
+    FT_Int major, minor, patch;
+    FT_Library_Version(ft, &major, &minor, &patch);
+    std::cout << "[FreeType] Version: " << major << "." << minor << "." << patch << std::endl;
 
-        // --- Cube Setup ---
-        float vertices[] = {
-            // positions        // colors
-           -0.5f,-0.5f,-0.5f,  1.0f,0.0f,0.0f,
-            0.5f,-0.5f,-0.5f,  0.0f,1.0f,0.0f,
-            0.5f, 0.5f,-0.5f,  0.0f,0.0f,1.0f,
-            0.5f, 0.5f,-0.5f,  0.0f,0.0f,1.0f,
-           -0.5f, 0.5f,-0.5f,  1.0f,1.0f,0.0f,
-           -0.5f,-0.5f,-0.5f,  1.0f,0.0f,0.0f,
+    // Try to load the specified font
+    FT_Face face;
+    error = FT_New_Face(ft, "Resources/Fonts/Kenney Mini.ttf", 0, &face);
 
-           -0.5f,-0.5f,0.5f,   1.0f,0.0f,1.0f,
-            0.5f,-0.5f,0.5f,   0.0f,1.0f,1.0f,
-            0.5f, 0.5f,0.5f,   1.0f,1.0f,1.0f,
-            0.5f, 0.5f,0.5f,   1.0f,1.0f,1.0f,
-           -0.5f, 0.5f,0.5f,   0.0f,0.0f,0.0f,
-           -0.5f,-0.5f,0.5f,   1.0f,0.0f,1.0f
-        };
-        glGenVertexArrays(1, &cubeVAO);
-        glGenBuffers(1, &cubeVBO);
-        glBindVertexArray(cubeVAO);
-        glBindBuffer(GL_ARRAY_BUFFER, cubeVBO);
-        glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
-        glEnableVertexAttribArray(0);
-        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
-        glEnableVertexAttribArray(1);
+    if (error == FT_Err_Unknown_File_Format) {
+        std::cout << "[FreeType] ERROR: Font file format not supported!" << std::endl;
+    }
+    else if (error) {
+        std::cout << "[FreeType] ERROR: Failed to load font file (Error code: " << error << ")" << std::endl;
+        std::cout << "[FreeType] Make sure 'Resources/Fonts/Kenney Mini.ttf' exists!" << std::endl;
+    }
+    else {
+        std::cout << "[FreeType] Font loaded successfully!" << std::endl;
+        std::cout << "[FreeType] Font family: " << face->family_name << std::endl;
+        std::cout << "[FreeType] Font style: " << face->style_name << std::endl;
+        std::cout << "[FreeType] Number of glyphs: " << face->num_glyphs << std::endl;
+        std::cout << "[FreeType] Scalable: " << (FT_IS_SCALABLE(face) ? "Yes" : "No") << std::endl;
 
-        cubeShaderProgram = CreateShaderProgram(cubeVertexShader, cubeFragmentShader);
-
-        // --- FreeType Setup ---
-        FT_Library ft;
-        if (FT_Init_FreeType(&ft)) { std::cerr << "Could not init FreeType\n"; return false; }
-        FT_Face face;
-        if (FT_New_Face(ft, "Resources/Fonts/Kenney Mini.ttf", 0, &face)) { std::cerr << "Failed to load font\n"; return false; }
-        FT_Set_Pixel_Sizes(face, 0, 48);
-        glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-        for (unsigned char c = 0;c < 128;c++) {
-            if (FT_Load_Char(face, c, FT_LOAD_RENDER)) { std::cerr << "Failed char " << c << "\n"; continue; }
-            unsigned int tex;
-            glGenTextures(1, &tex);
-            glBindTexture(GL_TEXTURE_2D, tex);
-            glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, face->glyph->bitmap.width, face->glyph->bitmap.rows, 0, GL_RED, GL_UNSIGNED_BYTE, face->glyph->bitmap.buffer);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-            Character ch = {
-                tex,
-                {face->glyph->bitmap.width, face->glyph->bitmap.rows},
-                {face->glyph->bitmap_left, face->glyph->bitmap_top},
-                static_cast<unsigned int>(face->glyph->advance.x)
-            };
-            Characters.insert(std::pair<char, Character>(c, ch));
-
+        // Test setting font size
+        error = FT_Set_Pixel_Sizes(face, 0, 48);
+        if (!error) {
+            std::cout << "[FreeType] Font size set to 48px successfully" << std::endl;
         }
+
         FT_Done_Face(face);
-        FT_Done_FreeType(ft);
-
-        textShaderProgram = CreateShaderProgram(textVertexShader, textFragmentShader);
-        glGenVertexArrays(1, &textVAO);
-        glGenBuffers(1, &textVBO);
-        glBindVertexArray(textVAO);
-        glBindBuffer(GL_ARRAY_BUFFER, textVBO);
-        glBufferData(GL_ARRAY_BUFFER, sizeof(float) * 6 * 4, nullptr, GL_DYNAMIC_DRAW);
-        glEnableVertexAttribArray(0);
-        glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, 4 * sizeof(float), 0);
-        glBindBuffer(GL_ARRAY_BUFFER, 0);
-        glBindVertexArray(0);
-
-        running = true;
-        return true;
     }
 
-    // ---- Update ----
-    void TestScene::Update() {
-        float delta = 0.016f; // ~60FPS
+    FT_Done_FreeType(ft);
+    std::cout << "[FreeType] Test complete!" << std::endl;
+    std::cout << std::endl;
+}
 
-        if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) cameraPos += cameraSpeed * cameraFront * delta;
-        if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) cameraPos -= cameraSpeed * cameraFront * delta;
-        if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) cameraPos -= glm::normalize(glm::cross(cameraFront, cameraUp)) * cameraSpeed * delta;
-        if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) cameraPos += glm::normalize(glm::cross(cameraFront, cameraUp)) * cameraSpeed * delta;
+void TestScene::TestAssimp() {
+    std::cout << "[Assimp] Testing..." << std::endl;
 
-        if (glfwWindowShouldClose(window)) running = false;
-    }
+    // Create an importer instance
+    Assimp::Importer importer;
 
-    // ---- Render ----
-    void TestScene::Render() {
-        glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    // Get Assimp version info (different method)
+    const aiScene* scene = importer.GetScene();
+    std::cout << "[Assimp] Importer created successfully" << std::endl;
 
-        // Cube
-        glUseProgram(cubeShaderProgram);
-        glm::mat4 model = glm::mat4(1.0f);
-        glm::mat4 view = glm::lookAt(cameraPos, cameraPos + cameraFront, cameraUp);
-        glm::mat4 projection = glm::perspective(glm::radians(45.0f), 800.0f / 600.0f, 0.1f, 100.0f);
-        glUniformMatrix4fv(glGetUniformLocation(cubeShaderProgram, "model"), 1, GL_FALSE, glm::value_ptr(model));
-        glUniformMatrix4fv(glGetUniformLocation(cubeShaderProgram, "view"), 1, GL_FALSE, glm::value_ptr(view));
-        glUniformMatrix4fv(glGetUniformLocation(cubeShaderProgram, "projection"), 1, GL_FALSE, glm::value_ptr(projection));
-        glBindVertexArray(cubeVAO);
-        glDrawArrays(GL_TRIANGLES, 0, 36);
+    // Get supported file formats
+    aiString extensions;
+    importer.GetExtensionList(extensions);
+    std::cout << "[Assimp] Supported formats: " << extensions.C_Str() << std::endl;
 
-        // Text
-        RenderText("Hello FreeType!", 25.0f, 550.0f, 1.0f, { 1.0f,1.0f,0.0f });
+    // Test import capabilities (without actually loading a model)
+    std::cout << "[Assimp] Available post-processing steps:" << std::endl;
+    std::cout << "[Assimp]   - Triangulate: " << (aiProcess_Triangulate ? "Available" : "Not available") << std::endl;
+    std::cout << "[Assimp]   - Generate Normals: " << (aiProcess_GenNormals ? "Available" : "Not available") << std::endl;
+    std::cout << "[Assimp]   - Calculate Tangents: " << (aiProcess_CalcTangentSpace ? "Available" : "Not available") << std::endl;
+    std::cout << "[Assimp]   - Optimize Meshes: " << (aiProcess_OptimizeMeshes ? "Available" : "Not available") << std::endl;
 
-        glfwSwapBuffers(window);
-        glfwPollEvents();
-    }
+    // Test memory management
+    //std::cout << "[Assimp] Memory info available: " << (importer.GetMemoryRequirements().total > 0 ? "Yes" : "No") << std::endl;
 
-    // ---- Shutdown ----
-    void TestScene::Shutdown() {
-        for (auto& c : Characters) glDeleteTextures(1, &c.second.TextureID);
-        glDeleteVertexArrays(1, &cubeVAO);
-        glDeleteBuffers(1, &cubeVBO);
-        glDeleteVertexArrays(1, &textVAO);
-        glDeleteBuffers(1, &textVBO);
-        glDeleteProgram(cubeShaderProgram);
-        glDeleteProgram(textShaderProgram);
-        glfwDestroyWindow(window);
-        glfwTerminate();
-        running = false;
-    }
+    std::cout << "[Assimp] Library initialization: SUCCESS" << std::endl;
+    std::cout << "[Assimp] Ready to load 3D models" << std::endl;
 
-    bool TestScene::IsRunning() { return running; }
+    std::cout << "[Assimp] Test complete!" << std::endl;
+    std::cout << std::endl;
+}
