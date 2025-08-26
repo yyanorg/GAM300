@@ -1,10 +1,11 @@
+#include "pch.h"
+
 #include "Engine.h"
 #include "TestScene.h"
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
-#include <iostream>
 
 // Static member definitions
 GLFWwindow* Engine::window = nullptr;
