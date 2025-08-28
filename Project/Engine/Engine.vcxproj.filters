@@ -10,11 +10,15 @@
     <ClInclude Include="include\Engine.h" />
     <ClInclude Include="include\TestScene.h" />
     <ClInclude Include="include\pch.h" />
+    <ClInclude Include="include\GraphicsManager.h" />
+    <ClInclude Include="include\WindowManager.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Engine.cpp" />
     <ClCompile Include="src\glad.c" />
     <ClCompile Include="src\TestScene.cpp" />
     <ClCompile Include="src\pch.cpp" />
+    <ClCompile Include="src\GraphicsManager.cpp" />
+    <ClCompile Include="src\WindowManager.cpp" />
   </ItemGroup>
 </Project>

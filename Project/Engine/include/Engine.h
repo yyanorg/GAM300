@@ -10,10 +10,17 @@ class ENGINE_API Engine {
 public:
     static void Initialize();
     static void Update();
+
+    // Rendering phases
+    static void StartDraw();
+    static void Draw();
+    static void EndDraw();
+
     static void Shutdown();
     static bool IsRunning();
 
-    static struct GLFWwindow* window;
-private:
-    static bool running;
+    // FBO Control (no editor knowledge)
+    static void SetRenderToFramebuffer(bool enabled);
+    static unsigned int GetFramebufferTexture();
+    //static void ResizeFramebuffer(int width, int height);
 };

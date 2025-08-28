@@ -1,24 +1,27 @@
 #include "Engine.h"
 #include "GameManager.h"
 #include <iostream>
-#include <thread>
-#include <chrono>
 
 int main() {
-    std::cout << "Starting Game..." << std::endl;
+    std::cout << "=== GAME BUILD ===" << std::endl;
 
     Engine::Initialize();
     GameManager::Initialize();
+
+    std::cout << "Game running - ESC to exit" << std::endl;
 
     while (Engine::IsRunning()) {
         Engine::Update();
         GameManager::Update();
 
-        std::this_thread::sleep_for(std::chrono::milliseconds(16));
+        Engine::StartDraw();
+        Engine::Draw();
+        Engine::EndDraw();
     }
 
     GameManager::Shutdown();
     Engine::Shutdown();
-    std::cout << "Game ended." << std::endl;
+
+    std::cout << "=== Game ended ===" << std::endl;
     return 0;
 }

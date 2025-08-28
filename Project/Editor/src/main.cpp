@@ -1,36 +1,45 @@
 #include "Engine.h"
 #include "GameManager.h"
-#include "EditorManager.h"
+#include "UIManager.h"
+#include "SceneWindow.h"
+#include "WindowManager.h"
 #include <iostream>
-#include <thread>
-#include <chrono>
 
 int main() {
-    std::cout << "Starting Editor..." << std::endl;
+    std::cout << "=== EDITOR BUILD ===" << std::endl;
 
     Engine::Initialize();
     GameManager::Initialize();
+    UIManager::Initialize();
+    SceneWindow::Initialize();
 
-    // Small delay to ensure window is fully ready
-    std::this_thread::sleep_for(std::chrono::milliseconds(100));
-
-    EditorManager::Initialize();
+    std::cout << "Editor running with proper architecture!" << std::endl;
 
     while (Engine::IsRunning()) {
         Engine::Update();
         GameManager::Update();
 
-        // Editor rendering
-        EditorManager::Update();
-        EditorManager::Render();
+        // Render 3D content to FBO
+        Engine::StartDraw();
+        Engine::Draw();
 
-        std::this_thread::sleep_for(std::chrono::milliseconds(16));
+        // Render UI
+        UIManager::StartRender();
+        UIManager::Render();
+        SceneWindow::RenderSceneWindow(WindowManager::GetWindowWidth(), WindowManager::GetWindowHeight());
+        UIManager::EndRender();
+
+        Engine::EndDraw();
+
+        // WindowManager handles buffer swapping for editor
+        //WindowManager::SwapBuffers();
     }
 
-    EditorManager::Shutdown();
+    SceneWindow::Shutdown();
+    UIManager::Shutdown();
     GameManager::Shutdown();
     Engine::Shutdown();
 
-    std::cout << "Editor ended." << std::endl;
+    std::cout << "=== Editor ended ===" << std::endl;
     return 0;
 }

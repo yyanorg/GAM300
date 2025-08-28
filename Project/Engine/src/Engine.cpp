@@ -1,92 +1,92 @@
 #include "pch.h"
-
-#include "Engine.h"
-#include "TestScene.h"
 #include <glad/glad.h>
-#include <GLFW/glfw3.h>
-#include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
+#include "Engine.h"
+#include "WindowManager.h"
+#include "GraphicsManager.h"
 
-// Static member definitions
-GLFWwindow* Engine::window = nullptr;
-bool Engine::running = false;
+static bool initialized = false;
+static bool running = false;
+static bool renderToFBO = false;
 
 void Engine::Initialize() {
-    std::cout << "Engine initializing..." << std::endl;
+    std::cout << "[Engine] Initializing..." << std::endl;
 
-    if (!glfwInit()) {
-        std::cout << "Failed to initialize GLFW!" << std::endl;
+    if (!WindowManager::Initialize(1200, 800, "Engine")) {
+        std::cout << "[Engine] Window initialization failed!" << std::endl;
         return;
     }
-
-    // Set OpenGL version hints
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
-    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-
-    window = glfwCreateWindow(800, 600, "Engine Test Window", NULL, NULL);
-    if (!window) {
-        std::cout << "Failed to create GLFW window!" << std::endl;
-        glfwTerminate();
-        return;
-    }
-
-    glfwMakeContextCurrent(window);
 
     if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
-        std::cout << "Failed to initialize GLAD!" << std::endl;
-        glfwDestroyWindow(window);
-        glfwTerminate();
+        std::cout << "[Engine] GLAD initialization failed!" << std::endl;
         return;
     }
 
-    // Set viewport
-    glViewport(0, 0, 800, 600);
+    std::cout << "[Engine] OpenGL " << glGetString(GL_VERSION) << std::endl;
 
-    // Enable depth testing
-    glEnable(GL_DEPTH_TEST);
+    GraphicsManager::Initialize();
 
+    initialized = true;
     running = true;
-    std::cout << "Engine initialized successfully!" << std::endl;
-    std::cout << std::endl;
-
-    // Run all library tests
-    TestScene::RunAllTests();
+    std::cout << "[Engine] Ready" << std::endl;
 }
 
 void Engine::Update() {
-    if (!window || !running) {
-        return;
-    }
+    if (!running) return;
 
-    // Poll for and process events
-    glfwPollEvents();
+    WindowManager::PollEvents();
 
-    // Check if window should close
-    if (glfwWindowShouldClose(window)) {
+    if (WindowManager::ShouldClose()) {
         running = false;
-        return;
     }
 
-    // Clear the screen
-    glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-    // Swap front and back buffers
-    glfwSwapBuffers(window);
+    // Handle ESC key for game mode
+    GLFWwindow* window = WindowManager::GetWindow();
+    if (window && glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
+        running = false;
+    }
 }
 
-void Engine::Shutdown() {
-    if (window) {
-        glfwDestroyWindow(window);
-        window = nullptr;
-    }
+void Engine::StartDraw() {
+    if (!initialized) return;
 
-    glfwTerminate();
-    running = false;
-    std::cout << "Engine shut down." << std::endl;
+    glViewport(0, 0, WindowManager::GetWindowWidth(), WindowManager::GetWindowHeight());
+}
+
+void Engine::Draw() {
+    if (!initialized) return;
+
+    GraphicsManager::DrawTestCube();
+}
+
+void Engine::EndDraw() {
+    if (!initialized) return;
+
+    //if (renderToFBO) {
+    //    GraphicsManager::UnbindFBO();
+    //}
+    //else {
+    //    // Game mode - swap buffers directly
+    //    WindowManager::SwapBuffers();
+    //}
+
+    WindowManager::SwapBuffers();
+}
+
+void Engine::SetRenderToFramebuffer(bool enabled) {
+    renderToFBO = enabled;
+}
+
+unsigned int Engine::GetFramebufferTexture() {
+    return GraphicsManager::GetFBOTexture();
 }
 
 bool Engine::IsRunning() {
     return running;
+}
+
+void Engine::Shutdown() {
+    GraphicsManager::Shutdown();
+    WindowManager::Shutdown();
+    running = false;
+    std::cout << "[Engine] Shutdown complete" << std::endl;
 }
