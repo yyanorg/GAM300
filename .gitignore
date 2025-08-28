@@ -2,4 +2,4 @@
 .vs/
 
 # Ignore build folder
-/Build
+Project/Build
