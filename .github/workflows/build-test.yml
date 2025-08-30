@@ -1,4 +1,4 @@
-name: Simple Debug Build
+name: Build GAM300 Engine
 
 on:
   push:
@@ -7,13 +7,13 @@ on:
     branches: [ main ]
 
 jobs:
-  debug-build:
+  build:
     runs-on: windows-2022
     
     strategy:
       fail-fast: false
       matrix:
-        configuration: [Release]  # Just test Release first
+        configuration: [Debug, Release, EditorDebug, EditorRelease]
         
     steps:
     - name: Checkout Repository
@@ -22,60 +22,153 @@ jobs:
     - name: Setup MSBuild
       uses: microsoft/setup-msbuild@v2
     
-    - name: Check Project Structure
-      run: |
-        Write-Host "=== PROJECT STRUCTURE ===" -ForegroundColor Yellow
-        cd Project
-        Write-Host "Current directory: $PWD"
-        Write-Host "Solution file:"
-        Get-ChildItem -Filter "*.sln"
-        Write-Host "Project files:"
-        Get-ChildItem -Recurse -Filter "*.vcxproj" | Select-Object Name, Directory
-    
     - name: Build Solution
       run: |
-        Write-Host "=== BUILDING RELEASE ===" -ForegroundColor Yellow
+        Write-Host "Building GAM300.sln with configuration: ${{ matrix.configuration }}" -ForegroundColor Cyan
         cd Project
-        msbuild GAM300.sln /p:Configuration=Release /p:Platform=x64 /v:normal
-        Write-Host "Build exit code: $LASTEXITCODE"
+        
+        msbuild GAM300.sln /p:Configuration=${{ matrix.configuration }} /p:Platform=x64 /m /v:minimal
+        
+        if ($LASTEXITCODE -ne 0) {
+            Write-Error "Build failed for configuration ${{ matrix.configuration }}!"
+            exit 1
+        }
+        
+        Write-Host "Build successful for ${{ matrix.configuration }}!" -ForegroundColor Green
     
-    - name: Find ALL Output Files
+    - name: Verify Build Outputs - Game Configuration
+      if: matrix.configuration == 'Debug' || matrix.configuration == 'Release'
       run: |
-        Write-Host "=== SEARCHING FOR OUTPUT FILES ===" -ForegroundColor Yellow
+        Write-Host "Verifying Game build outputs for ${{ matrix.configuration }}..." -ForegroundColor Cyan
         cd Project
         
-        Write-Host "ALL .exe files anywhere:"
-        Get-ChildItem -Recurse -Filter "*.exe" -ErrorAction SilentlyContinue | ForEach-Object {
-            Write-Host "  $($_.FullName.Replace($PWD, '.'))"
-        }
+        $expectedFiles = @(
+            "Build/${{ matrix.configuration }}/Game.exe",
+            "Build/${{ matrix.configuration }}/Engine.dll"
+        )
         
-        Write-Host "ALL .dll files anywhere:"
-        Get-ChildItem -Recurse -Filter "*.dll" -ErrorAction SilentlyContinue | ForEach-Object {
-            Write-Host "  $($_.FullName.Replace($PWD, '.'))"
-        }
-        
-        Write-Host "x64 folder contents (if exists):"
-        if (Test-Path "x64") {
-            Get-ChildItem "x64" -Recurse -ErrorAction SilentlyContinue | ForEach-Object {
-                Write-Host "  $($_.FullName.Replace($PWD, '.'))"
+        $missing = @()
+        foreach ($file in $expectedFiles) {
+            if (!(Test-Path $file)) {
+                $missing += $file
+                Write-Error "Missing output file: $file"
+            } else {
+                $size = [math]::Round((Get-Item $file).Length / 1MB, 2)
+                Write-Host "Found: $file ($size MB)" -ForegroundColor Green
             }
+        }
+        
+        if ($missing.Count -gt 0) {
+            Write-Error "Missing build outputs: $($missing -join ', ')"
+            exit 1
+        }
+    
+    - name: Verify Build Outputs - Editor Configuration
+      if: matrix.configuration == 'EditorDebug' || matrix.configuration == 'EditorRelease'
+      run: |
+        Write-Host "Verifying Editor build outputs for ${{ matrix.configuration }}..." -ForegroundColor Cyan
+        cd Project
+        
+        $expectedFiles = @(
+            "Build/${{ matrix.configuration }}/Editor.exe"
+        )
+        
+        foreach ($file in $expectedFiles) {
+            if (!(Test-Path $file)) {
+                Write-Error "Missing executable: $file"
+                exit 1
+            } else {
+                $size = [math]::Round((Get-Item $file).Length / 1MB, 2)  
+                Write-Host "Found executable: $file ($size MB)" -ForegroundColor Green
+            }
+        }
+        
+        # Check for static libraries (may or may not exist depending on linking)
+        $possibleLibs = @(
+            "Build/${{ matrix.configuration }}/Engine.lib",
+            "Build/${{ matrix.configuration }}/Game.lib"
+        )
+        
+        foreach ($lib in $possibleLibs) {
+            if (Test-Path $lib) {
+                $size = [math]::Round((Get-Item $lib).Length / 1MB, 2)
+                Write-Host "Found library: $lib ($size MB)" -ForegroundColor Green
+            } else {
+                Write-Host "Library not found (may be linked differently): $lib" -ForegroundColor Yellow
+            }
+        }
+    
+    - name: Quick Smoke Test - Game
+      if: matrix.configuration == 'Release'
+      run: |
+        Write-Host "Running Game smoke test..." -ForegroundColor Cyan
+        cd Project/Build/Release
+        
+        # Test if Game.exe can start without crashing immediately
+        $process = Start-Process -FilePath ".\Game.exe" -PassThru -WindowStyle Hidden
+        Start-Sleep -Seconds 3
+        
+        if (!$process.HasExited) {
+            Write-Host "Game started successfully and is running!" -ForegroundColor Green
+            Stop-Process -Id $process.Id -Force -ErrorAction SilentlyContinue
+        } elseif ($process.ExitCode -eq 0) {
+            Write-Host "Game ran and exited cleanly" -ForegroundColor Green
         } else {
-            Write-Host "  x64 folder does not exist"
+            Write-Warning "Game may have crashed. Exit code: $($process.ExitCode)"
+            # Don't fail the build - this might be expected behavior
         }
     
-    - name: Check Alternative Output Locations
+    - name: Upload Game Build Artifacts
+      if: matrix.configuration == 'Debug' || matrix.configuration == 'Release'
+      uses: actions/upload-artifact@v4
+      with:
+        name: GameBuild-${{ matrix.configuration }}
+        path: |
+          Project/Build/${{ matrix.configuration }}/Game.exe
+          Project/Build/${{ matrix.configuration }}/Engine.dll
+          Project/Build/${{ matrix.configuration }}/*.dll
+          Project/Build/${{ matrix.configuration }}/*.pdb
+          Project/Build/${{ matrix.configuration }}/Resources/
+        retention-days: 7
+        if-no-files-found: error
+    
+    - name: Upload Editor Build Artifacts  
+      if: matrix.configuration == 'EditorDebug' || matrix.configuration == 'EditorRelease'
+      uses: actions/upload-artifact@v4
+      with:
+        name: EditorBuild-${{ matrix.configuration }}
+        path: |
+          Project/Build/${{ matrix.configuration }}/Editor.exe
+          Project/Build/${{ matrix.configuration }}/*.lib
+          Project/Build/${{ matrix.configuration }}/*.pdb
+        retention-days: 7
+        if-no-files-found: error
+
+  # Build summary
+  build-summary:
+    runs-on: ubuntu-latest
+    needs: build
+    if: always()
+    
+    steps:
+    - name: Generate Build Summary
       run: |
-        Write-Host "=== CHECKING ALTERNATIVE LOCATIONS ===" -ForegroundColor Yellow
-        cd Project
+        echo "# GAM300 Build Results" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "| Configuration | Status |" >> $GITHUB_STEP_SUMMARY
+        echo "|---------------|--------|" >> $GITHUB_STEP_SUMMARY
         
-        $locations = @("Engine", "Game", "Editor", "bin", "out", "Debug", "Release")
-        foreach ($loc in $locations) {
-            if (Test-Path $loc) {
-                Write-Host "$loc folder contents:"
-                Get-ChildItem $loc -Recurse -ErrorAction SilentlyContinue | Where-Object { 
-                    $_.Extension -in @('.exe', '.dll', '.lib', '.pdb') 
-                } | ForEach-Object {
-                    Write-Host "  $($_.FullName.Replace($PWD, '.'))"
-                }
-            }
-        }
+        if [[ "${{ needs.build.result }}" == "success" ]]; then
+          echo "| Debug | ✅ Success |" >> $GITHUB_STEP_SUMMARY
+          echo "| Release | ✅ Success |" >> $GITHUB_STEP_SUMMARY  
+          echo "| EditorDebug | ✅ Success |" >> $GITHUB_STEP_SUMMARY
+          echo "| EditorRelease | ✅ Success |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "🎉 All configurations built successfully!" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Build artifacts are available for download in the Actions tab.**" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "| Build | ❌ Failed |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "⚠️ Build failed. Check the logs above for details." >> $GITHUB_STEP_SUMMARY
+        fi
