@@ -1,10 +1,5 @@
 name: Build GAM300 Engine
 
-permissions:
-  contents: read
-  security-events: write
-  actions: read
-
 on:
   push:
     branches: [ main ]
@@ -244,40 +239,6 @@ jobs:
           Project/Build/${{ matrix.configuration }}/*.pdb
         retention-days: 7
         if-no-files-found: error
-
-  # Code analysis job
-  code-analysis:
-    runs-on: windows-2022
-    needs: build
-    # if: github.event_name == 'pull_request'
-    
-    steps:
-    - name: Checkout Repository
-      uses: actions/checkout@v4
-    
-    - name: Setup MSBuild
-      uses: microsoft/setup-msbuild@v2
-    
-    - name: Initialize CodeQL
-      uses: github/codeql-action/init@v3
-      with:
-        languages: cpp
-        config: |
-          paths:
-            - Project/Engine/src
-            - Project/Game/src  
-            - Project/Editor/src
-          paths-ignore:
-            - Project/Libraries
-            - Project/Editor/src/imgui
-    
-    - name: Build for CodeQL
-      run: |
-        cd Project
-        msbuild GAM300.sln /p:Configuration=Release /p:Platform=x64 /m
-    
-    - name: Perform CodeQL Analysis
-      uses: github/codeql-action/analyze@v3
 
   # Build summary
   build-summary:
