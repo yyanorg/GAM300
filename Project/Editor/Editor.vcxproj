@@ -35,7 +35,6 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="src\UIManager.cpp" />
     <ClCompile Include="src\imgui\imgui.cpp" />
     <ClCompile Include="src\imgui\imgui_demo.cpp" />
     <ClCompile Include="src\imgui\imgui_draw.cpp" />
@@ -44,11 +43,6 @@
     <ClCompile Include="src\imgui\imgui_tables.cpp" />
     <ClCompile Include="src\imgui\imgui_widgets.cpp" />
     <ClCompile Include="src\main.cpp" />
-    <ClCompile Include="src\SceneWindow.cpp" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="include\UIManager.h" />
-    <ClInclude Include="include\SceneWindow.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>17.0</VCProjectVersion>
@@ -227,7 +221,7 @@
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp17</LanguageStandard>
-      <AdditionalIncludeDirectories>$(ProjectDir)include;$(SolutionDir)Engine\include;$(SolutionDir)Game\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)include;$(SolutionDir)Engine\include;$(SolutionDir)Game\include;$(SolutionDir)Libraries\ImGui;$(SolutionDir)Libraries\ImGui\backends;$(SolutionDir)Libraries\GLFW\include;$(SolutionDir)Libraries\GLAD\include;$(SolutionDir)Libraries\GLM;$(SolutionDir)Libraries\assimp\include</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -262,7 +256,7 @@
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp17</LanguageStandard>
-      <AdditionalIncludeDirectories>$(ProjectDir)include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)include;$(SolutionDir)Engine\include;$(SolutionDir)Game\include;$(SolutionDir)Libraries\ImGui;$(SolutionDir)Libraries\ImGui\backends;$(SolutionDir)Libraries\GLFW\include;$(SolutionDir)Libraries\GLAD\include;$(SolutionDir)Libraries\GLM;$(SolutionDir)Libraries\assimp\include</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>

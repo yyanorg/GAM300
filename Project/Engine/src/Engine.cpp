@@ -395,6 +395,10 @@ void Engine::Shutdown() {
     std::cout << "[Engine] Shutdown complete" << std::endl;
 }
 
+bool Engine::IsRunning() {
+	return glfwWindowShouldClose(window);
+}
+
 // process all input: query GLFW whether relevant keys are pressed/released this frame and react accordingly
 // ---------------------------------------------------------------------------------------------------------
 void processInput(GLFWwindow* window)
