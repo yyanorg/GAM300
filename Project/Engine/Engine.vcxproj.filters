@@ -12,6 +12,17 @@
     <ClInclude Include="include\pch.h" />
     <ClInclude Include="include\GraphicsManager.h" />
     <ClInclude Include="include\WindowManager.h" />
+    <ClInclude Include="src\Input\InputManager.hpp" />
+    <ClInclude Include="src\ECS\Entity.hpp" />
+    <ClInclude Include="src\ECS\ECSManager.hpp" />
+    <ClInclude Include="src\ECS\EntityManager.hpp" />
+    <ClInclude Include="src\ECS\Component.hpp" />
+    <ClInclude Include="src\ECS\ComponentArray.hpp" />
+    <ClInclude Include="src\ECS\ComponentManager.hpp" />
+    <ClInclude Include="src\ECS\Signature.hpp" />
+    <ClInclude Include="src\ECS\System.hpp" />
+    <ClInclude Include="src\ECS\SystemManager.hpp" />
+    <ClInclude Include="src\ECS\ECSRegistry.hpp" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Engine.cpp" />
@@ -20,5 +31,12 @@
     <ClCompile Include="src\pch.cpp" />
     <ClCompile Include="src\GraphicsManager.cpp" />
     <ClCompile Include="src\WindowManager.cpp" />
+    <ClCompile Include="src\Input\InputManager.cpp" />
+    <ClCompile Include="src\ECS\EntityManager.cpp" />
+    <ClCompile Include="src\ECS\ECSManager.cpp" />
+    <ClCompile Include="src\ECS\ECSRegistry.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="cpp.hint" />
   </ItemGroup>
 </Project>

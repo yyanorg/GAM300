@@ -40,8 +40,22 @@
     <ClInclude Include="include\pch.h" />
     <ClInclude Include="include\TestScene.h" />
     <ClInclude Include="include\WindowManager.h" />
+    <ClInclude Include="src\ECS\Component.hpp" />
+    <ClInclude Include="src\ECS\ComponentArray.hpp" />
+    <ClInclude Include="src\ECS\ComponentManager.hpp" />
+    <ClInclude Include="src\ECS\ECSManager.hpp" />
+    <ClInclude Include="src\ECS\ECSRegistry.hpp" />
+    <ClInclude Include="src\ECS\Entity.hpp" />
+    <ClInclude Include="src\ECS\EntityManager.hpp" />
+    <ClInclude Include="src\ECS\Signature.hpp" />
+    <ClInclude Include="src\ECS\System.hpp" />
+    <ClInclude Include="src\ECS\SystemManager.hpp" />
+    <ClInclude Include="src\Input\InputManager.hpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="src\ECS\ECSManager.cpp" />
+    <ClCompile Include="src\ECS\ECSRegistry.cpp" />
+    <ClCompile Include="src\ECS\EntityManager.cpp" />
     <ClCompile Include="src\Engine.cpp" />
     <ClCompile Include="src\glad.c">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
@@ -50,6 +64,7 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='EditorDebug|x64'">NotUsing</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="src\GraphicsManager.cpp" />
+    <ClCompile Include="src\Input\InputManager.cpp" />
     <ClCompile Include="src\pch.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='EditorRelease|x64'">Create</PrecompiledHeader>
@@ -58,6 +73,9 @@
     </ClCompile>
     <ClCompile Include="src\TestScene.cpp" />
     <ClCompile Include="src\WindowManager.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="cpp.hint" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>17.0</VCProjectVersion>
@@ -224,7 +242,7 @@
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions);ENGINE_EXPORTS</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp17</LanguageStandard>
-      <AdditionalIncludeDirectories>$(ProjectDir)include;$(SolutionDir)Libraries\GLFW\include;$(SolutionDir)Libraries\GLAD\include;$(SolutionDir)Libraries\GLM;$(SolutionDir)Libraries\assimp\include;$(SolutionDir)Libraries\freetype\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)include;$(SolutionDir)Libraries\glfw\include;$(SolutionDir)Libraries\GLAD\include;$(SolutionDir)Libraries\GLM;$(SolutionDir)Libraries\assimp\include;$(SolutionDir)Libraries\freetype\include</AdditionalIncludeDirectories>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
     </ClCompile>

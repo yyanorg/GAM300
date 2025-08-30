@@ -3,6 +3,8 @@
 #include "Engine.h"
 #include "WindowManager.h"
 #include "GraphicsManager.h"
+#include "Input/InputManager.hpp"
+#include "ECS/ECSRegistry.hpp"
 
 static bool initialized = false;
 static bool running = false;
@@ -24,6 +26,24 @@ void Engine::Initialize() {
     std::cout << "[Engine] OpenGL " << glGetString(GL_VERSION) << std::endl;
 
     GraphicsManager::Initialize();
+	InputManager::Initialize(WindowManager::GetWindow());
+
+	// Temp testing code - create some ECS managers and entities
+	ECSRegistry::GetInstance().CreateECSManager("MainWorld");
+    ECSRegistry::GetInstance().GetActiveECSManager().CreateEntity();
+    ECSRegistry::GetInstance().GetActiveECSManager().CreateEntity();
+    ECSRegistry::GetInstance().GetActiveECSManager().CreateEntity();
+    ECSRegistry::GetInstance().GetActiveECSManager().CreateEntity();
+    ECSRegistry::GetInstance().GetActiveECSManager().CreateEntity();
+
+    ECSRegistry::GetInstance().GetActiveECSManager().DestroyEntity(2);
+
+	ECSRegistry::GetInstance().CreateECSManager("SecondaryWorld");
+	ECSRegistry::GetInstance().GetECSManager("SecondaryWorld").CreateEntity();
+	ECSRegistry::GetInstance().GetECSManager("SecondaryWorld").CreateEntity();
+	ECSRegistry::GetInstance().GetECSManager("SecondaryWorld").CreateEntity();
+
+    ECSRegistry::GetInstance().GetActiveECSManager().ClearAllEntities();
 
     initialized = true;
     running = true;
@@ -33,7 +53,7 @@ void Engine::Initialize() {
 void Engine::Update() {
     if (!running) return;
 
-    WindowManager::PollEvents();
+    //WindowManager::PollEvents();
 
     if (WindowManager::ShouldClose()) {
         running = false;
@@ -41,9 +61,15 @@ void Engine::Update() {
 
     // Handle ESC key for game mode
     GLFWwindow* window = WindowManager::GetWindow();
-    if (window && glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
+    if (window && InputManager::GetKeyDown(GLFW_KEY_ESCAPE)) {
         running = false;
     }
+
+    if (InputManager::GetAnyInputDown()) {
+        std::cout << "[Engine] Input detected" << std::endl;
+	}
+
+    InputManager::Update();
 }
 
 void Engine::StartDraw() {
