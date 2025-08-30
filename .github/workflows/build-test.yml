@@ -1,74 +1,109 @@
+# WORKFLOW NAME - appears in GitHub Actions tab
 name: Build GAM300 Engine
 
+# TRIGGERS - when does this workflow run?
 on:
   push:
-    branches: [ main ]
+    branches: [ main ]        # Run when someone pushes directly to main
   pull_request:
-    branches: [ main ]
+    branches: [ main ]        # Run when someone creates/updates PR targeting main
 
+# JOBS - the actual work to do (can have multiple jobs running in parallel)
 jobs:
+  # JOB NAME - you can have multiple jobs like "build", "test", "deploy"
   build:
-    runs-on: windows-2022
+    # RUNNER - what kind of virtual machine should GitHub spin up?
+    runs-on: windows-2022     # Windows Server 2022 with Visual Studio pre-installed
     
+    # STRATEGY - run this job multiple times with different parameters
     strategy:
-      fail-fast: false
-      matrix:
+      fail-fast: false       # If Debug fails, still try Release/EditorDebug/EditorRelease
+      matrix:                 # Create 4 parallel jobs, one for each configuration
         configuration: [Debug, Release, EditorDebug, EditorRelease]
+        # GitHub creates 4 VMs simultaneously:
+        # VM1: matrix.configuration = "Debug"
+        # VM2: matrix.configuration = "Release" 
+        # VM3: matrix.configuration = "EditorDebug"
+        # VM4: matrix.configuration = "EditorRelease"
         
+    # STEPS - sequential actions that run on each VM
     steps:
+    # STEP 1: Download your repository code to the VM
     - name: Checkout Repository
-      uses: actions/checkout@v4
+      uses: actions/checkout@v4  # Pre-built action to download code from GitHub
+      # VM starts empty - this downloads your entire repo so build tools can access it
     
+    # STEP 2: Install Visual Studio build tools 
     - name: Setup MSBuild
-      uses: microsoft/setup-msbuild@v2
+      uses: microsoft/setup-msbuild@v2  # Pre-built action to install MSBuild
+      # MSBuild is the command-line version of "Build Solution" button in Visual Studio
     
+    # STEP 3: Compile your code
     - name: Build Solution
-      run: |
+      run: |                  # Execute these PowerShell commands on the VM
+        # Display what configuration we're building (Debug/Release/etc)
         Write-Host "Building GAM300.sln with configuration: ${{ matrix.configuration }}" -ForegroundColor Cyan
+        
+        # Navigate to your Project folder where GAM300.sln is located
         cd Project
         
+        # RUN MSBUILD - equivalent to clicking "Build Solution" in Visual Studio
+        # /p:Configuration=${{ matrix.configuration }} - sets Debug/Release/EditorDebug/EditorRelease
+        # /p:Platform=x64 - build for 64-bit architecture
+        # /m - use multiple CPU cores for faster compilation
+        # /v:minimal - reduce verbose output unless there are errors
         msbuild GAM300.sln /p:Configuration=${{ matrix.configuration }} /p:Platform=x64 /m /v:minimal
         
+        # CHECK IF BUILD SUCCEEDED - $LASTEXITCODE is 0 for success, non-zero for failure
         if ($LASTEXITCODE -ne 0) {
             Write-Error "Build failed for configuration ${{ matrix.configuration }}!"
-            exit 1
+            exit 1            # Exit with error code - this marks the entire job as failed
         }
         
         Write-Host "Build successful for ${{ matrix.configuration }}!" -ForegroundColor Green
     
-    - name: Verify Build Outputs - Game Configuration
+    # STEP 4: Verify Game builds produced expected files (only runs for Debug/Release)
+    - name: Verify Build Outputs - Game Configuration  
       if: matrix.configuration == 'Debug' || matrix.configuration == 'Release'
+      # CONDITIONAL - this step only runs for Debug and Release, not Editor configs
       run: |
         Write-Host "Verifying Game build outputs for ${{ matrix.configuration }}..." -ForegroundColor Cyan
         cd Project
         
+        # LIST OF FILES WE EXPECT TO EXIST after a successful build
         $expectedFiles = @(
-            "Build/${{ matrix.configuration }}/Game.exe",
-            "Build/${{ matrix.configuration }}/Engine.dll"
+            "Build/${{ matrix.configuration }}/Game.exe",      # Your main game executable
+            "Build/${{ matrix.configuration }}/Engine.dll"     # Your engine dynamic library
         )
         
+        # CHECK EACH EXPECTED FILE
         $missing = @()
         foreach ($file in $expectedFiles) {
             if (!(Test-Path $file)) {
                 $missing += $file
                 Write-Error "Missing output file: $file"
             } else {
+                # FILE EXISTS - show its size in MB
                 $size = [math]::Round((Get-Item $file).Length / 1MB, 2)
                 Write-Host "Found: $file ($size MB)" -ForegroundColor Green
             }
         }
         
+        # FAIL THE BUILD if any expected files are missing
         if ($missing.Count -gt 0) {
             Write-Error "Missing build outputs: $($missing -join ', ')"
             exit 1
         }
     
+    # STEP 5: Verify Editor builds (only runs for EditorDebug/EditorRelease)
     - name: Verify Build Outputs - Editor Configuration
       if: matrix.configuration == 'EditorDebug' || matrix.configuration == 'EditorRelease'
+      # CONDITIONAL - this step only runs for Editor configs, not Debug/Release
       run: |
         Write-Host "Verifying Editor build outputs for ${{ matrix.configuration }}..." -ForegroundColor Cyan
         cd Project
         
+        # FOR EDITOR BUILDS - we expect Editor.exe (Game/Engine are static libs)
         $expectedFiles = @(
             "Build/${{ matrix.configuration }}/Editor.exe"
         )
@@ -83,7 +118,7 @@ jobs:
             }
         }
         
-        # Check for static libraries (may or may not exist depending on linking)
+        # OPTIONAL CHECK - look for static library files (may not always exist)
         $possibleLibs = @(
             "Build/${{ matrix.configuration }}/Engine.lib",
             "Build/${{ matrix.configuration }}/Game.lib"
@@ -98,66 +133,76 @@ jobs:
             }
         }
     
+    # STEP 6: Test that the game actually runs (only test Release build)
     - name: Quick Smoke Test - Game
       if: matrix.configuration == 'Release'
+      # CONDITIONAL - only run this test once (Release), not for all 4 configurations
       run: |
         Write-Host "Running Game smoke test..." -ForegroundColor Cyan
         cd Project/Build/Release
         
-        # Test if Game.exe can start without crashing immediately
+        # START THE GAME and let it run for 3 seconds
         $process = Start-Process -FilePath ".\Game.exe" -PassThru -WindowStyle Hidden
         Start-Sleep -Seconds 3
         
+        # CHECK RESULTS
         if (!$process.HasExited) {
+            # GAME IS STILL RUNNING - good sign! Kill it gracefully
             Write-Host "Game started successfully and is running!" -ForegroundColor Green
             Stop-Process -Id $process.Id -Force -ErrorAction SilentlyContinue
         } elseif ($process.ExitCode -eq 0) {
+            # GAME RAN AND EXITED CLEANLY - also good
             Write-Host "Game ran and exited cleanly" -ForegroundColor Green
         } else {
+            # GAME CRASHED - warn but don't fail build (might be expected)
             Write-Warning "Game may have crashed. Exit code: $($process.ExitCode)"
-            # Don't fail the build - this might be expected behavior
         }
     
+    # STEP 7: Upload Game build files so you can download them from GitHub
     - name: Upload Game Build Artifacts
       if: matrix.configuration == 'Debug' || matrix.configuration == 'Release'
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v4  # Pre-built action to upload files
       with:
-        name: GameBuild-${{ matrix.configuration }}
-        path: |
+        name: GameBuild-${{ matrix.configuration }}    # Creates "GameBuild-Debug.zip", "GameBuild-Release.zip"
+        path: |                                        # List of files/folders to include in the zip
           Project/Build/${{ matrix.configuration }}/Game.exe
           Project/Build/${{ matrix.configuration }}/Engine.dll
-          Project/Build/${{ matrix.configuration }}/*.dll
-          Project/Build/${{ matrix.configuration }}/*.pdb
-          Project/Build/${{ matrix.configuration }}/Resources/
-        retention-days: 7
-        if-no-files-found: error
+          Project/Build/${{ matrix.configuration }}/*.dll     # Any other DLLs (Assimp, etc)
+          Project/Build/${{ matrix.configuration }}/*.pdb     # Debug symbols for crash debugging
+          Project/Build/${{ matrix.configuration }}/Resources/ # Assets folder
+        retention-days: 7                              # Keep files for 7 days then auto-delete
+        if-no-files-found: error                       # Fail if no files match the patterns
     
+    # STEP 8: Upload Editor build files 
     - name: Upload Editor Build Artifacts  
       if: matrix.configuration == 'EditorDebug' || matrix.configuration == 'EditorRelease'
       uses: actions/upload-artifact@v4
       with:
-        name: EditorBuild-${{ matrix.configuration }}
+        name: EditorBuild-${{ matrix.configuration }}  # Creates "EditorBuild-EditorDebug.zip", etc
         path: |
           Project/Build/${{ matrix.configuration }}/Editor.exe
-          Project/Build/${{ matrix.configuration }}/*.lib
-          Project/Build/${{ matrix.configuration }}/*.pdb
+          Project/Build/${{ matrix.configuration }}/*.lib     # Static library files
+          Project/Build/${{ matrix.configuration }}/*.pdb     # Debug symbols
         retention-days: 7
         if-no-files-found: error
 
-  # Build summary
+  # SECOND JOB - runs after build job completes (regardless of success/failure)
   build-summary:
-    runs-on: ubuntu-latest
-    needs: build
-    if: always()
+    runs-on: ubuntu-latest        # Use Linux VM for this simple job (cheaper than Windows)
+    needs: build                  # Wait for "build" job to complete before starting
+    if: always()                  # Run even if build job failed
     
     steps:
+    # CREATE A SUMMARY REPORT that appears at the top of the Actions page
     - name: Generate Build Summary
       run: |
+        # WRITE MARKDOWN to GitHub's special summary file
         echo "# GAM300 Build Results" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
         echo "| Configuration | Status |" >> $GITHUB_STEP_SUMMARY
         echo "|---------------|--------|" >> $GITHUB_STEP_SUMMARY
         
+        # CHECK IF ALL BUILDS SUCCEEDED
         if [[ "${{ needs.build.result }}" == "success" ]]; then
           echo "| Debug | ✅ Success |" >> $GITHUB_STEP_SUMMARY
           echo "| Release | ✅ Success |" >> $GITHUB_STEP_SUMMARY  
