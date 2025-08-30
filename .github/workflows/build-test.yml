@@ -1,4 +1,4 @@
-name: Debug GAM300 Build
+name: Simple Debug Build
 
 on:
   push:
@@ -13,7 +13,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        configuration: [Debug, Release, EditorDebug, EditorRelease]
+        configuration: [Release]  # Just test Release first
         
     steps:
     - name: Checkout Repository
@@ -22,143 +22,60 @@ jobs:
     - name: Setup MSBuild
       uses: microsoft/setup-msbuild@v2
     
-    - name: Show Initial Directory Structure
+    - name: Check Project Structure
       run: |
-        Write-Host "=== INITIAL DIRECTORY STRUCTURE ===" -ForegroundColor Yellow
+        Write-Host "=== PROJECT STRUCTURE ===" -ForegroundColor Yellow
         cd Project
-        Write-Host "Current directory: $PWD" -ForegroundColor Cyan
-        Write-Host "Contents:" -ForegroundColor Cyan
-        Get-ChildItem -Recurse -Directory | Select-Object FullName | Format-Table -AutoSize
-        
-        Write-Host "=== SOLUTION AND PROJECT FILES ===" -ForegroundColor Yellow
-        Get-ChildItem -Recurse -Filter "*.sln" | Format-Table Name, FullName -AutoSize
-        Get-ChildItem -Recurse -Filter "*.vcxproj" | Format-Table Name, FullName -AutoSize
+        Write-Host "Current directory: $PWD"
+        Write-Host "Solution file:"
+        Get-ChildItem -Filter "*.sln"
+        Write-Host "Project files:"
+        Get-ChildItem -Recurse -Filter "*.vcxproj" | Select-Object Name, Directory
     
-    - name: Verify Libraries (Quick Check)
+    - name: Build Solution
       run: |
+        Write-Host "=== BUILDING RELEASE ===" -ForegroundColor Yellow
         cd Project
-        if (Test-Path "Libraries") {
-            Write-Host "Libraries folder exists" -ForegroundColor Green
-            Get-ChildItem "Libraries" | Format-Table Name -AutoSize
-        } else {
-            Write-Error "Libraries folder missing!"
+        msbuild GAM300.sln /p:Configuration=Release /p:Platform=x64 /v:normal
+        Write-Host "Build exit code: $LASTEXITCODE"
+    
+    - name: Find ALL Output Files
+      run: |
+        Write-Host "=== SEARCHING FOR OUTPUT FILES ===" -ForegroundColor Yellow
+        cd Project
+        
+        Write-Host "ALL .exe files anywhere:"
+        Get-ChildItem -Recurse -Filter "*.exe" -ErrorAction SilentlyContinue | ForEach-Object {
+            Write-Host "  $($_.FullName.Replace($PWD, '.'))"
         }
-    
-    - name: Attempt Build with Maximum Verbosity
-      run: |
-        Write-Host "=== STARTING BUILD: ${{ matrix.configuration }} ===" -ForegroundColor Yellow
-        cd Project
         
-        Write-Host "Building with detailed output..." -ForegroundColor Cyan
-        msbuild GAM300.sln /p:Configuration=${{ matrix.configuration }} /p:Platform=x64 /v:normal /fl /flp:logfile=build.log
-        
-        Write-Host "Build command exit code: $LASTEXITCODE" -ForegroundColor $(if ($LASTEXITCODE -eq 0) { 'Green' } else { 'Red' })
-    
-    - name: Show Build Log
-      run: |
-        cd Project
-        if (Test-Path "build.log") {
-            Write-Host "=== BUILD LOG CONTENTS ===" -ForegroundColor Yellow
-            Get-Content "build.log" | Select-Object -Last 50
-        } else {
-            Write-Host "No build log found" -ForegroundColor Red
+        Write-Host "ALL .dll files anywhere:"
+        Get-ChildItem -Recurse -Filter "*.dll" -ErrorAction SilentlyContinue | ForEach-Object {
+            Write-Host "  $($_.FullName.Replace($PWD, '.'))"
         }
-    
-    - name: Search for ALL Output Files
-      run: |
-        Write-Host "=== SEARCHING FOR ALL .EXE AND .DLL FILES ===" -ForegroundColor Yellow
-        cd Project
         
-        Write-Host "All .exe files in project:" -ForegroundColor Cyan
-        Get-ChildItem -Recurse -Filter "*.exe" | Format-Table Name, Directory, Length -AutoSize
-        
-        Write-Host "All .dll files in project:" -ForegroundColor Cyan  
-        Get-ChildItem -Recurse -Filter "*.dll" | Format-Table Name, Directory, Length -AutoSize
-        
-        Write-Host "All .lib files in project:" -ForegroundColor Cyan
-        Get-ChildItem -Recurse -Filter "*.lib" | Format-Table Name, Directory, Length -AutoSize
-    
-    - name: Show x64 Directory Structure
-      run: |
-        cd Project
-        Write-Host "=== x64 DIRECTORY CONTENTS ===" -ForegroundColor Yellow
-        
+        Write-Host "x64 folder contents (if exists):"
         if (Test-Path "x64") {
-            Write-Host "x64 folder exists:" -ForegroundColor Green
-            Get-ChildItem "x64" -Recurse | Format-Table Name, Directory, Length -AutoSize
-        } else {
-            Write-Host "x64 folder does not exist!" -ForegroundColor Red
-        }
-        
-        # Check for alternative output directories
-        Write-Host "=== CHECKING FOR ALTERNATIVE OUTPUT PATHS ===" -ForegroundColor Yellow
-        
-        $possiblePaths = @(
-            "bin",
-            "output", 
-            "Debug",
-            "Release",
-            "EditorDebug", 
-            "EditorRelease",
-            "Engine/x64",
-            "Game/x64", 
-            "Editor/x64"
-        )
-        
-        foreach ($path in $possiblePaths) {
-            if (Test-Path $path) {
-                Write-Host "Found alternative path: $path" -ForegroundColor Green
-                Get-ChildItem $path -Recurse -ErrorAction SilentlyContinue | Where-Object { $_.Extension -in @('.exe', '.dll', '.lib') } | Format-Table Name, Directory -AutoSize
+            Get-ChildItem "x64" -Recurse -ErrorAction SilentlyContinue | ForEach-Object {
+                Write-Host "  $($_.FullName.Replace($PWD, '.'))"
             }
+        } else {
+            Write-Host "  x64 folder does not exist"
         }
     
-    - name: Check MSBuild Project Properties
+    - name: Check Alternative Output Locations
       run: |
-        Write-Host "=== CHECKING PROJECT OUTPUT SETTINGS ===" -ForegroundColor Yellow
+        Write-Host "=== CHECKING ALTERNATIVE LOCATIONS ===" -ForegroundColor Yellow
         cd Project
         
-        # Try to extract output directory from project files
-        $projects = @("Engine/Engine.vcxproj", "Game/Game.vcxproj", "Editor/Editor.vcxproj")
-        
-        foreach ($proj in $projects) {
-            if (Test-Path $proj) {
-                Write-Host "Checking $proj:" -ForegroundColor Cyan
-                $content = Get-Content $proj
-                $outputDirs = $content | Select-String -Pattern "OutDir|OutputPath|TargetDir" 
-                if ($outputDirs) {
-                    $outputDirs | ForEach-Object { Write-Host "  $_" }
-                } else {
-                    Write-Host "  No explicit output directory settings found"
+        $locations = @("Engine", "Game", "Editor", "bin", "out", "Debug", "Release")
+        foreach ($loc in $locations) {
+            if (Test-Path $loc) {
+                Write-Host "$loc folder contents:"
+                Get-ChildItem $loc -Recurse -ErrorAction SilentlyContinue | Where-Object { 
+                    $_.Extension -in @('.exe', '.dll', '.lib', '.pdb') 
+                } | ForEach-Object {
+                    Write-Host "  $($_.FullName.Replace($PWD, '.'))"
                 }
             }
         }
-    
-    - name: Final Status Report
-      run: |
-        Write-Host "=== FINAL STATUS REPORT ===" -ForegroundColor Yellow
-        cd Project
-        
-        Write-Host "Configuration: ${{ matrix.configuration }}" -ForegroundColor Cyan
-        Write-Host "Expected files would be at:" -ForegroundColor Cyan
-        
-        if ("${{ matrix.configuration }}" -like "*Editor*") {
-            Write-Host "  - x64/${{ matrix.configuration }}/Editor.exe"
-        } else {
-            Write-Host "  - x64/${{ matrix.configuration }}/Game.exe"
-            Write-Host "  - x64/${{ matrix.configuration }}/Engine.dll"
-        }
-        
-        Write-Host "Build process completed. Check above output for actual file locations." -ForegroundColor Yellow
-    
-    - name: Upload Build Logs
-      uses: actions/upload-artifact@v4
-      if: always()
-      with:
-        name: BuildDebugInfo-${{ matrix.configuration }}
-        path: |
-          Project/build.log
-          Project/**/*.exe
-          Project/**/*.dll
-          Project/**/*.lib
-        if-no-files-found: warn
-        retention-days: 3
