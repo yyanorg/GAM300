@@ -8,10 +8,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\Engine.h" />
-    <ClInclude Include="include\TestScene.h" />
     <ClInclude Include="include\pch.h" />
-    <ClInclude Include="include\GraphicsManager.h" />
-    <ClInclude Include="include\WindowManager.h" />
     <ClInclude Include="src\Input\InputManager.hpp" />
     <ClInclude Include="src\ECS\Entity.hpp" />
     <ClInclude Include="src\ECS\ECSManager.hpp" />
@@ -23,18 +20,29 @@
     <ClInclude Include="src\ECS\System.hpp" />
     <ClInclude Include="src\ECS\SystemManager.hpp" />
     <ClInclude Include="src\ECS\ECSRegistry.hpp" />
+    <ClInclude Include="include\Graphics\Camera.h" />
+    <ClInclude Include="include\Graphics\EBO.h" />
+    <ClInclude Include="include\Graphics\Mesh.h" />
+    <ClInclude Include="include\Graphics\ShaderClass.h" />
+    <ClInclude Include="include\Graphics\Texture.h" />
+    <ClInclude Include="include\Graphics\VAO.h" />
+    <ClInclude Include="include\Graphics\VBO.h" />
+    <ClInclude Include="include\Graphics\stb_image.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Engine.cpp" />
     <ClCompile Include="src\glad.c" />
-    <ClCompile Include="src\TestScene.cpp" />
     <ClCompile Include="src\pch.cpp" />
-    <ClCompile Include="src\GraphicsManager.cpp" />
-    <ClCompile Include="src\WindowManager.cpp" />
     <ClCompile Include="src\Input\InputManager.cpp" />
     <ClCompile Include="src\ECS\EntityManager.cpp" />
     <ClCompile Include="src\ECS\ECSManager.cpp" />
     <ClCompile Include="src\ECS\ECSRegistry.cpp" />
+    <ClCompile Include="src\Graphics\EBO.cpp" />
+    <ClCompile Include="src\Graphics\VAO.cpp" />
+    <ClCompile Include="src\Graphics\VBO.cpp" />
+    <ClCompile Include="src\Graphics\Texture.cpp" />
+    <ClCompile Include="src\Graphics\Mesh.cpp" />
+    <ClCompile Include="src\Graphics\ShaderClass.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="cpp.hint" />

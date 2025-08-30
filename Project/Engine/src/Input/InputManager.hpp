@@ -1,7 +1,6 @@
 #pragma once
 
 #include <unordered_map>
-#include <WindowManager.h>
 
 #ifdef ENGINE_EXPORTS
 #define ENGINE_API __declspec(dllexport)

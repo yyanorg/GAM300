@@ -1,32 +1,241 @@
 #include "pch.h"
+
 #include <glad/glad.h>
+#include <GLFW/glfw3.h>
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp> 
+#include <assimp/Importer.hpp>
+#include <assimp/scene.h>
+#include <assimp/postprocess.h>
+
 #include "Engine.h"
-#include "WindowManager.h"
-#include "GraphicsManager.h"
+#include "Graphics/Mesh.h"
+#include "Graphics/ShaderClass.h"
+
 #include "Input/InputManager.hpp"
 #include "ECS/ECSRegistry.hpp"
 
-static bool initialized = false;
-static bool running = false;
-static bool renderToFBO = false;
+void framebuffer_size_callback(GLFWwindow* window, int width, int height);
+void mouse_callback(GLFWwindow* window, double xpos, double ypos);
+void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
+void processInput(GLFWwindow* window);
 
-void Engine::Initialize() {
+const unsigned int SCR_WIDTH = 800;
+const unsigned int SCR_HEIGHT = 600;
+
+GLFWwindow* window;
+
+// camera
+Camera camera(glm::vec3(0.0f, 0.0f, 3.0f));
+float lastX = SCR_WIDTH / 2.0f;
+float lastY = SCR_HEIGHT / 2.0f;
+bool firstMouse = true;
+
+float deltaTime = 0.0f;
+float lastFrame = 0.0f;
+
+// positions of the point lights
+glm::vec3 pointLightPositions[] = {
+	glm::vec3(0.7f,  0.2f,  2.0f),
+	glm::vec3(2.3f, -3.3f, -4.0f),
+	glm::vec3(-4.0f,  2.0f, -12.0f),
+	glm::vec3(0.0f,  0.0f, -3.0f)
+};
+
+bool Engine::Initialize() {
     std::cout << "[Engine] Initializing..." << std::endl;
 
-    if (!WindowManager::Initialize(1200, 800, "Engine")) {
-        std::cout << "[Engine] Window initialization failed!" << std::endl;
-        return;
-    }
+	Assimp::Importer importer;
 
-    if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
-        std::cout << "[Engine] GLAD initialization failed!" << std::endl;
-        return;
-    }
+	// Change this to your actual model path (relative to your .exe)
+	const aiScene* scene = importer.ReadFile("Resources/Models/FinalBaseMesh.obj",
+		aiProcess_Triangulate | aiProcess_FlipUVs);
 
-    std::cout << "[Engine] OpenGL " << glGetString(GL_VERSION) << std::endl;
+	// Error checking
+	if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode) {
+		std::cerr << "Assimp Error: " << importer.GetErrorString() << std::endl;
+		return 1;
+	}
 
-    GraphicsManager::Initialize();
-	InputManager::Initialize(WindowManager::GetWindow());
+	std::cout << "Model loaded successfully!\n";
+	std::cout << "Meshes: " << scene->mNumMeshes << "\n";
+	std::cout << "Materials: " << scene->mNumMaterials << "\n";
+
+	// Print mesh info
+	for (unsigned int i = 0; i < scene->mNumMeshes; ++i) {
+		aiMesh* mesh = scene->mMeshes[i];
+		std::cout << "Mesh " << i << ": " << mesh->mNumVertices << " vertices, ";
+		std::cout << mesh->mNumFaces << " faces\n";
+	}
+
+	glm::vec3 cubePositions[]{
+		glm::vec3(0.0f,  0.0f,  0.0f),
+		glm::vec3(2.0f,  5.0f, -15.0f),
+		glm::vec3(-1.5f, -2.2f, -2.5f),
+		glm::vec3(-3.8f, -2.0f, -12.3f),
+		glm::vec3(2.4f, -0.4f, -3.5f),
+		glm::vec3(-1.7f,  3.0f, -7.5f),
+		glm::vec3(1.3f, -2.0f, -2.5f),
+		glm::vec3(1.5f,  2.0f, -2.5f),
+		glm::vec3(1.5f,  0.2f, -1.5f),
+		glm::vec3(-1.3f,  1.0f, -1.5f)
+	};
+
+	std::vector<Vertex> vertices = {
+		// Back face (4 vertices: 0-3)
+		{{-0.5f, -0.5f, -0.5f}, {0.0f,  0.0f, -1.0f}, {1.0f, 1.0f, 1.0f}, {0.0f, 0.0f}}, // 0
+		{{ 0.5f, -0.5f, -0.5f}, {0.0f,  0.0f, -1.0f}, {1.0f, 1.0f, 1.0f}, {1.0f, 0.0f}}, // 1
+		{{ 0.5f,  0.5f, -0.5f}, {0.0f,  0.0f, -1.0f}, {1.0f, 1.0f, 1.0f}, {1.0f, 1.0f}}, // 2
+		{{-0.5f,  0.5f, -0.5f}, {0.0f,  0.0f, -1.0f}, {1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}}, // 3
+
+		// Front face (4 vertices: 4-7)
+		{{-0.5f, -0.5f,  0.5f}, {0.0f,  0.0f,  1.0f}, {1.0f, 1.0f, 1.0f}, {0.0f, 0.0f}}, // 4
+		{{ 0.5f, -0.5f,  0.5f}, {0.0f,  0.0f,  1.0f}, {1.0f, 1.0f, 1.0f}, {1.0f, 0.0f}}, // 5
+		{{ 0.5f,  0.5f,  0.5f}, {0.0f,  0.0f,  1.0f}, {1.0f, 1.0f, 1.0f}, {1.0f, 1.0f}}, // 6
+		{{-0.5f,  0.5f,  0.5f}, {0.0f,  0.0f,  1.0f}, {1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}}, // 7
+
+		// Left face (4 vertices: 8-11)
+		{{-0.5f,  0.5f,  0.5f}, {-1.0f,  0.0f,  0.0f}, {1.0f, 1.0f, 1.0f}, {1.0f, 0.0f}}, // 8
+		{{-0.5f,  0.5f, -0.5f}, {-1.0f,  0.0f,  0.0f}, {1.0f, 1.0f, 1.0f}, {1.0f, 1.0f}}, // 9
+		{{-0.5f, -0.5f, -0.5f}, {-1.0f,  0.0f,  0.0f}, {1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}}, // 10
+		{{-0.5f, -0.5f,  0.5f}, {-1.0f,  0.0f,  0.0f}, {1.0f, 1.0f, 1.0f}, {0.0f, 0.0f}}, // 11
+
+		// Right face (4 vertices: 12-15)
+		{{ 0.5f,  0.5f,  0.5f}, { 1.0f,  0.0f,  0.0f}, {1.0f, 1.0f, 1.0f}, {1.0f, 0.0f}}, // 12
+		{{ 0.5f,  0.5f, -0.5f}, { 1.0f,  0.0f,  0.0f}, {1.0f, 1.0f, 1.0f}, {1.0f, 1.0f}}, // 13
+		{{ 0.5f, -0.5f, -0.5f}, { 1.0f,  0.0f,  0.0f}, {1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}}, // 14
+		{{ 0.5f, -0.5f,  0.5f}, { 1.0f,  0.0f,  0.0f}, {1.0f, 1.0f, 1.0f}, {0.0f, 0.0f}}, // 15
+
+		// Bottom face (4 vertices: 16-19)
+		{{-0.5f, -0.5f, -0.5f}, { 0.0f, -1.0f,  0.0f}, {1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}}, // 16
+		{{ 0.5f, -0.5f, -0.5f}, { 0.0f, -1.0f,  0.0f}, {1.0f, 1.0f, 1.0f}, {1.0f, 1.0f}}, // 17
+		{{ 0.5f, -0.5f,  0.5f}, { 0.0f, -1.0f,  0.0f}, {1.0f, 1.0f, 1.0f}, {1.0f, 0.0f}}, // 18
+		{{-0.5f, -0.5f,  0.5f}, { 0.0f, -1.0f,  0.0f}, {1.0f, 1.0f, 1.0f}, {0.0f, 0.0f}}, // 19
+
+		// Top face (4 vertices: 20-23)
+		{{-0.5f,  0.5f, -0.5f}, { 0.0f,  1.0f,  0.0f}, {1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}}, // 20
+		{{ 0.5f,  0.5f, -0.5f}, { 0.0f,  1.0f,  0.0f}, {1.0f, 1.0f, 1.0f}, {1.0f, 1.0f}}, // 21
+		{{ 0.5f,  0.5f,  0.5f}, { 0.0f,  1.0f,  0.0f}, {1.0f, 1.0f, 1.0f}, {1.0f, 0.0f}}, // 22
+		{{-0.5f,  0.5f,  0.5f}, { 0.0f,  1.0f,  0.0f}, {1.0f, 1.0f, 1.0f}, {0.0f, 0.0f}}  // 23
+	};
+
+	std::vector<GLuint> indices = {
+		// Back face
+		0, 1, 2,   2, 3, 0,
+		// Front face
+		4, 5, 6,   6, 7, 4,
+		// Left face
+		8, 9, 10,  10, 11, 8,
+		// Right face
+		12, 13, 14, 14, 15, 12,
+		// Bottom face
+		16, 17, 18, 18, 19, 16,
+		// Top face
+		20, 21, 22, 22, 23, 20
+	};
+
+	std::vector<Vertex> lightVertices = {
+		// Back face (4 vertices: 0-3)
+		{{-0.1f, -0.1f, -0.1f}, {0.0f, 0.0f, 0.0f}, {1.0f, 1.0f, 1.0f}, {0.0f, 0.0f}}, // 0
+		{{ 0.1f, -0.1f, -0.1f}, {0.0f, 0.0f, 0.0f}, {1.0f, 1.0f, 1.0f}, {0.0f, 0.0f}}, // 1
+		{{ 0.1f,  0.1f, -0.1f}, {0.0f, 0.0f, 0.0f}, {1.0f, 1.0f, 1.0f}, {0.0f, 0.0f}}, // 2
+		{{-0.1f,  0.1f, -0.1f}, {0.0f, 0.0f, 0.0f}, {1.0f, 1.0f, 1.0f}, {0.0f, 0.0f}}, // 3
+
+		// Front face (4 vertices: 4-7)
+		{{-0.1f, -0.1f,  0.1f}, {0.0f, 0.0f, 0.0f}, {1.0f, 1.0f, 1.0f}, {0.0f, 0.0f}}, // 4
+		{{ 0.1f, -0.1f,  0.1f}, {0.0f, 0.0f, 0.0f}, {1.0f, 1.0f, 1.0f}, {0.0f, 0.0f}}, // 5
+		{{ 0.1f,  0.1f,  0.1f}, {0.0f, 0.0f, 0.0f}, {1.0f, 1.0f, 1.0f}, {0.0f, 0.0f}}, // 6
+		{{-0.1f,  0.1f,  0.1f}, {0.0f, 0.0f, 0.0f}, {1.0f, 1.0f, 1.0f}, {0.0f, 0.0f}}, // 7
+
+		// Left face (4 vertices: 8-11)
+		{{-0.1f,  0.1f,  0.1f}, {0.0f, 0.0f, 0.0f}, {1.0f, 1.0f, 1.0f}, {0.0f, 0.0f}}, // 8
+		{{-0.1f,  0.1f, -0.1f}, {0.0f, 0.0f, 0.0f}, {1.0f, 1.0f, 1.0f}, {0.0f, 0.0f}}, // 9
+		{{-0.1f, -0.1f, -0.1f}, {0.0f, 0.0f, 0.0f}, {1.0f, 1.0f, 1.0f}, {0.0f, 0.0f}}, // 10
+		{{-0.1f, -0.1f,  0.1f}, {0.0f, 0.0f, 0.0f}, {1.0f, 1.0f, 1.0f}, {0.0f, 0.0f}}, // 11
+
+		// Right face (4 vertices: 12-15)
+		{{ 0.1f,  0.1f,  0.1f}, {0.0f, 0.0f, 0.0f}, {1.0f, 1.0f, 1.0f}, {0.0f, 0.0f}}, // 12
+		{{ 0.1f,  0.1f, -0.1f}, {0.0f, 0.0f, 0.0f}, {1.0f, 1.0f, 1.0f}, {0.0f, 0.0f}}, // 13
+		{{ 0.1f, -0.1f, -0.1f}, {0.0f, 0.0f, 0.0f}, {1.0f, 1.0f, 1.0f}, {0.0f, 0.0f}}, // 14
+		{{ 0.1f, -0.1f,  0.1f}, {0.0f, 0.0f, 0.0f}, {1.0f, 1.0f, 1.0f}, {0.0f, 0.0f}}, // 15
+
+		// Bottom face (4 vertices: 16-19)
+		{{-0.1f, -0.1f, -0.1f}, {0.0f, 0.0f, 0.0f}, {1.0f, 1.0f, 1.0f}, {0.0f, 0.0f}}, // 16
+		{{ 0.1f, -0.1f, -0.1f}, {0.0f, 0.0f, 0.0f}, {1.0f, 1.0f, 1.0f}, {0.0f, 0.0f}}, // 17
+		{{ 0.1f, -0.1f,  0.1f}, {0.0f, 0.0f, 0.0f}, {1.0f, 1.0f, 1.0f}, {0.0f, 0.0f}}, // 18
+		{{-0.1f, -0.1f,  0.1f}, {0.0f, 0.0f, 0.0f}, {1.0f, 1.0f, 1.0f}, {0.0f, 0.0f}}, // 19
+
+		// Top face (4 vertices: 20-23)
+		{{-0.1f,  0.1f, -0.1f}, {0.0f, 0.0f, 0.0f}, {1.0f, 1.0f, 1.0f}, {0.0f, 0.0f}}, // 20
+		{{ 0.1f,  0.1f, -0.1f}, {0.0f, 0.0f, 0.0f}, {1.0f, 1.0f, 1.0f}, {0.0f, 0.0f}}, // 21
+		{{ 0.1f,  0.1f,  0.1f}, {0.0f, 0.0f, 0.0f}, {1.0f, 1.0f, 1.0f}, {0.0f, 0.0f}}, // 22
+		{{-0.1f,  0.1f,  0.1f}, {0.0f, 0.0f, 0.0f}, {1.0f, 1.0f, 1.0f}, {0.0f, 0.0f}}  // 23
+	};
+
+	std::vector<GLuint> lightIndices = {
+		// Back face
+		0, 1, 2,   2, 3, 0,
+		// Front face
+		4, 5, 6,   6, 7, 4,
+		// Left face
+		8, 9, 10,  10, 11, 8,
+		// Right face
+		12, 13, 14, 14, 15, 12,
+		// Bottom face
+		16, 17, 18, 18, 19, 16,
+		// Top face
+		20, 21, 22, 22, 23, 20
+	};
+	glfwInit();
+
+	// Sets version 3.3
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+	// Uses core profile which removes the ability to use older functions that we do not need
+	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+
+	window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "Graphics", NULL, NULL);
+
+	if (window == NULL)
+	{
+		std::cout << "Failed to create window" << std::endl;
+		glfwTerminate();
+		return -1;
+	}
+	glfwMakeContextCurrent(window);
+	glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
+	glfwSetCursorPosCallback(window, mouse_callback);
+	glfwSetScrollCallback(window, scroll_callback);
+	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+
+	// Initializes GLAD
+	if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
+	{
+		std::cout << "Failed to initialize GLAD" << std::endl;
+		return -1;
+	}
+
+	Texture textures[]
+	{
+		Texture("Resources/Textures/container2.png", "diffuse", 0, GL_RGBA, GL_UNSIGNED_BYTE),
+		Texture("Resources/Textures/container2_specular.png", "specular", 1, GL_RGBA, GL_UNSIGNED_BYTE)
+	};
+
+	// Generates Shader object using shaders defualt.vert and default.frag
+	Shader shaderProgram("Resources/Shaders/default.vert", "Resources/Shaders/default.frag");
+	std::vector<Texture> textureVector = { textures[0], textures[1] };
+	Mesh cubesMesh(vertices, indices, textureVector);
+
+
+	//----------------LIGHT-------------------
+	Shader lightShader("Resources/Shaders/light.vert", "Resources/Shaders/light.frag");
+	std::vector<Texture> emptyTextures = {}; // No textures needed for light cube
+	Mesh lightCubeMesh(lightVertices, lightIndices, emptyTextures);
+
+	//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+
+	// WOON LI TEST CODE
 
 	// Temp testing code - create some ECS managers and entities
 	ECSRegistry::GetInstance().CreateECSManager("MainWorld");
@@ -45,74 +254,198 @@ void Engine::Initialize() {
 
     ECSRegistry::GetInstance().GetActiveECSManager().ClearAllEntities();
 
-    initialized = true;
-    running = true;
-    std::cout << "[Engine] Ready" << std::endl;
+    std::cout << "[Engine] successfully initialized!" << std::endl;
+
+	// TRIED TO PUT THIS IN ENGINE::UPDATE(), DONT BOTHER ITS TOO MANY BUGS NOW
+
+	while (!glfwWindowShouldClose(window))
+	{
+		float currentFrame = (float)glfwGetTime();
+		deltaTime = currentFrame - lastFrame;
+		lastFrame = currentFrame;
+
+		processInput(window);
+
+		glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
+		glEnable(GL_DEPTH_TEST);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+		shaderProgram.Activate();
+		// View, for camera
+		// Camera explanation:
+		// cameraPos      - The position of the camera in world space
+		// cameraFront    - The direction the camera is facing (default is (0, 0, -1), into the screen)
+		// cameraPos + cameraFront - The target point the camera is looking at
+		// 
+		// We use glm::lookAt(cameraPos, cameraPos + cameraFront, cameraUp) to generate the view matrix:
+		// - The first argument is the camera position
+		// - The second argument is the position we are looking at (target)
+		// - The third argument is the up direction (usually (0, 1, 0))
+		// 
+		// Adding cameraFront to cameraPos gives us a point directly in front of the camera.
+		// Technically the direction will never change, but lookAt asks for a target, hence in order to keep it in line with the direction we add the camera pos
+		// If we dont add camera position, we will constantly be looking at that point when we want to move forward instead
+		// This allows the camera to move and look in the right direction based on its position and orientation.
+		glm::mat4 view = camera.GetViewMatrix();
+		shaderProgram.setMat4("view", view);
+
+		// Projection, for perspective projection
+		glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
+		shaderProgram.setMat4("projection", projection);
+
+		//shaderProgram.setVec3("light.position", lightPos);
+		shaderProgram.setVec3("cameraPos", camera.Position);
+
+		// Material
+		shaderProgram.setFloat("material.shininess", 32.0f);
+
+
+		// directional light
+		shaderProgram.setVec3("dirLight.direction", -0.2f, -1.0f, -0.3f);
+		shaderProgram.setVec3("dirLight.ambient", 0.05f, 0.05f, 0.05f);
+		shaderProgram.setVec3("dirLight.diffuse", 0.4f, 0.4f, 0.4f);
+		shaderProgram.setVec3("dirLight.specular", 0.5f, 0.5f, 0.5f);
+		// point light 1
+		shaderProgram.setVec3("pointLights[0].position", pointLightPositions[0]);
+		shaderProgram.setVec3("pointLights[0].ambient", 0.05f, 0.05f, 0.05f);
+		shaderProgram.setVec3("pointLights[0].diffuse", 0.8f, 0.8f, 0.8f);
+		shaderProgram.setVec3("pointLights[0].specular", 1.0f, 1.0f, 1.0f);
+		shaderProgram.setFloat("pointLights[0].constant", 1.0f);
+		shaderProgram.setFloat("pointLights[0].linear", 0.09f);
+		shaderProgram.setFloat("pointLights[0].quadratic", 0.032f);
+		// point light 2
+		shaderProgram.setVec3("pointLights[1].position", pointLightPositions[1]);
+		shaderProgram.setVec3("pointLights[1].ambient", 0.05f, 0.05f, 0.05f);
+		shaderProgram.setVec3("pointLights[1].diffuse", 0.8f, 0.8f, 0.8f);
+		shaderProgram.setVec3("pointLights[1].specular", 1.0f, 1.0f, 1.0f);
+		shaderProgram.setFloat("pointLights[1].constant", 1.0f);
+		shaderProgram.setFloat("pointLights[1].linear", 0.09f);
+		shaderProgram.setFloat("pointLights[1].quadratic", 0.032f);
+		// point light 3
+		shaderProgram.setVec3("pointLights[2].position", pointLightPositions[2]);
+		shaderProgram.setVec3("pointLights[2].ambient", 0.05f, 0.05f, 0.05f);
+		shaderProgram.setVec3("pointLights[2].diffuse", 0.8f, 0.8f, 0.8f);
+		shaderProgram.setVec3("pointLights[2].specular", 1.0f, 1.0f, 1.0f);
+		shaderProgram.setFloat("pointLights[2].constant", 1.0f);
+		shaderProgram.setFloat("pointLights[2].linear", 0.09f);
+		shaderProgram.setFloat("pointLights[2].quadratic", 0.032f);
+		// point light 4
+		shaderProgram.setVec3("pointLights[3].position", pointLightPositions[3]);
+		shaderProgram.setVec3("pointLights[3].ambient", 0.05f, 0.05f, 0.05f);
+		shaderProgram.setVec3("pointLights[3].diffuse", 0.8f, 0.8f, 0.8f);
+		shaderProgram.setVec3("pointLights[3].specular", 1.0f, 1.0f, 1.0f);
+		shaderProgram.setFloat("pointLights[3].constant", 1.0f);
+		shaderProgram.setFloat("pointLights[3].linear", 0.09f);
+		shaderProgram.setFloat("pointLights[3].quadratic", 0.032f);
+		// spotLight
+		shaderProgram.setVec3("spotLight.position", camera.Position);
+		shaderProgram.setVec3("spotLight.direction", camera.Front);
+		shaderProgram.setVec3("spotLight.ambient", 0.0f, 0.0f, 0.0f);
+		shaderProgram.setVec3("spotLight.diffuse", 1.0f, 1.0f, 1.0f);
+		shaderProgram.setVec3("spotLight.specular", 1.0f, 1.0f, 1.0f);
+		shaderProgram.setFloat("spotLight.constant", 1.0f);
+		shaderProgram.setFloat("spotLight.linear", 0.09f);
+		shaderProgram.setFloat("spotLight.quadratic", 0.032f);
+		shaderProgram.setFloat("spotLight.cutOff", glm::cos(glm::radians(12.5f)));
+		shaderProgram.setFloat("spotLight.outerCutOff", glm::cos(glm::radians(15.0f)));
+
+		for (unsigned int i = 0; i < 10; i++)
+		{
+			glm::mat4 model = glm::mat4(1.0f);
+			model = glm::translate(model, cubePositions[i]);
+			float angle = 20.0f * i;
+			model = glm::rotate(model, glm::radians(angle), glm::vec3(1.0f, 0.3f, 0.5f));
+			shaderProgram.setMat4("model", model);
+
+			cubesMesh.Draw(shaderProgram, camera);  // Use your mesh instead
+		}
+
+
+
+		// Draw light cube
+		for (unsigned int i = 0; i < 4; i++)
+		{
+			glm::mat4 lightModel = glm::mat4(1.0f);
+			lightModel = glm::translate(lightModel, pointLightPositions[i]);
+			lightShader.setMat4("model", lightModel);  // Remove scale since light cube is already small
+
+			lightCubeMesh.Draw(lightShader, camera);  // Use your light mesh
+		}
+
+		glfwSwapBuffers(window);
+		glfwPollEvents();
+
+	}
 }
 
 void Engine::Update() {
-    if (!running) return;
 
-    //WindowManager::PollEvents();
-
-    if (WindowManager::ShouldClose()) {
-        running = false;
-    }
-
-    // Handle ESC key for game mode
-    GLFWwindow* window = WindowManager::GetWindow();
-    if (window && InputManager::GetKeyDown(GLFW_KEY_ESCAPE)) {
-        running = false;
-    }
-
-    if (InputManager::GetAnyInputDown()) {
-        std::cout << "[Engine] Input detected" << std::endl;
-	}
-
-    InputManager::Update();
 }
 
 void Engine::StartDraw() {
-    if (!initialized) return;
-
-    glViewport(0, 0, WindowManager::GetWindowWidth(), WindowManager::GetWindowHeight());
 }
 
 void Engine::Draw() {
-    if (!initialized) return;
-
-    GraphicsManager::DrawTestCube();
 }
 
 void Engine::EndDraw() {
-    if (!initialized) return;
-
-    //if (renderToFBO) {
-    //    GraphicsManager::UnbindFBO();
-    //}
-    //else {
-    //    // Game mode - swap buffers directly
-    //    WindowManager::SwapBuffers();
-    //}
-
-    WindowManager::SwapBuffers();
-}
-
-void Engine::SetRenderToFramebuffer(bool enabled) {
-    renderToFBO = enabled;
-}
-
-unsigned int Engine::GetFramebufferTexture() {
-    return GraphicsManager::GetFBOTexture();
-}
-
-bool Engine::IsRunning() {
-    return running;
 }
 
 void Engine::Shutdown() {
-    GraphicsManager::Shutdown();
-    WindowManager::Shutdown();
-    running = false;
     std::cout << "[Engine] Shutdown complete" << std::endl;
+}
+
+// process all input: query GLFW whether relevant keys are pressed/released this frame and react accordingly
+// ---------------------------------------------------------------------------------------------------------
+void processInput(GLFWwindow* window)
+{
+    if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
+        glfwSetWindowShouldClose(window, true);
+
+    float cameraSpeed = 2.5f * deltaTime;
+    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
+        camera.Position += cameraSpeed * camera.Front;
+    if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
+        camera.Position -= cameraSpeed * camera.Front;
+    if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
+        camera.Position -= glm::normalize(glm::cross(camera.Front, camera.Up)) * cameraSpeed;
+    if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
+        camera.Position += glm::normalize(glm::cross(camera.Front, camera.Up)) * cameraSpeed;
+}
+
+// glfw: whenever the window size changed (by OS or user resize) this callback function executes
+// ---------------------------------------------------------------------------------------------
+void framebuffer_size_callback(GLFWwindow* window, int width, int height)
+{
+    // make sure the viewport matches the new window dimensions; note that width and 
+    // height will be significantly larger than specified on retina displays.
+    glViewport(0, 0, width, height);
+}
+
+void mouse_callback(GLFWwindow* window, double xposIn, double yposIn)
+{
+    float xpos = static_cast<float>(xposIn);
+    float ypos = static_cast<float>(yposIn);
+
+    if (firstMouse)
+    {
+        lastX = xpos;
+        lastY = ypos;
+        firstMouse = false;
+    }
+
+    float xoffset = xpos - lastX;
+    float yoffset = lastY - ypos; // reversed since y-coordinates go from bottom to top
+
+    lastX = xpos;
+    lastY = ypos;
+
+    camera.ProcessMouseMovement(xoffset, yoffset);
+}
+
+// glfw: whenever the mouse scroll wheel scrolls, this callback is called
+// ----------------------------------------------------------------------
+void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
+{
+    camera.ProcessMouseScroll(static_cast<float>(yoffset));
 }

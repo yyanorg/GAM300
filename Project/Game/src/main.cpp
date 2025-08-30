@@ -8,16 +8,12 @@ int main() {
     Engine::Initialize();
     GameManager::Initialize();
 
-    std::cout << "Game running - ESC to exit" << std::endl;
+    Engine::Update();
+    GameManager::Update();
 
-    while (Engine::IsRunning()) {
-        Engine::Update();
-        GameManager::Update();
-
-        Engine::StartDraw();
-        Engine::Draw();
-        Engine::EndDraw();
-    }
+    //Engine::StartDraw();
+    //Engine::Draw();
+    //Engine::EndDraw();
 
     GameManager::Shutdown();
     Engine::Shutdown();

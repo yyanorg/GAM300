@@ -22,3 +22,4 @@
 #include <stdexcept>
 #include <cassert>
 #include <cmath>
+#include <cerrno>

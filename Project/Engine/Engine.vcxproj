@@ -36,10 +36,15 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\Engine.h" />
-    <ClInclude Include="include\GraphicsManager.h" />
+    <ClInclude Include="include\Graphics\Camera.h" />
+    <ClInclude Include="include\Graphics\EBO.h" />
+    <ClInclude Include="include\Graphics\Mesh.h" />
+    <ClInclude Include="include\Graphics\ShaderClass.h" />
+    <ClInclude Include="include\Graphics\stb_image.h" />
+    <ClInclude Include="include\Graphics\Texture.h" />
+    <ClInclude Include="include\Graphics\VAO.h" />
+    <ClInclude Include="include\Graphics\VBO.h" />
     <ClInclude Include="include\pch.h" />
-    <ClInclude Include="include\TestScene.h" />
-    <ClInclude Include="include\WindowManager.h" />
     <ClInclude Include="src\ECS\Component.hpp" />
     <ClInclude Include="src\ECS\ComponentArray.hpp" />
     <ClInclude Include="src\ECS\ComponentManager.hpp" />
@@ -63,7 +68,12 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='EditorDebug|x64'">NotUsing</PrecompiledHeader>
     </ClCompile>
-    <ClCompile Include="src\GraphicsManager.cpp" />
+    <ClCompile Include="src\Graphics\EBO.cpp" />
+    <ClCompile Include="src\Graphics\Mesh.cpp" />
+    <ClCompile Include="src\Graphics\ShaderClass.cpp" />
+    <ClCompile Include="src\Graphics\Texture.cpp" />
+    <ClCompile Include="src\Graphics\VAO.cpp" />
+    <ClCompile Include="src\Graphics\VBO.cpp" />
     <ClCompile Include="src\Input\InputManager.cpp" />
     <ClCompile Include="src\pch.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
@@ -71,8 +81,6 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='EditorDebug|x64'">Create</PrecompiledHeader>
     </ClCompile>
-    <ClCompile Include="src\TestScene.cpp" />
-    <ClCompile Include="src\WindowManager.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="cpp.hint" />
