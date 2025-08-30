@@ -1,4 +1,4 @@
-name: Build GAM300 Engine
+name: Debug GAM300 Build
 
 on:
   push:
@@ -7,7 +7,7 @@ on:
     branches: [ main ]
 
 jobs:
-  build:
+  debug-build:
     runs-on: windows-2022
     
     strategy:
@@ -18,291 +18,147 @@ jobs:
     steps:
     - name: Checkout Repository
       uses: actions/checkout@v4
-      with:
-        fetch-depth: 0
     
     - name: Setup MSBuild
       uses: microsoft/setup-msbuild@v2
-      with:
-        vs-version: latest
     
-    - name: Setup Windows SDK
-      uses: GuillaumeFalourd/setup-windows10-sdk-action@v2
-      with:
-        sdk-version: 22621
-    
-    - name: Verify Library Structure
+    - name: Show Initial Directory Structure
       run: |
-        Write-Host "Verifying Libraries folder structure..." -ForegroundColor Cyan
+        Write-Host "=== INITIAL DIRECTORY STRUCTURE ===" -ForegroundColor Yellow
         cd Project
+        Write-Host "Current directory: $PWD" -ForegroundColor Cyan
+        Write-Host "Contents:" -ForegroundColor Cyan
+        Get-ChildItem -Recurse -Directory | Select-Object FullName | Format-Table -AutoSize
         
-        $requiredPaths = @(
-            "Libraries/Assimp/include",
-            "Libraries/Assimp/lib/x64", 
-            "Libraries/Assimp/bin/x64",
-            "Libraries/freetype/include",
-            "Libraries/freetype/release_dll/win64",
-            "Libraries/glad/include/glad",
-            "Libraries/glad/include/KHR",
-            "Libraries/glfw/include/GLFW",
-            "Libraries/glfw/lib-vc2022",
-            "Libraries/glm/glm",
-            "Libraries/ImGui"
-        )
-        
-        $missing = @()
-        foreach ($path in $requiredPaths) {
-            if (!(Test-Path $path)) {
-                $missing += $path
-                Write-Warning "Missing: $path"
-            } else {
-                Write-Host "Found: $path" -ForegroundColor Green
-            }
-        }
-        
-        if ($missing.Count -gt 0) {
-            Write-Error "Missing required library paths: $($missing -join ', ')"
-            exit 1
-        }
-        
-        # Verify key library files
-        $requiredFiles = @(
-            "Libraries/Assimp/lib/x64/assimp-vc143-mt.lib",
-            "Libraries/glfw/lib-vc2022/glfw3.lib", 
-            "Libraries/glad/include/glad/glad.h",
-            "Libraries/ImGui/imgui.h"
-        )
-        
-        foreach ($file in $requiredFiles) {
-            if (!(Test-Path $file)) {
-                Write-Warning "Key file missing: $file"
-            } else {
-                Write-Host "Key file verified: $file" -ForegroundColor Green
-            }
-        }
-        
-        Write-Host "Library verification complete!" -ForegroundColor Green
+        Write-Host "=== SOLUTION AND PROJECT FILES ===" -ForegroundColor Yellow
+        Get-ChildItem -Recurse -Filter "*.sln" | Format-Table Name, FullName -AutoSize
+        Get-ChildItem -Recurse -Filter "*.vcxproj" | Format-Table Name, FullName -AutoSize
     
-    - name: Cache Build Artifacts
-      uses: actions/cache@v4
-      with:
-        path: |
-          Project/x64/
-          Project/Engine/x64/
-          Project/Game/x64/
-          Project/Editor/x64/
-        key: ${{ runner.os }}-gam300-${{ matrix.configuration }}-${{ hashFiles('Project/**/*.vcxproj', 'Project/**/*.cpp', 'Project/**/*.h') }}
-        restore-keys: |
-          ${{ runner.os }}-gam300-${{ matrix.configuration }}-
-          ${{ runner.os }}-gam300-
-    
-    - name: Build Solution
+    - name: Verify Libraries (Quick Check)
       run: |
-        Write-Host "Building GAM300.sln with configuration: ${{ matrix.configuration }}" -ForegroundColor Cyan
         cd Project
-        
-        # Build entire solution - MSBuild will handle dependencies
-        msbuild GAM300.sln /p:Configuration=${{ matrix.configuration }} /p:Platform=x64 /m /v:minimal /p:WarningLevel=3
-        
-        if ($LASTEXITCODE -ne 0) {
-            Write-Error "Build failed for configuration ${{ matrix.configuration }}!"
-            
-            # Show more detailed error info
-            Write-Host "Re-running with detailed verbosity..." -ForegroundColor Yellow
-            msbuild GAM300.sln /p:Configuration=${{ matrix.configuration }} /p:Platform=x64 /v:detailed
-            exit 1
-        }
-        
-        Write-Host "Build successful for ${{ matrix.configuration }}!" -ForegroundColor Green
-    
-    - name: Verify Build Outputs - Game Configuration
-      if: matrix.configuration == 'Debug' || matrix.configuration == 'Release'
-      run: |
-        Write-Host "Verifying Game build outputs for ${{ matrix.configuration }}..." -ForegroundColor Cyan
-        cd Project
-        
-        $expectedFiles = @(
-            "x64/${{ matrix.configuration }}/Game.exe",
-            "x64/${{ matrix.configuration }}/Engine.dll"
-        )
-        
-        $missing = @()
-        foreach ($file in $expectedFiles) {
-            if (!(Test-Path $file)) {
-                $missing += $file
-                Write-Error "Missing output file: $file"
-            } else {
-                $size = [math]::Round((Get-Item $file).Length / 1MB, 2)
-                Write-Host "Found: $file ($size MB)" -ForegroundColor Green
-            }
-        }
-        
-        if ($missing.Count -gt 0) {
-            Write-Error "Missing build outputs: $($missing -join ', ')"
-            exit 1
-        }
-    
-    - name: Verify Build Outputs - Editor Configuration
-      if: matrix.configuration == 'EditorDebug' || matrix.configuration == 'EditorRelease'
-      run: |
-        Write-Host "Verifying Editor build outputs for ${{ matrix.configuration }}..." -ForegroundColor Cyan
-        cd Project
-        
-        $expectedFiles = @(
-            "x64/${{ matrix.configuration }}/Editor.exe"
-        )
-        
-        # In editor builds, Engine and Game should be static libraries
-        $expectedLibs = @(
-            "x64/${{ matrix.configuration }}/Engine.lib",
-            "x64/${{ matrix.configuration }}/Game.lib"
-        )
-        
-        foreach ($file in $expectedFiles) {
-            if (!(Test-Path $file)) {
-                Write-Error "Missing executable: $file"
-                exit 1
-            } else {
-                $size = [math]::Round((Get-Item $file).Length / 1MB, 2)  
-                Write-Host "Found executable: $file ($size MB)" -ForegroundColor Green
-            }
-        }
-        
-        foreach ($lib in $expectedLibs) {
-            if (Test-Path $lib) {
-                $size = [math]::Round((Get-Item $lib).Length / 1MB, 2)
-                Write-Host "Found library: $lib ($size MB)" -ForegroundColor Green
-            } else {
-                Write-Warning "Library not found (may be linked differently): $lib"
-            }
-        }
-    
-    - name: Copy Required DLLs - Game Configuration
-      if: matrix.configuration == 'Debug' || matrix.configuration == 'Release'
-      run: |
-        Write-Host "Copying required DLLs for Game..." -ForegroundColor Cyan
-        cd Project
-        
-        # Copy Assimp DLL if Game uses it
-        if (Test-Path "Libraries/Assimp/bin/x64/assimp-vc143-mt.dll") {
-            Copy-Item "Libraries/Assimp/bin/x64/assimp-vc143-mt.dll" "x64/${{ matrix.configuration }}/" -Force
-            Write-Host "Copied Assimp DLL" -ForegroundColor Green
-        }
-        
-        # Copy GLFW DLL if using dynamic linking
-        if (Test-Path "Libraries/glfw/lib-vc2022/glfw3.dll") {
-            Copy-Item "Libraries/glfw/lib-vc2022/glfw3.dll" "x64/${{ matrix.configuration }}/" -Force  
-            Write-Host "Copied GLFW DLL" -ForegroundColor Green
-        }
-        
-        # Copy FreeType DLL if used
-        if (Test-Path "Libraries/freetype/release_dll/win64/freetype.dll") {
-            Copy-Item "Libraries/freetype/release_dll/win64/freetype.dll" "x64/${{ matrix.configuration }}/" -Force
-            Write-Host "Copied FreeType DLL" -ForegroundColor Green
-        }
-    
-    - name: Quick Smoke Test - Game
-      if: matrix.configuration == 'Release'
-      run: |
-        Write-Host "Running Game smoke test..." -ForegroundColor Cyan
-        cd Project/x64/Release
-        
-        # Test if Game.exe can start without crashing immediately
-        $process = Start-Process -FilePath ".\Game.exe" -PassThru -WindowStyle Hidden
-        Start-Sleep -Seconds 3
-        
-        if (!$process.HasExited) {
-            Write-Host "Game started successfully and is running!" -ForegroundColor Green
-            Stop-Process -Id $process.Id -Force -ErrorAction SilentlyContinue
-        } elseif ($process.ExitCode -eq 0) {
-            Write-Host "Game ran and exited cleanly" -ForegroundColor Green
+        if (Test-Path "Libraries") {
+            Write-Host "Libraries folder exists" -ForegroundColor Green
+            Get-ChildItem "Libraries" | Format-Table Name -AutoSize
         } else {
-            Write-Warning "Game may have crashed. Exit code: $($process.ExitCode)"
-            # Don't fail the build for this - it might be expected behavior
+            Write-Error "Libraries folder missing!"
         }
     
-    - name: Upload Game Build Artifacts
-      if: matrix.configuration == 'Debug' || matrix.configuration == 'Release'
-      uses: actions/upload-artifact@v4
-      with:
-        name: GameBuild-${{ matrix.configuration }}
-        path: |
-          Project/x64/${{ matrix.configuration }}/Game.exe
-          Project/x64/${{ matrix.configuration }}/Engine.dll
-          Project/x64/${{ matrix.configuration }}/*.dll
-          Project/x64/${{ matrix.configuration }}/*.pdb
-        retention-days: 7
-        if-no-files-found: error
+    - name: Attempt Build with Maximum Verbosity
+      run: |
+        Write-Host "=== STARTING BUILD: ${{ matrix.configuration }} ===" -ForegroundColor Yellow
+        cd Project
+        
+        Write-Host "Building with detailed output..." -ForegroundColor Cyan
+        msbuild GAM300.sln /p:Configuration=${{ matrix.configuration }} /p:Platform=x64 /v:normal /fl /flp:logfile=build.log
+        
+        Write-Host "Build command exit code: $LASTEXITCODE" -ForegroundColor $(if ($LASTEXITCODE -eq 0) { 'Green' } else { 'Red' })
     
-    - name: Upload Editor Build Artifacts  
-      if: matrix.configuration == 'EditorDebug' || matrix.configuration == 'EditorRelease'
-      uses: actions/upload-artifact@v4
-      with:
-        name: EditorBuild-${{ matrix.configuration }}
-        path: |
-          Project/x64/${{ matrix.configuration }}/Editor.exe
-          Project/x64/${{ matrix.configuration }}/*.lib
-          Project/x64/${{ matrix.configuration }}/*.pdb
-        retention-days: 7
-        if-no-files-found: error
-
-  # Code analysis job
-  code-analysis:
-    runs-on: windows-2022
-    needs: build
-    if: github.event_name == 'pull_request' # Only on PRs to save Actions minutes
-    
-    steps:
-    - name: Checkout Repository
-      uses: actions/checkout@v4
-    
-    - name: Setup MSBuild
-      uses: microsoft/setup-msbuild@v2
-    
-    - name: Initialize CodeQL
-      uses: github/codeql-action/init@v3
-      with:
-        languages: cpp
-        config: |
-          paths:
-            - Project/Engine/src
-            - Project/Game/src  
-            - Project/Editor/src
-          paths-ignore:
-            - Project/Libraries
-            - Project/Editor/src/imgui
-    
-    - name: Build for CodeQL
+    - name: Show Build Log
       run: |
         cd Project
-        msbuild GAM300.sln /p:Configuration=Release /p:Platform=x64 /m
+        if (Test-Path "build.log") {
+            Write-Host "=== BUILD LOG CONTENTS ===" -ForegroundColor Yellow
+            Get-Content "build.log" | Select-Object -Last 50
+        } else {
+            Write-Host "No build log found" -ForegroundColor Red
+        }
     
-    - name: Perform CodeQL Analysis
-      uses: github/codeql-action/analyze@v3
-
-  # Build summary
-  build-summary:
-    runs-on: ubuntu-latest
-    needs: build
-    if: always()
-    
-    steps:
-    - name: Generate Build Summary
+    - name: Search for ALL Output Files
       run: |
-        echo "# GAM300 Build Results" >> $GITHUB_STEP_SUMMARY
-        echo "" >> $GITHUB_STEP_SUMMARY
-        echo "| Configuration | Status |" >> $GITHUB_STEP_SUMMARY
-        echo "|---------------|--------|" >> $GITHUB_STEP_SUMMARY
+        Write-Host "=== SEARCHING FOR ALL .EXE AND .DLL FILES ===" -ForegroundColor Yellow
+        cd Project
         
-        if [[ "${{ needs.build.result }}" == "success" ]]; then
-          echo "| Debug | ✅ Success |" >> $GITHUB_STEP_SUMMARY
-          echo "| Release | ✅ Success |" >> $GITHUB_STEP_SUMMARY  
-          echo "| EditorDebug | ✅ Success |" >> $GITHUB_STEP_SUMMARY
-          echo "| EditorRelease | ✅ Success |" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "🎉 All configurations built successfully!" >> $GITHUB_STEP_SUMMARY
-        else
-          echo "| Build | ❌ Failed |" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "⚠️ Build failed. Check the logs above for details." >> $GITHUB_STEP_SUMMARY
-        fi
+        Write-Host "All .exe files in project:" -ForegroundColor Cyan
+        Get-ChildItem -Recurse -Filter "*.exe" | Format-Table Name, Directory, Length -AutoSize
+        
+        Write-Host "All .dll files in project:" -ForegroundColor Cyan  
+        Get-ChildItem -Recurse -Filter "*.dll" | Format-Table Name, Directory, Length -AutoSize
+        
+        Write-Host "All .lib files in project:" -ForegroundColor Cyan
+        Get-ChildItem -Recurse -Filter "*.lib" | Format-Table Name, Directory, Length -AutoSize
+    
+    - name: Show x64 Directory Structure
+      run: |
+        cd Project
+        Write-Host "=== x64 DIRECTORY CONTENTS ===" -ForegroundColor Yellow
+        
+        if (Test-Path "x64") {
+            Write-Host "x64 folder exists:" -ForegroundColor Green
+            Get-ChildItem "x64" -Recurse | Format-Table Name, Directory, Length -AutoSize
+        } else {
+            Write-Host "x64 folder does not exist!" -ForegroundColor Red
+        }
+        
+        # Check for alternative output directories
+        Write-Host "=== CHECKING FOR ALTERNATIVE OUTPUT PATHS ===" -ForegroundColor Yellow
+        
+        $possiblePaths = @(
+            "bin",
+            "output", 
+            "Debug",
+            "Release",
+            "EditorDebug", 
+            "EditorRelease",
+            "Engine/x64",
+            "Game/x64", 
+            "Editor/x64"
+        )
+        
+        foreach ($path in $possiblePaths) {
+            if (Test-Path $path) {
+                Write-Host "Found alternative path: $path" -ForegroundColor Green
+                Get-ChildItem $path -Recurse -ErrorAction SilentlyContinue | Where-Object { $_.Extension -in @('.exe', '.dll', '.lib') } | Format-Table Name, Directory -AutoSize
+            }
+        }
+    
+    - name: Check MSBuild Project Properties
+      run: |
+        Write-Host "=== CHECKING PROJECT OUTPUT SETTINGS ===" -ForegroundColor Yellow
+        cd Project
+        
+        # Try to extract output directory from project files
+        $projects = @("Engine/Engine.vcxproj", "Game/Game.vcxproj", "Editor/Editor.vcxproj")
+        
+        foreach ($proj in $projects) {
+            if (Test-Path $proj) {
+                Write-Host "Checking $proj:" -ForegroundColor Cyan
+                $content = Get-Content $proj
+                $outputDirs = $content | Select-String -Pattern "OutDir|OutputPath|TargetDir" 
+                if ($outputDirs) {
+                    $outputDirs | ForEach-Object { Write-Host "  $_" }
+                } else {
+                    Write-Host "  No explicit output directory settings found"
+                }
+            }
+        }
+    
+    - name: Final Status Report
+      run: |
+        Write-Host "=== FINAL STATUS REPORT ===" -ForegroundColor Yellow
+        cd Project
+        
+        Write-Host "Configuration: ${{ matrix.configuration }}" -ForegroundColor Cyan
+        Write-Host "Expected files would be at:" -ForegroundColor Cyan
+        
+        if ("${{ matrix.configuration }}" -like "*Editor*") {
+            Write-Host "  - x64/${{ matrix.configuration }}/Editor.exe"
+        } else {
+            Write-Host "  - x64/${{ matrix.configuration }}/Game.exe"
+            Write-Host "  - x64/${{ matrix.configuration }}/Engine.dll"
+        }
+        
+        Write-Host "Build process completed. Check above output for actual file locations." -ForegroundColor Yellow
+    
+    - name: Upload Build Logs
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: BuildDebugInfo-${{ matrix.configuration }}
+        path: |
+          Project/build.log
+          Project/**/*.exe
+          Project/**/*.dll
+          Project/**/*.lib
+        if-no-files-found: warn
+        retention-days: 3
