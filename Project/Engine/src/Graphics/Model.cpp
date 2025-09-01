@@ -32,7 +32,7 @@ void Model::processNode(aiNode* node, const aiScene* scene)
 	for (unsigned int i = 0; i < node->mNumMeshes; i++)
 	{
 		aiMesh* mesh = scene->mMeshes[node->mMeshes[i]];
-		meshes.push_back(processMesh(mesh, scene));
+		meshes.emplace_back(processMesh(mesh, scene));
 	}
 
 	// Process children nodes
@@ -40,7 +40,6 @@ void Model::processNode(aiNode* node, const aiScene* scene)
 	{
 		processNode(node->mChildren[i], scene);
 	}
-
 }
 
 Mesh Model::processMesh(aiMesh* mesh, const aiScene* scene)
