@@ -22,6 +22,6 @@ private:
 	void processNode(aiNode* node, const aiScene* scene);
 	Mesh processMesh(aiMesh* mesh, const aiScene* scene);
 	std::vector<Texture> loadMaterialTexture(aiMaterial* mat, aiTextureType type, std::string typeName);
-	// Add this static member for texture caching
-	static std::unordered_map<std::string, std::shared_ptr<Texture>> textureCache;
+
+	static std::unordered_map<std::string, Texture> textureCache;
 };

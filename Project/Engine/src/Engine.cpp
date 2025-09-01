@@ -196,8 +196,8 @@ bool Engine::Initialize() {
 	Shader shaderProgram("Resources/Shaders/default.vert", "Resources/Shaders/default.frag");
 	/*std::vector<Texture> textureVector = { textures[0], textures[1] };
 	Mesh cubesMesh(vertices, indices, textureVector);*/
+	//Model ourModel("Resources/Models/model/backpack.obj");
 	Model ourModel("Resources/Models/FinalBaseMesh.obj");
-
 	//----------------LIGHT-------------------
 	Shader lightShader("Resources/Shaders/light.vert", "Resources/Shaders/light.frag");
 	std::vector<Texture> emptyTextures = {}; // No textures needed for light cube

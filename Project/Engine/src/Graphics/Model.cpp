@@ -2,9 +2,17 @@
 #include "Graphics/Model.h"
 #include <iostream>
 
+std::unordered_map<std::string, Texture> Model::textureCache;
+
 Model::Model(const std::string& filePath)
 {
-    loadModel(filePath);
+	loadModel(filePath);
+	/*std::cout << "Model loaded with " << meshes.size() << " meshes" << std::endl;
+	for (int i = 0; i < meshes.size(); i++)
+	{
+		std::cout << "Mesh " << i << ": " << meshes[i].vertices.size() << " vertices, "
+			<< meshes[i].indices.size() << " indices" << std::endl;
+	}*/
 }
 
 void Model::loadModel(const std::string& path)
@@ -40,6 +48,7 @@ void Model::processNode(aiNode* node, const aiScene* scene)
 	{
 		processNode(node->mChildren[i], scene);
 	}
+
 }
 
 Mesh Model::processMesh(aiMesh* mesh, const aiScene* scene)
@@ -52,7 +61,7 @@ Mesh Model::processMesh(aiMesh* mesh, const aiScene* scene)
 	for (unsigned int i = 0; i < mesh->mNumVertices; i++)
 	{
 		Vertex vertex;
-		
+
 		// Position
 		vertex.position.x = mesh->mVertices[i].x;
 		vertex.position.y = mesh->mVertices[i].y;
@@ -83,11 +92,10 @@ Mesh Model::processMesh(aiMesh* mesh, const aiScene* scene)
 		vertices.push_back(vertex);
 	}
 
-	// Process indices - what is this doing
+	// Process ALL faces (not just the first 5)
 	for (unsigned int i = 0; i < mesh->mNumFaces; i++)
 	{
 		aiFace face = mesh->mFaces[i];
-		
 		for (unsigned int j = 0; j < face.mNumIndices; j++)
 		{
 			indices.push_back(face.mIndices[j]);
@@ -113,36 +121,47 @@ Mesh Model::processMesh(aiMesh* mesh, const aiScene* scene)
 
 std::vector<Texture> Model::loadMaterialTexture(aiMaterial* mat, aiTextureType type, std::string typeName)
 {
-    std::vector<Texture> textures;
+	static int textureUnit = 0;
+	std::vector<Texture> textures;
 
-    for (unsigned int i = 0; i < mat->GetTextureCount(type); i++)
-    {
-        aiString str;
-        mat->GetTexture(type, i, &str);
+	for (unsigned int i = 0; i < mat->GetTextureCount(type); i++)
+	{
+		aiString str;
+		mat->GetTexture(type, i, &str);
+		std::string texturePath = directory + '/' + str.C_Str();
 
-        std::string texturePath = directory + '/' + str.C_Str();
+		// Check if texture is already cached
+		auto it = textureCache.find(texturePath);
+		if (it != textureCache.end())
+		{
+			std::cout << "Using cached texture: " << texturePath << std::endl;
+			textures.push_back(it->second);
+		}
+		else
+		{
+			std::cout << "Loading new texture: " << texturePath << std::endl;
 
-        std::cout << "Loading texture: " << texturePath << " with type: " << typeName << std::endl;
+			GLenum format = GL_RGB;
+			if (texturePath.find(".png") != std::string::npos)
+			{
+				format = GL_RGBA;
+			}
 
-        // Try to determine format based on file extension
-        GLenum format = GL_RGB;  // Default for JPG
-        if (texturePath.find(".png") != std::string::npos)
-        {
-            format = GL_RGBA;  // PNG might have alpha
-        }
+			Texture texture(texturePath.c_str(), typeName.c_str(), textureUnit++, format, GL_UNSIGNED_BYTE);
 
-        // Create texture - NO CACHING FOR NOW
-        Texture texture(texturePath.c_str(), typeName.c_str(), i, format, GL_UNSIGNED_BYTE);
-        textures.push_back(texture);
-    }
+			// Cache the texture
+			textureCache.emplace(texturePath, texture);
+			textures.push_back(texture);
+		}
+	}
 
-    return textures;
+	return textures;
 }
 
 void Model::Draw(Shader& shader, Camera& camera)
 {
-    for (auto& mesh : meshes)
-    {
-        mesh.Draw(shader, camera);
-    }
+	for (auto& mesh : meshes)
+	{
+		mesh.Draw(shader, camera);
+	}
 }
