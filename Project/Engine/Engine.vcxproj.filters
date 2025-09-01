@@ -28,6 +28,7 @@
     <ClInclude Include="include\Graphics\VAO.h" />
     <ClInclude Include="include\Graphics\VBO.h" />
     <ClInclude Include="include\Graphics\stb_image.h" />
+    <ClInclude Include="include\Graphics\Model.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Engine.cpp" />
@@ -43,6 +44,7 @@
     <ClCompile Include="src\Graphics\Texture.cpp" />
     <ClCompile Include="src\Graphics\Mesh.cpp" />
     <ClCompile Include="src\Graphics\ShaderClass.cpp" />
+    <ClCompile Include="src\Graphics\Model.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="cpp.hint" />

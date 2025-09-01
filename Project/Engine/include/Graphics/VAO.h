@@ -15,4 +15,8 @@ public:
 	void Bind();
 	void Unbind();
 	void Delete();
+
+	VAO(VAO&& other) noexcept : ID(other.ID) {
+		other.ID = 0; // Prevent the moved-from object from deleting the VAO
+	}
 };

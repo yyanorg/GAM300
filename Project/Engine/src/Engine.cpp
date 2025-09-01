@@ -2,17 +2,9 @@
 
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
-#include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
-#include <glm/gtc/type_ptr.hpp> 
-
-#include <assimp/Importer.hpp>
-#include <assimp/scene.h>
-#include <assimp/postprocess.h>
+#include "Graphics/Model.h"
 
 #include "Engine.h"
-#include "Graphics/Mesh.h"
-#include "Graphics/ShaderClass.h"
 
 #include "Input/InputManager.hpp"
 #include "ECS/ECSRegistry.hpp"
@@ -46,29 +38,6 @@ glm::vec3 pointLightPositions[] = {
 
 bool Engine::Initialize() {
     std::cout << "[Engine] Initializing..." << std::endl;
-
-	Assimp::Importer importer;
-
-	// Change this to your actual model path (relative to your .exe)
-	const aiScene* scene = importer.ReadFile("Resources/Models/FinalBaseMesh.obj",
-		aiProcess_Triangulate | aiProcess_FlipUVs);
-
-	// Error checking
-	if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode) {
-		std::cerr << "Assimp Error: " << importer.GetErrorString() << std::endl;
-		return 1;
-	}
-
-	std::cout << "Model loaded successfully!\n";
-	std::cout << "Meshes: " << scene->mNumMeshes << "\n";
-	std::cout << "Materials: " << scene->mNumMaterials << "\n";
-
-	// Print mesh info
-	for (unsigned int i = 0; i < scene->mNumMeshes; ++i) {
-		aiMesh* mesh = scene->mMeshes[i];
-		std::cout << "Mesh " << i << ": " << mesh->mNumVertices << " vertices, ";
-		std::cout << mesh->mNumFaces << " faces\n";
-	}
 
 	glm::vec3 cubePositions[]{
 		glm::vec3(0.0f,  0.0f,  0.0f),
@@ -225,9 +194,9 @@ bool Engine::Initialize() {
 
 	// Generates Shader object using shaders defualt.vert and default.frag
 	Shader shaderProgram("Resources/Shaders/default.vert", "Resources/Shaders/default.frag");
-	std::vector<Texture> textureVector = { textures[0], textures[1] };
-	Mesh cubesMesh(vertices, indices, textureVector);
-
+	/*std::vector<Texture> textureVector = { textures[0], textures[1] };
+	Mesh cubesMesh(vertices, indices, textureVector);*/
+	Model ourModel("Resources/Models/FinalBaseMesh.obj");
 
 	//----------------LIGHT-------------------
 	Shader lightShader("Resources/Shaders/light.vert", "Resources/Shaders/light.frag");
@@ -350,18 +319,21 @@ bool Engine::Initialize() {
 		shaderProgram.setFloat("spotLight.cutOff", glm::cos(glm::radians(12.5f)));
 		shaderProgram.setFloat("spotLight.outerCutOff", glm::cos(glm::radians(15.0f)));
 
-		for (unsigned int i = 0; i < 10; i++)
-		{
-			glm::mat4 model = glm::mat4(1.0f);
-			model = glm::translate(model, cubePositions[i]);
-			float angle = 20.0f * i;
-			model = glm::rotate(model, glm::radians(angle), glm::vec3(1.0f, 0.3f, 0.5f));
-			shaderProgram.setMat4("model", model);
+		//for (unsigned int i = 0; i < 10; i++)
+		//{
+		//	glm::mat4 model = glm::mat4(1.0f);
+		//	model = glm::translate(model, cubePositions[i]);
+		//	float angle = 20.0f * i;
+		//	model = glm::rotate(model, glm::radians(angle), glm::vec3(1.0f, 0.3f, 0.5f));
+		//	shaderProgram.setMat4("model", model);
 
-			cubesMesh.Draw(shaderProgram, camera);  // Use your mesh instead
-		}
-
-
+		//	cubesMesh.Draw(shaderProgram, camera);  // Use your mesh instead
+		//}
+		glm::mat4 model = glm::mat4(1.0f); 
+		model = glm::translate(model, glm::vec3(0.0f, 0.0f, 0.0f)); 
+		model = glm::scale(model, glm::vec3(0.1f, 0.1f, 0.1f)); 
+		shaderProgram.setMat4("model", model); 
+		ourModel.Draw(shaderProgram, camera);
 
 		// Draw light cube
 		for (unsigned int i = 0; i < 4; i++)

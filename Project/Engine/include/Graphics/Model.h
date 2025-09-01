@@ -1,0 +1,27 @@
+#pragma once
+#include "Mesh.h"
+#include <assimp/Importer.hpp>
+#include <assimp/scene.h>
+#include <assimp/postprocess.h>
+#include <string>
+#include <unordered_map>
+#include <thread>
+#include <chrono>
+#include <algorithm>
+
+class Model {
+public:
+	std::vector<Mesh> meshes;
+	std::string directory;
+
+	Model(const std::string& filePath);
+	void Draw(Shader& shader, Camera& camera);
+
+private:
+	void loadModel(const std::string& path);
+	void processNode(aiNode* node, const aiScene* scene);
+	Mesh processMesh(aiMesh* mesh, const aiScene* scene);
+	std::vector<Texture> loadMaterialTexture(aiMaterial* mat, aiTextureType type, std::string typeName);
+	// Add this static member for texture caching
+	static std::unordered_map<std::string, std::shared_ptr<Texture>> textureCache;
+};
