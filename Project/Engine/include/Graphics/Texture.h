@@ -1,7 +1,7 @@
 #pragma once
 #include <glad/glad.h>
 #include <Graphics/stb_image.h>
-#include "shaderClass.h"
+#include "ShaderClass.h"
 
 class Texture {
 public:
