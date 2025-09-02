@@ -1,8 +1,7 @@
 #include "pch.h"
 #include "Graphics/Model.h"
+#include "Graphics/TextureManager.h"
 #include <iostream>
-
-std::unordered_map<std::string, Texture> Model::textureCache;
 
 Model::Model(const std::string& filePath)
 {
@@ -121,8 +120,8 @@ Mesh Model::processMesh(aiMesh* mesh, const aiScene* scene)
 
 std::vector<Texture> Model::loadMaterialTexture(aiMaterial* mat, aiTextureType type, std::string typeName)
 {
-	static int textureUnit = 0;
 	std::vector<Texture> textures;
+	TextureManager& textureManager = TextureManager::getInstance();
 
 	for (unsigned int i = 0; i < mat->GetTextureCount(type); i++)
 	{
@@ -130,28 +129,11 @@ std::vector<Texture> Model::loadMaterialTexture(aiMaterial* mat, aiTextureType t
 		mat->GetTexture(type, i, &str);
 		std::string texturePath = directory + '/' + str.C_Str();
 
-		// Check if texture is already cached
-		auto it = textureCache.find(texturePath);
-		if (it != textureCache.end())
+		// Use the texture manager
+		auto texture = textureManager.loadTexture(texturePath, typeName);
+		if (texture) 
 		{
-			std::cout << "Using cached texture: " << texturePath << std::endl;
-			textures.push_back(it->second);
-		}
-		else
-		{
-			std::cout << "Loading new texture: " << texturePath << std::endl;
-
-			GLenum format = GL_RGB;
-			if (texturePath.find(".png") != std::string::npos)
-			{
-				format = GL_RGBA;
-			}
-
-			Texture texture(texturePath.c_str(), typeName.c_str(), textureUnit++, format, GL_UNSIGNED_BYTE);
-
-			// Cache the texture
-			textureCache.emplace(texturePath, texture);
-			textures.push_back(texture);
+			textures.push_back(*texture); // Dereference shared_ptr
 		}
 	}
 

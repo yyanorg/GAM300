@@ -23,5 +23,4 @@ private:
 	Mesh processMesh(aiMesh* mesh, const aiScene* scene);
 	std::vector<Texture> loadMaterialTexture(aiMaterial* mat, aiTextureType type, std::string typeName);
 
-	static std::unordered_map<std::string, Texture> textureCache;
 };

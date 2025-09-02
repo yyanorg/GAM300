@@ -29,6 +29,7 @@
     <ClInclude Include="include\Graphics\VBO.h" />
     <ClInclude Include="include\Graphics\stb_image.h" />
     <ClInclude Include="include\Graphics\Model.h" />
+    <ClInclude Include="include\Graphics\TextureManager.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Engine.cpp" />
@@ -45,6 +46,7 @@
     <ClCompile Include="src\Graphics\Mesh.cpp" />
     <ClCompile Include="src\Graphics\ShaderClass.cpp" />
     <ClCompile Include="src\Graphics\Model.cpp" />
+    <ClCompile Include="src\Graphics\TextureManager.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="cpp.hint" />

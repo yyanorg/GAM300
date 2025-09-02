@@ -43,6 +43,7 @@
     <ClInclude Include="include\Graphics\ShaderClass.h" />
     <ClInclude Include="include\Graphics\stb_image.h" />
     <ClInclude Include="include\Graphics\Texture.h" />
+    <ClInclude Include="include\Graphics\TextureManager.h" />
     <ClInclude Include="include\Graphics\VAO.h" />
     <ClInclude Include="include\Graphics\VBO.h" />
     <ClInclude Include="include\pch.h" />
@@ -74,6 +75,7 @@
     <ClCompile Include="src\Graphics\Model.cpp" />
     <ClCompile Include="src\Graphics\ShaderClass.cpp" />
     <ClCompile Include="src\Graphics\Texture.cpp" />
+    <ClCompile Include="src\Graphics\TextureManager.cpp" />
     <ClCompile Include="src\Graphics\VAO.cpp" />
     <ClCompile Include="src\Graphics\VBO.cpp" />
     <ClCompile Include="src\Input\InputManager.cpp" />
