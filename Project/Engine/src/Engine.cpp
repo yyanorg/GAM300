@@ -196,8 +196,8 @@ bool Engine::Initialize() {
 	Shader shaderProgram("Resources/Shaders/default.vert", "Resources/Shaders/default.frag");
 	/*std::vector<Texture> textureVector = { textures[0], textures[1] };
 	Mesh cubesMesh(vertices, indices, textureVector);*/
-	//Model ourModel("Resources/Models/model/backpack.obj");
-	Model ourModel("Resources/Models/FinalBaseMesh.obj");
+	Model backPack("Resources/Models/backpack/backpack.obj");
+	//Model ourModel("Resources/Models/FinalBaseMesh.obj");
 	//----------------LIGHT-------------------
 	Shader lightShader("Resources/Shaders/light.vert", "Resources/Shaders/light.frag");
 	std::vector<Texture> emptyTextures = {}; // No textures needed for light cube
@@ -333,7 +333,7 @@ bool Engine::Initialize() {
 		model = glm::translate(model, glm::vec3(0.0f, 0.0f, 0.0f)); 
 		model = glm::scale(model, glm::vec3(0.1f, 0.1f, 0.1f)); 
 		shaderProgram.setMat4("model", model); 
-		ourModel.Draw(shaderProgram, camera);
+		backPack.Draw(shaderProgram, camera);
 
 		// Draw light cube
 		for (unsigned int i = 0; i < 4; i++)
