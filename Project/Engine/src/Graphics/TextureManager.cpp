@@ -26,20 +26,11 @@ std::shared_ptr<Texture> TextureManager::loadTexture(const std::string& filepath
 
 	GLenum format = getFormatFromExtension(filepath);
 
-	try {
-		auto texture = std::make_shared<Texture>(filepath.c_str(), type.c_str(), nextTextureUnit++, format, GL_UNSIGNED_BYTE);
-		
-		textureCache[filepath] = texture;
-		std::cout << "[TextureManager] Successfully loaded texture: " << filepath << " (Unit: " << (nextTextureUnit - 1) << ")" << std::endl;
+	// Create texture with NO permanent unit (-1)
+	auto texture = std::make_shared<Texture>(filepath.c_str(), type.c_str(), -1, format, GL_UNSIGNED_BYTE);
 
-		return texture;
-	}
-	catch (const std::exception& e)
-	{
-		std::cerr << "[TextureManager] ERROR loading texture " << filepath << ": " << e.what() << std::endl;
-		return nullptr;
-	}
-	return std::shared_ptr<Texture>();
+	textureCache.emplace(filepath, texture);
+	return texture;
 }
 
 std::shared_ptr<Texture> TextureManager::getTexture(const std::string& filepath)

@@ -54,7 +54,7 @@ Mesh Model::processMesh(aiMesh* mesh, const aiScene* scene)
 {
 	std::vector<Vertex> vertices;
 	std::vector<GLuint> indices;
-	std::vector<Texture> textures;
+	std::vector<std::shared_ptr<Texture>> textures;
 
 	// Process vertices
 	for (unsigned int i = 0; i < mesh->mNumVertices; i++)
@@ -106,21 +106,21 @@ Mesh Model::processMesh(aiMesh* mesh, const aiScene* scene)
 	{
 		aiMaterial* material = scene->mMaterials[mesh->mMaterialIndex];
 
-		// Load diffuse textures
-		std::vector<Texture> diffuseMaps = loadMaterialTexture(material, aiTextureType_DIFFUSE, "diffuse");
-		textures.insert(textures.end(), diffuseMaps.begin(), diffuseMaps.end()); // why use insert and not push_back
+		// Load diffuse textures - now returns shared_ptr vector
+		std::vector<std::shared_ptr<Texture>> diffuseMaps = loadMaterialTexture(material, aiTextureType_DIFFUSE, "diffuse");
+		textures.insert(textures.end(), diffuseMaps.begin(), diffuseMaps.end());
 
-		// Load specular textures
-		std::vector<Texture> specularMaps = loadMaterialTexture(material, aiTextureType_SPECULAR, "specular");
+		// Load specular textures - now returns shared_ptr vector  
+		std::vector<std::shared_ptr<Texture>> specularMaps = loadMaterialTexture(material, aiTextureType_SPECULAR, "specular");
 		textures.insert(textures.end(), specularMaps.begin(), specularMaps.end());
 	}
 
 	return Mesh(vertices, indices, textures);
 }
 
-std::vector<Texture> Model::loadMaterialTexture(aiMaterial* mat, aiTextureType type, std::string typeName)
+std::vector<std::shared_ptr<Texture>> Model::loadMaterialTexture(aiMaterial* mat, aiTextureType type, std::string typeName)
 {
-	std::vector<Texture> textures;
+	std::vector<std::shared_ptr<Texture>> textures;
 	TextureManager& textureManager = TextureManager::getInstance();
 
 	for (unsigned int i = 0; i < mat->GetTextureCount(type); i++)
@@ -133,7 +133,7 @@ std::vector<Texture> Model::loadMaterialTexture(aiMaterial* mat, aiTextureType t
 		auto texture = textureManager.loadTexture(texturePath, typeName);
 		if (texture) 
 		{
-			textures.push_back(*texture); // Dereference shared_ptr
+			textures.push_back(texture); // Dereference shared_ptr
 		}
 	}
 

@@ -200,7 +200,7 @@ bool Engine::Initialize() {
 	//Model ourModel("Resources/Models/FinalBaseMesh.obj");
 	//----------------LIGHT-------------------
 	Shader lightShader("Resources/Shaders/light.vert", "Resources/Shaders/light.frag");
-	std::vector<Texture> emptyTextures = {}; // No textures needed for light cube
+	std::vector<std::shared_ptr<Texture>> emptyTextures = {}; // No textures needed for light cube
 	Mesh lightCubeMesh(lightVertices, lightIndices, emptyTextures);
 
 	//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
