@@ -1,7 +1,7 @@
 #include "pch.h"
 #include <iostream>
 #include <assert.h>
-#include "ECSRegistry.hpp"
+#include "ECS/ECSRegistry.hpp"
 
 ECSRegistry& ECSRegistry::GetInstance() {
 	static ECSRegistry instance;
