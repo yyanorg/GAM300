@@ -140,14 +140,17 @@ bool Engine::Initialize() {
 
 	
 	renderer.Initialise(SCR_WIDTH, SCR_HEIGHT);
+
+	// Loads model
 	backpackModel = std::make_shared<Model>("Resources/Models/backpack/backpack.obj");
 	shader = std::make_shared<Shader>("Resources/Shaders/default.vert", "Resources/Shaders/default.frag");
 
+	// Creates light
 	lightShader = std::make_shared<Shader>("Resources/Shaders/light.vert", "Resources/Shaders/light.frag");
-
 	std::vector<std::shared_ptr<Texture>> emptyTextures = {};
 	lightCubeMesh = std::make_shared<Mesh>(lightVertices, lightIndices, emptyTextures);
 
+	// Sets camera
 	renderer.SetCamera(&camera);
 
 	// TRIED TO PUT THIS IN ENGINE::UPDATE(), DONT BOTHER ITS TOO MANY BUGS NOW
