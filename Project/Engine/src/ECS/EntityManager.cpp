@@ -1,5 +1,5 @@
 #include "pch.h"
-#include "EntityManager.hpp"
+#include "ECS/EntityManager.hpp"
 #include <assert.h>
 
 EntityManager::EntityManager() {
