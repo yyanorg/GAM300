@@ -30,6 +30,8 @@
     <ClInclude Include="include\ECS\System.hpp" />
     <ClInclude Include="include\ECS\SystemManager.hpp" />
     <ClInclude Include="include\WindowManager.hpp" />
+    <ClInclude Include="include\Graphics\TextureManager.h" />
+    <ClInclude Include="include\Graphics\Renderer.hpp" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Engine.cpp" />
@@ -47,6 +49,8 @@
     <ClCompile Include="src\Graphics\ShaderClass.cpp" />
     <ClCompile Include="src\Graphics\Model.cpp" />
     <ClCompile Include="src\WindowManager.cpp" />
+    <ClCompile Include="src\Graphics\TextureManager.cpp" />
+    <ClCompile Include="src\Graphics\Renderer.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="cpp.hint" />

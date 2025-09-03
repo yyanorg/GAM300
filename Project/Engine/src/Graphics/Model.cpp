@@ -1,8 +1,7 @@
 #include "pch.h"
 #include "Graphics/Model.h"
+#include "Graphics/TextureManager.h"
 #include <iostream>
-
-std::unordered_map<std::string, Texture> Model::textureCache;
 
 Model::Model(const std::string& filePath)
 {
@@ -55,7 +54,7 @@ Mesh Model::processMesh(aiMesh* mesh, const aiScene* scene)
 {
 	std::vector<Vertex> vertices;
 	std::vector<GLuint> indices;
-	std::vector<Texture> textures;
+	std::vector<std::shared_ptr<Texture>> textures;
 
 	// Process vertices
 	for (unsigned int i = 0; i < mesh->mNumVertices; i++)
@@ -107,22 +106,22 @@ Mesh Model::processMesh(aiMesh* mesh, const aiScene* scene)
 	{
 		aiMaterial* material = scene->mMaterials[mesh->mMaterialIndex];
 
-		// Load diffuse textures
-		std::vector<Texture> diffuseMaps = loadMaterialTexture(material, aiTextureType_DIFFUSE, "diffuse");
-		textures.insert(textures.end(), diffuseMaps.begin(), diffuseMaps.end()); // why use insert and not push_back
+		// Load diffuse textures - now returns shared_ptr vector
+		std::vector<std::shared_ptr<Texture>> diffuseMaps = loadMaterialTexture(material, aiTextureType_DIFFUSE, "diffuse");
+		textures.insert(textures.end(), diffuseMaps.begin(), diffuseMaps.end());
 
-		// Load specular textures
-		std::vector<Texture> specularMaps = loadMaterialTexture(material, aiTextureType_SPECULAR, "specular");
+		// Load specular textures - now returns shared_ptr vector  
+		std::vector<std::shared_ptr<Texture>> specularMaps = loadMaterialTexture(material, aiTextureType_SPECULAR, "specular");
 		textures.insert(textures.end(), specularMaps.begin(), specularMaps.end());
 	}
 
 	return Mesh(vertices, indices, textures);
 }
 
-std::vector<Texture> Model::loadMaterialTexture(aiMaterial* mat, aiTextureType type, std::string typeName)
+std::vector<std::shared_ptr<Texture>> Model::loadMaterialTexture(aiMaterial* mat, aiTextureType type, std::string typeName)
 {
-	static int textureUnit = 0;
-	std::vector<Texture> textures;
+	std::vector<std::shared_ptr<Texture>> textures;
+	TextureManager& textureManager = TextureManager::getInstance();
 
 	for (unsigned int i = 0; i < mat->GetTextureCount(type); i++)
 	{
@@ -130,28 +129,11 @@ std::vector<Texture> Model::loadMaterialTexture(aiMaterial* mat, aiTextureType t
 		mat->GetTexture(type, i, &str);
 		std::string texturePath = directory + '/' + str.C_Str();
 
-		// Check if texture is already cached
-		auto it = textureCache.find(texturePath);
-		if (it != textureCache.end())
+		// Use the texture manager
+		auto texture = textureManager.loadTexture(texturePath, typeName);
+		if (texture) 
 		{
-			std::cout << "Using cached texture: " << texturePath << std::endl;
-			textures.push_back(it->second);
-		}
-		else
-		{
-			std::cout << "Loading new texture: " << texturePath << std::endl;
-
-			GLenum format = GL_RGB;
-			if (texturePath.find(".png") != std::string::npos)
-			{
-				format = GL_RGBA;
-			}
-
-			Texture texture(texturePath.c_str(), typeName.c_str(), textureUnit++, format, GL_UNSIGNED_BYTE);
-
-			// Cache the texture
-			textureCache.emplace(texturePath, texture);
-			textures.push_back(texture);
+			textures.push_back(texture); // Dereference shared_ptr
 		}
 	}
 

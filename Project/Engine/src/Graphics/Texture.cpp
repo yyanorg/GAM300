@@ -9,6 +9,7 @@ Texture::Texture(const char* image, const char* texType, GLuint slot, GLenum for
 {
 	// Assigns the type of the texture ot the texture object
 	type = texType;
+	unit = slot; // Store the slot, but don't bind if it's -1
 
 	// Stores the width, height, and the number of color channels of the image
 	int widthImg, heightImg, numColCh;
@@ -19,10 +20,18 @@ Texture::Texture(const char* image, const char* texType, GLuint slot, GLenum for
 
 	// Generates an OpenGL texture object
 	glGenTextures(1, &ID);
-	// Assigns the texture to a Texture Unit
-	glActiveTexture(GL_TEXTURE0 + slot);
-	unit = slot;
-	glBindTexture(GL_TEXTURE_2D, ID);
+
+	//// Assigns the texture to a Texture Unit
+	//glActiveTexture(GL_TEXTURE0 + slot);
+	//unit = slot;
+	//glBindTexture(GL_TEXTURE_2D, ID);
+
+	// Only bind to unit if slot is valid
+	if (slot >= 0) 
+	{
+		glActiveTexture(GL_TEXTURE0 + slot);
+		glBindTexture(GL_TEXTURE_2D, ID);
+	}
 
 	// Configures the type of algorithm that is used to make the image smaller or bigger
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_LINEAR);
