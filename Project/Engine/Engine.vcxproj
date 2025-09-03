@@ -56,6 +56,7 @@
     <ClInclude Include="include\Graphics\VAO.h" />
     <ClInclude Include="include\Graphics\VBO.h" />
     <ClInclude Include="include\pch.h" />
+    <ClInclude Include="include\WindowManager.hpp" />
     <ClInclude Include="src\Input\InputManager.hpp" />
   </ItemGroup>
   <ItemGroup>
@@ -83,6 +84,7 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='EditorDebug|x64'">Create</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="src\WindowManager.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="cpp.hint" />

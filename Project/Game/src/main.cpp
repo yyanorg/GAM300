@@ -8,12 +8,15 @@ int main() {
     Engine::Initialize();
     GameManager::Initialize();
 
-    Engine::Update();
-    GameManager::Update();
+    while (Engine::IsRunning()) {
 
-    //Engine::StartDraw();
-    //Engine::Draw();
-    //Engine::EndDraw();
+        Engine::Update();
+        GameManager::Update();
+
+        Engine::StartDraw();
+        Engine::Draw();
+        Engine::EndDraw();
+    }
 
     GameManager::Shutdown();
     Engine::Shutdown();

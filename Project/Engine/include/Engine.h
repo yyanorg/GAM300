@@ -36,6 +36,4 @@ public:
 
     static bool IsRunning();
     static void Shutdown();
-
-    static GLFWwindow* GetWindowTemp(); // remove after windowmanager
 };
