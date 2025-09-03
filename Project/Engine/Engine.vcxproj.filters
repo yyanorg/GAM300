@@ -30,6 +30,7 @@
     <ClInclude Include="include\Graphics\stb_image.h" />
     <ClInclude Include="include\Graphics\Model.h" />
     <ClInclude Include="include\Math\Vector3.h" />
+    <ClInclude Include="include\Math\Matrix4x4.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Engine.cpp" />
@@ -47,6 +48,7 @@
     <ClCompile Include="src\Graphics\ShaderClass.cpp" />
     <ClCompile Include="src\Graphics\Model.cpp" />
     <ClCompile Include="src\Math\Vector3.cpp" />
+    <ClCompile Include="src\Math\Matrix4x4.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="cpp.hint" />
