@@ -41,6 +41,14 @@
   <ItemGroup>
     <ClInclude Include="include\GUIManager.hpp" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Engine\Engine.vcxproj">
+      <Project>{eed3c586-c882-4c07-8e56-84afef55c17d}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\Game\Game.vcxproj">
+      <Project>{bea8f13d-ac63-471b-a3fa-171f00c98e39}</Project>
+    </ProjectReference>
+  </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>17.0</VCProjectVersion>
     <Keyword>Win32Proj</Keyword>

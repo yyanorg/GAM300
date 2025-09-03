@@ -3,6 +3,8 @@
 #include "GUIManager.hpp"
 #include <iostream>
 #include "imgui.h"
+
+
 int main() {
     std::cout << "=== EDITOR BUILD ===" << std::endl;
 
@@ -16,9 +18,10 @@ int main() {
         // Render 3D content to FBO
         Engine::StartDraw();
         Engine::Draw();
+        GUIManager::Render();
         Engine::EndDraw();
         //ImGui::ShowDemoWindow();
-		GUIManager::Render();
+		
         // WindowManager handles buffer swapping for editor
         //WindowManager::SwapBuffers();
     }

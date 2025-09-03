@@ -2,8 +2,7 @@
 #include "imgui.h"
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_opengl3.h"
-
-GLFWwindow* window;
+#include "WindowManager.hpp"
 
 void GUIManager::Initialize() {
     // ImGui initialization
@@ -13,7 +12,7 @@ void GUIManager::Initialize() {
     ImGui::StyleColorsDark();
 
     // Initialize platform/renderer bindings
-    ImGui_ImplGlfw_InitForOpenGL(window, true);
+    ImGui_ImplGlfw_InitForOpenGL(WindowManager::getWindow(), true);
     ImGui_ImplOpenGL3_Init("#version 450");
 }
 
