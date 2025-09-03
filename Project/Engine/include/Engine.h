@@ -22,6 +22,8 @@
     #endif
 #endif
 
+struct GLFWwindow;
+
 class ENGINE_API Engine {
 public:
     static bool Initialize();
@@ -34,4 +36,6 @@ public:
 
     static bool IsRunning();
     static void Shutdown();
+
+    static GLFWwindow* GetWindowTemp(); // remove after windowmanager
 };

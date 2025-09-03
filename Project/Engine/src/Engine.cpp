@@ -19,6 +19,13 @@ const unsigned int SCR_HEIGHT = 600;
 
 GLFWwindow* window;
 
+GLFWwindow* Engine::GetWindowTemp() { return window; }
+
+Shader* shaderProgram;
+Model* backPack;
+Shader* lightShader;
+Mesh* lightCubeMesh;
+
 // camera
 Camera camera(glm::vec3(0.0f, 0.0f, 3.0f));
 float lastX = SCR_WIDTH / 2.0f;
@@ -193,15 +200,15 @@ bool Engine::Initialize() {
 	};
 
 	// Generates Shader object using shaders defualt.vert and default.frag
-	Shader shaderProgram("Resources/Shaders/default.vert", "Resources/Shaders/default.frag");
+	shaderProgram = new Shader("Resources/Shaders/default.vert", "Resources/Shaders/default.frag");
 	/*std::vector<Texture> textureVector = { textures[0], textures[1] };
 	Mesh cubesMesh(vertices, indices, textureVector);*/
-	Model backPack("Resources/Models/backpack/backpack.obj");
+	backPack = new Model("Resources/Models/backpack/backpack.obj");
 	//Model ourModel("Resources/Models/FinalBaseMesh.obj");
 	//----------------LIGHT-------------------
-	Shader lightShader("Resources/Shaders/light.vert", "Resources/Shaders/light.frag");
+	lightShader = new Shader("Resources/Shaders/light.vert", "Resources/Shaders/light.frag");
 	std::vector<Texture> emptyTextures = {}; // No textures needed for light cube
-	Mesh lightCubeMesh(lightVertices, lightIndices, emptyTextures);
+	lightCubeMesh = new Mesh(lightVertices, lightIndices, emptyTextures);
 
 	//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
@@ -226,129 +233,7 @@ bool Engine::Initialize() {
 
     std::cout << "[Engine] successfully initialized!" << std::endl;
 
-	// TRIED TO PUT THIS IN ENGINE::UPDATE(), DONT BOTHER ITS TOO MANY BUGS NOW
 
-	while (!glfwWindowShouldClose(window))
-	{
-		float currentFrame = (float)glfwGetTime();
-		deltaTime = currentFrame - lastFrame;
-		lastFrame = currentFrame;
-
-		processInput(window);
-
-		glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
-		glEnable(GL_DEPTH_TEST);
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-		shaderProgram.Activate();
-		// View, for camera
-		// Camera explanation:
-		// cameraPos      - The position of the camera in world space
-		// cameraFront    - The direction the camera is facing (default is (0, 0, -1), into the screen)
-		// cameraPos + cameraFront - The target point the camera is looking at
-		// 
-		// We use glm::lookAt(cameraPos, cameraPos + cameraFront, cameraUp) to generate the view matrix:
-		// - The first argument is the camera position
-		// - The second argument is the position we are looking at (target)
-		// - The third argument is the up direction (usually (0, 1, 0))
-		// 
-		// Adding cameraFront to cameraPos gives us a point directly in front of the camera.
-		// Technically the direction will never change, but lookAt asks for a target, hence in order to keep it in line with the direction we add the camera pos
-		// If we dont add camera position, we will constantly be looking at that point when we want to move forward instead
-		// This allows the camera to move and look in the right direction based on its position and orientation.
-		glm::mat4 view = camera.GetViewMatrix();
-		shaderProgram.setMat4("view", view);
-
-		// Projection, for perspective projection
-		glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
-		shaderProgram.setMat4("projection", projection);
-
-		//shaderProgram.setVec3("light.position", lightPos);
-		shaderProgram.setVec3("cameraPos", camera.Position);
-
-		// Material
-		shaderProgram.setFloat("material.shininess", 32.0f);
-
-
-		// directional light
-		shaderProgram.setVec3("dirLight.direction", -0.2f, -1.0f, -0.3f);
-		shaderProgram.setVec3("dirLight.ambient", 0.05f, 0.05f, 0.05f);
-		shaderProgram.setVec3("dirLight.diffuse", 0.4f, 0.4f, 0.4f);
-		shaderProgram.setVec3("dirLight.specular", 0.5f, 0.5f, 0.5f);
-		// point light 1
-		shaderProgram.setVec3("pointLights[0].position", pointLightPositions[0]);
-		shaderProgram.setVec3("pointLights[0].ambient", 0.05f, 0.05f, 0.05f);
-		shaderProgram.setVec3("pointLights[0].diffuse", 0.8f, 0.8f, 0.8f);
-		shaderProgram.setVec3("pointLights[0].specular", 1.0f, 1.0f, 1.0f);
-		shaderProgram.setFloat("pointLights[0].constant", 1.0f);
-		shaderProgram.setFloat("pointLights[0].linear", 0.09f);
-		shaderProgram.setFloat("pointLights[0].quadratic", 0.032f);
-		// point light 2
-		shaderProgram.setVec3("pointLights[1].position", pointLightPositions[1]);
-		shaderProgram.setVec3("pointLights[1].ambient", 0.05f, 0.05f, 0.05f);
-		shaderProgram.setVec3("pointLights[1].diffuse", 0.8f, 0.8f, 0.8f);
-		shaderProgram.setVec3("pointLights[1].specular", 1.0f, 1.0f, 1.0f);
-		shaderProgram.setFloat("pointLights[1].constant", 1.0f);
-		shaderProgram.setFloat("pointLights[1].linear", 0.09f);
-		shaderProgram.setFloat("pointLights[1].quadratic", 0.032f);
-		// point light 3
-		shaderProgram.setVec3("pointLights[2].position", pointLightPositions[2]);
-		shaderProgram.setVec3("pointLights[2].ambient", 0.05f, 0.05f, 0.05f);
-		shaderProgram.setVec3("pointLights[2].diffuse", 0.8f, 0.8f, 0.8f);
-		shaderProgram.setVec3("pointLights[2].specular", 1.0f, 1.0f, 1.0f);
-		shaderProgram.setFloat("pointLights[2].constant", 1.0f);
-		shaderProgram.setFloat("pointLights[2].linear", 0.09f);
-		shaderProgram.setFloat("pointLights[2].quadratic", 0.032f);
-		// point light 4
-		shaderProgram.setVec3("pointLights[3].position", pointLightPositions[3]);
-		shaderProgram.setVec3("pointLights[3].ambient", 0.05f, 0.05f, 0.05f);
-		shaderProgram.setVec3("pointLights[3].diffuse", 0.8f, 0.8f, 0.8f);
-		shaderProgram.setVec3("pointLights[3].specular", 1.0f, 1.0f, 1.0f);
-		shaderProgram.setFloat("pointLights[3].constant", 1.0f);
-		shaderProgram.setFloat("pointLights[3].linear", 0.09f);
-		shaderProgram.setFloat("pointLights[3].quadratic", 0.032f);
-		// spotLight
-		shaderProgram.setVec3("spotLight.position", camera.Position);
-		shaderProgram.setVec3("spotLight.direction", camera.Front);
-		shaderProgram.setVec3("spotLight.ambient", 0.0f, 0.0f, 0.0f);
-		shaderProgram.setVec3("spotLight.diffuse", 1.0f, 1.0f, 1.0f);
-		shaderProgram.setVec3("spotLight.specular", 1.0f, 1.0f, 1.0f);
-		shaderProgram.setFloat("spotLight.constant", 1.0f);
-		shaderProgram.setFloat("spotLight.linear", 0.09f);
-		shaderProgram.setFloat("spotLight.quadratic", 0.032f);
-		shaderProgram.setFloat("spotLight.cutOff", glm::cos(glm::radians(12.5f)));
-		shaderProgram.setFloat("spotLight.outerCutOff", glm::cos(glm::radians(15.0f)));
-
-		//for (unsigned int i = 0; i < 10; i++)
-		//{
-		//	glm::mat4 model = glm::mat4(1.0f);
-		//	model = glm::translate(model, cubePositions[i]);
-		//	float angle = 20.0f * i;
-		//	model = glm::rotate(model, glm::radians(angle), glm::vec3(1.0f, 0.3f, 0.5f));
-		//	shaderProgram.setMat4("model", model);
-
-		//	cubesMesh.Draw(shaderProgram, camera);  // Use your mesh instead
-		//}
-		glm::mat4 model = glm::mat4(1.0f); 
-		model = glm::translate(model, glm::vec3(0.0f, 0.0f, 0.0f)); 
-		model = glm::scale(model, glm::vec3(0.1f, 0.1f, 0.1f)); 
-		shaderProgram.setMat4("model", model); 
-		backPack.Draw(shaderProgram, camera);
-
-		// Draw light cube
-		for (unsigned int i = 0; i < 4; i++)
-		{
-			glm::mat4 lightModel = glm::mat4(1.0f);
-			lightModel = glm::translate(lightModel, pointLightPositions[i]);
-			lightShader.setMat4("model", lightModel);  // Remove scale since light cube is already small
-
-			lightCubeMesh.Draw(lightShader, camera);  // Use your light mesh
-		}
-
-		glfwSwapBuffers(window);
-		glfwPollEvents();
-
-	}
 }
 
 void Engine::Update() {
@@ -359,17 +244,138 @@ void Engine::StartDraw() {
 }
 
 void Engine::Draw() {
+	float currentFrame = (float)glfwGetTime();
+	deltaTime = currentFrame - lastFrame;
+	lastFrame = currentFrame;
+
+	processInput(window);
+
+	glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
+	glEnable(GL_DEPTH_TEST);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+	shaderProgram->Activate();
+	// View, for camera
+	// Camera explanation:
+	// cameraPos      - The position of the camera in world space
+	// cameraFront    - The direction the camera is facing (default is (0, 0, -1), into the screen)
+	// cameraPos + cameraFront - The target point the camera is looking at
+	// 
+	// We use glm::lookAt(cameraPos, cameraPos + cameraFront, cameraUp) to generate the view matrix:
+	// - The first argument is the camera position
+	// - The second argument is the position we are looking at (target)
+	// - The third argument is the up direction (usually (0, 1, 0))
+	// 
+	// Adding cameraFront to cameraPos gives us a point directly in front of the camera.
+	// Technically the direction will never change, but lookAt asks for a target, hence in order to keep it in line with the direction we add the camera pos
+	// If we dont add camera position, we will constantly be looking at that point when we want to move forward instead
+	// This allows the camera to move and look in the right direction based on its position and orientation.
+	glm::mat4 view = camera.GetViewMatrix();
+	shaderProgram->setMat4("view", view);
+
+	// Projection, for perspective projection
+	glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
+	shaderProgram->setMat4("projection", projection);
+
+	//shaderProgram->setVec3("light.position", lightPos);
+	shaderProgram->setVec3("cameraPos", camera.Position);
+
+	// Material
+	shaderProgram->setFloat("material.shininess", 32.0f);
+
+
+	// directional light
+	shaderProgram->setVec3("dirLight.direction", -0.2f, -1.0f, -0.3f);
+	shaderProgram->setVec3("dirLight.ambient", 0.05f, 0.05f, 0.05f);
+	shaderProgram->setVec3("dirLight.diffuse", 0.4f, 0.4f, 0.4f);
+	shaderProgram->setVec3("dirLight.specular", 0.5f, 0.5f, 0.5f);
+	// point light 1
+	shaderProgram->setVec3("pointLights[0].position", pointLightPositions[0]);
+	shaderProgram->setVec3("pointLights[0].ambient", 0.05f, 0.05f, 0.05f);
+	shaderProgram->setVec3("pointLights[0].diffuse", 0.8f, 0.8f, 0.8f);
+	shaderProgram->setVec3("pointLights[0].specular", 1.0f, 1.0f, 1.0f);
+	shaderProgram->setFloat("pointLights[0].constant", 1.0f);
+	shaderProgram->setFloat("pointLights[0].linear", 0.09f);
+	shaderProgram->setFloat("pointLights[0].quadratic", 0.032f);
+	// point light 2
+	shaderProgram->setVec3("pointLights[1].position", pointLightPositions[1]);
+	shaderProgram->setVec3("pointLights[1].ambient", 0.05f, 0.05f, 0.05f);
+	shaderProgram->setVec3("pointLights[1].diffuse", 0.8f, 0.8f, 0.8f);
+	shaderProgram->setVec3("pointLights[1].specular", 1.0f, 1.0f, 1.0f);
+	shaderProgram->setFloat("pointLights[1].constant", 1.0f);
+	shaderProgram->setFloat("pointLights[1].linear", 0.09f);
+	shaderProgram->setFloat("pointLights[1].quadratic", 0.032f);
+	// point light 3
+	shaderProgram->setVec3("pointLights[2].position", pointLightPositions[2]);
+	shaderProgram->setVec3("pointLights[2].ambient", 0.05f, 0.05f, 0.05f);
+	shaderProgram->setVec3("pointLights[2].diffuse", 0.8f, 0.8f, 0.8f);
+	shaderProgram->setVec3("pointLights[2].specular", 1.0f, 1.0f, 1.0f);
+	shaderProgram->setFloat("pointLights[2].constant", 1.0f);
+	shaderProgram->setFloat("pointLights[2].linear", 0.09f);
+	shaderProgram->setFloat("pointLights[2].quadratic", 0.032f);
+	// point light 4
+	shaderProgram->setVec3("pointLights[3].position", pointLightPositions[3]);
+	shaderProgram->setVec3("pointLights[3].ambient", 0.05f, 0.05f, 0.05f);
+	shaderProgram->setVec3("pointLights[3].diffuse", 0.8f, 0.8f, 0.8f);
+	shaderProgram->setVec3("pointLights[3].specular", 1.0f, 1.0f, 1.0f);
+	shaderProgram->setFloat("pointLights[3].constant", 1.0f);
+	shaderProgram->setFloat("pointLights[3].linear", 0.09f);
+	shaderProgram->setFloat("pointLights[3].quadratic", 0.032f);
+	// spotLight
+	shaderProgram->setVec3("spotLight.position", camera.Position);
+	shaderProgram->setVec3("spotLight.direction", camera.Front);
+	shaderProgram->setVec3("spotLight.ambient", 0.0f, 0.0f, 0.0f);
+	shaderProgram->setVec3("spotLight.diffuse", 1.0f, 1.0f, 1.0f);
+	shaderProgram->setVec3("spotLight.specular", 1.0f, 1.0f, 1.0f);
+	shaderProgram->setFloat("spotLight.constant", 1.0f);
+	shaderProgram->setFloat("spotLight.linear", 0.09f);
+	shaderProgram->setFloat("spotLight.quadratic", 0.032f);
+	shaderProgram->setFloat("spotLight.cutOff", glm::cos(glm::radians(12.5f)));
+	shaderProgram->setFloat("spotLight.outerCutOff", glm::cos(glm::radians(15.0f)));
+
+	//for (unsigned int i = 0; i < 10; i++)
+	//{
+	//	glm::mat4 model = glm::mat4(1.0f);
+	//	model = glm::translate(model, cubePositions[i]);
+	//	float angle = 20.0f * i;
+	//	model = glm::rotate(model, glm::radians(angle), glm::vec3(1.0f, 0.3f, 0.5f));
+	//	shaderProgram->setMat4("model", model);
+
+	//	cubesMesh.Draw(shaderProgram, camera);  // Use your mesh instead
+	//}
+	glm::mat4 model = glm::mat4(1.0f);
+	model = glm::translate(model, glm::vec3(0.0f, 0.0f, 0.0f));
+	model = glm::scale(model, glm::vec3(0.1f, 0.1f, 0.1f));
+	shaderProgram->setMat4("model", model);
+	backPack->Draw(*shaderProgram, camera);
+
+	// Draw light cube
+	for (unsigned int i = 0; i < 4; i++)
+	{
+		glm::mat4 lightModel = glm::mat4(1.0f);
+		lightModel = glm::translate(lightModel, pointLightPositions[i]);
+		lightShader->setMat4("model", lightModel);  // Remove scale since light cube is already small
+
+		lightCubeMesh->Draw(*lightShader, camera);  // Use your light mesh
+	}
+	glfwSwapBuffers(window);
+	glfwPollEvents();
 }
 
 void Engine::EndDraw() {
 }
 
 void Engine::Shutdown() {
+	delete shaderProgram;
+	delete backPack;
+	delete lightShader;
+	delete lightCubeMesh;
     std::cout << "[Engine] Shutdown complete" << std::endl;
+
 }
 
 bool Engine::IsRunning() {
-	return glfwWindowShouldClose(window);
+	return !glfwWindowShouldClose(window);
 }
 
 // process all input: query GLFW whether relevant keys are pressed/released this frame and react accordingly
