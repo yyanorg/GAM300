@@ -10,16 +10,6 @@
     <ClInclude Include="include\Engine.h" />
     <ClInclude Include="include\pch.h" />
     <ClInclude Include="src\Input\InputManager.hpp" />
-    <ClInclude Include="src\ECS\Entity.hpp" />
-    <ClInclude Include="src\ECS\ECSManager.hpp" />
-    <ClInclude Include="src\ECS\EntityManager.hpp" />
-    <ClInclude Include="src\ECS\Component.hpp" />
-    <ClInclude Include="src\ECS\ComponentArray.hpp" />
-    <ClInclude Include="src\ECS\ComponentManager.hpp" />
-    <ClInclude Include="src\ECS\Signature.hpp" />
-    <ClInclude Include="src\ECS\System.hpp" />
-    <ClInclude Include="src\ECS\SystemManager.hpp" />
-    <ClInclude Include="src\ECS\ECSRegistry.hpp" />
     <ClInclude Include="include\Graphics\Camera.h" />
     <ClInclude Include="include\Graphics\EBO.h" />
     <ClInclude Include="include\Graphics\Mesh.h" />
@@ -29,6 +19,16 @@
     <ClInclude Include="include\Graphics\VBO.h" />
     <ClInclude Include="include\Graphics\stb_image.h" />
     <ClInclude Include="include\Graphics\Model.h" />
+    <ClInclude Include="include\ECS\Component.hpp" />
+    <ClInclude Include="include\ECS\ComponentArray.hpp" />
+    <ClInclude Include="include\ECS\ComponentManager.hpp" />
+    <ClInclude Include="include\ECS\ECSManager.hpp" />
+    <ClInclude Include="include\ECS\ECSRegistry.hpp" />
+    <ClInclude Include="include\ECS\Entity.hpp" />
+    <ClInclude Include="include\ECS\EntityManager.hpp" />
+    <ClInclude Include="include\ECS\Signature.hpp" />
+    <ClInclude Include="include\ECS\System.hpp" />
+    <ClInclude Include="include\ECS\SystemManager.hpp" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Engine.cpp" />

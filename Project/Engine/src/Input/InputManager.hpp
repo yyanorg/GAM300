@@ -10,7 +10,7 @@
 // #define ENGINE_API __declspec(dllimport)
 // #endif
 
-class ENGINE_API InputManager {
+class InputManager {
 public:
 	static void Initialize(GLFWwindow* window);
 	static void Update();

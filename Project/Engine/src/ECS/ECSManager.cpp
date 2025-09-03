@@ -1,5 +1,5 @@
 #include "pch.h"
-#include "ECSManager.hpp"
+#include "ECS/ECSManager.hpp"
 
 void ECSManager::Initialize() {
 	entityManager = std::make_unique<EntityManager>();
