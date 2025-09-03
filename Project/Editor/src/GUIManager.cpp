@@ -1,3 +1,5 @@
+#pragma once
+#include "pch.h"
 #include "GUIManager.hpp"
 #include "imgui.h"
 #include "imgui_impl_glfw.h"
@@ -5,14 +7,22 @@
 #include "WindowManager.hpp"
 
 void GUIManager::Initialize() {
+    GLFWwindow* window = WindowManager::getWindow();
+	if (!window) {
+		std::cerr << "Error: GLFW window is null. Cannot initialize ImGui." << std::endl;
+		return;
+	}
+    std::cout << "Window ptr GUI: " << WindowManager::getWindow() << std::endl;
+
     // ImGui initialization
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
-    ImGuiIO& io = ImGui::GetIO();
+    ImGuiIO& io = ImGui::GetIO(); (void)io;
+    io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;  // Enable Keyboard Controls
     ImGui::StyleColorsDark();
 
     // Initialize platform/renderer bindings
-    ImGui_ImplGlfw_InitForOpenGL(WindowManager::getWindow(), true);
+    ImGui_ImplGlfw_InitForOpenGL(window, true);
     ImGui_ImplOpenGL3_Init("#version 450");
 }
 

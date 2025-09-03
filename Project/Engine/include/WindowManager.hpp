@@ -4,7 +4,22 @@
 #include <GLFW/glfw3native.h>
 #include <string>
 
-class WindowManager {
+#ifdef _WIN32
+#ifdef ENGINE_EXPORTS
+#define ENGINE_API __declspec(dllexport)
+#else
+#define ENGINE_API __declspec(dllimport)
+#endif
+#else
+// Linux/GCC
+#ifdef ENGINE_EXPORTS
+#define ENGINE_API __attribute__((visibility("default")))
+#else
+#define ENGINE_API
+#endif
+#endif
+
+class ENGINE_API WindowManager {
 public:
     static bool Initialize(GLint width, GLint height, const char* title);
 

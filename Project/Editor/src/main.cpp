@@ -3,12 +3,27 @@
 #include "GUIManager.hpp"
 #include <iostream>
 #include "imgui.h"
+#include "WindowManager.hpp"
 
 
 int main() {
     std::cout << "=== EDITOR BUILD ===" << std::endl;
 
+    if (!glfwInit()) {
+        std::cerr << "Failed to initialize GLFW!" << std::endl;
+        return -1;
+    }
+
     Engine::Initialize();
+
+    GLFWwindow* window = WindowManager::getWindow();
+    if (!window) {
+        std::cerr << "Failed to create GLFW window!" << std::endl;
+        glfwTerminate();
+        return -1;
+    }
+    glfwMakeContextCurrent(window);
+    
     GameManager::Initialize();
 	GUIManager::Initialize();
     while (Engine::IsRunning()) {
