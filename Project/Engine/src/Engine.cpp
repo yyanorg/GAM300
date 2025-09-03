@@ -6,20 +6,21 @@
 
 #include "Engine.h"
 
+#include "WindowManager.hpp"
 #include "Input/InputManager.hpp"
 #include "ECS/ECSRegistry.hpp"
+
+namespace TEMP {
+	std::string windowTitle = "GAM300";
+}
+
+const unsigned int SCR_WIDTH = 800;
+const unsigned int SCR_HEIGHT = 600;
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
 void processInput(GLFWwindow* window);
-
-const unsigned int SCR_WIDTH = 800;
-const unsigned int SCR_HEIGHT = 600;
-
-GLFWwindow* window;
-
-GLFWwindow* Engine::GetWindowTemp() { return window; }
 
 Shader* shaderProgram;
 Model* backPack;
@@ -44,6 +45,9 @@ glm::vec3 pointLightPositions[] = {
 };
 
 bool Engine::Initialize() {
+
+	WindowManager::Initialize(SCR_WIDTH, SCR_HEIGHT, TEMP::windowTitle.c_str());
+
     std::cout << "[Engine] Initializing..." << std::endl;
 
 	glm::vec3 cubePositions[]{
@@ -164,34 +168,11 @@ bool Engine::Initialize() {
 		// Top face
 		20, 21, 22, 22, 23, 20
 	};
-	glfwInit();
 
-	// Sets version 3.3
-	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
-	// Uses core profile which removes the ability to use older functions that we do not need
-	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-	window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "Graphics", NULL, NULL);
-
-	if (window == NULL)
-	{
-		std::cout << "Failed to create window" << std::endl;
-		glfwTerminate();
-		return -1;
-	}
-	glfwMakeContextCurrent(window);
-	glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
-	glfwSetCursorPosCallback(window, mouse_callback);
-	glfwSetScrollCallback(window, scroll_callback);
-	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-
-	// Initializes GLAD
-	if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
-	{
-		std::cout << "Failed to initialize GLAD" << std::endl;
-		return -1;
-	}
+	glfwSetCursorPosCallback(WindowManager::getWindow(), mouse_callback);
+	glfwSetScrollCallback(WindowManager::getWindow(), scroll_callback);
+	glfwSetInputMode(WindowManager::getWindow(), GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
 	Texture textures[]
 	{
@@ -233,7 +214,7 @@ bool Engine::Initialize() {
 
     std::cout << "[Engine] successfully initialized!" << std::endl;
 
-
+	return true;
 }
 
 void Engine::Update() {
@@ -248,7 +229,7 @@ void Engine::Draw() {
 	deltaTime = currentFrame - lastFrame;
 	lastFrame = currentFrame;
 
-	processInput(window);
+	processInput(WindowManager::getWindow());
 
 	glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
 	glEnable(GL_DEPTH_TEST);
@@ -358,11 +339,12 @@ void Engine::Draw() {
 
 		lightCubeMesh->Draw(*lightShader, camera);  // Use your light mesh
 	}
-	glfwSwapBuffers(window);
+
 	glfwPollEvents();
 }
 
 void Engine::EndDraw() {
+	glfwSwapBuffers(WindowManager::getWindow());
 }
 
 void Engine::Shutdown() {
@@ -375,7 +357,7 @@ void Engine::Shutdown() {
 }
 
 bool Engine::IsRunning() {
-	return !glfwWindowShouldClose(window);
+	return !WindowManager::ShouldClose();
 }
 
 // process all input: query GLFW whether relevant keys are pressed/released this frame and react accordingly
