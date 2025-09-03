@@ -9,10 +9,10 @@ class Mesh {
 public:
 	std::vector<Vertex> vertices; 
 	std::vector<GLuint> indices; 
-	std::vector<Texture> textures;
+	std::vector<std::shared_ptr<Texture>> textures;
 
 	Mesh() {};
-	Mesh(std::vector<Vertex>& vertices, std::vector <GLuint>& indices, std::vector<Texture>& textures);
+	Mesh(std::vector<Vertex>& vertices, std::vector<GLuint>& indices, std::vector<std::shared_ptr<Texture>>& textures);
 	~Mesh();
 	void Draw(Shader& shader, Camera& camera);
 
