@@ -16,6 +16,7 @@ public:
 	static Renderer& getInstance();
 
 	bool Initialise(int window_width, int window_height);
+	//void applyLighting(Shader& shader);
 	void SetUpLighting(Shader& shader);
 	void Shutdown();
 
