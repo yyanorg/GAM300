@@ -33,9 +33,15 @@ void GUIManager::Render() {
     ImGui_ImplGlfw_NewFrame();
     ImGui::NewFrame();
 
-    // Here you can add custom ImGui windows for debugging or settings
+     //Here you can add custom ImGui windows for debugging or settings
     ImGui::Begin("Example Window");
     ImGui::Text("Hello, ImGui!");
+    ImGui::End();
+
+    ImGui::SetNextWindowPos(ImVec2(10, 150), ImGuiCond_Once);
+    ImGui::Begin("Performance");
+    ImGui::Text("FPS: %.1f", WindowManager::getFps());
+    ImGui::Text("Delta Time: %.3f ms", WindowManager::getDeltaTime() * 1000.0);
     ImGui::End();
 
     // Render ImGui on top of the scene

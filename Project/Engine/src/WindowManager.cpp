@@ -20,6 +20,9 @@ GLint WindowManager::windowedHeight = 900;  // Default windowed size
 GLint WindowManager::windowedPosX = 0;      // Default window position
 GLint WindowManager::windowedPosY = 0;      // Default window position
 
+double WindowManager::deltaTime = 0.0;
+double WindowManager::lastFrameTime = 0.0;
+
 bool WindowManager::Initialize(GLint _width, GLint _height, const char* _title) {
     WindowManager::width = _width;
     WindowManager::height = _height;
@@ -194,4 +197,16 @@ bool WindowManager::IsWindowMinimized() {
 
 bool WindowManager::IsWindowFocused() {
     return isFocused;
+}
+
+void WindowManager::updateDeltaTime() {
+    double currentFrameTime = glfwGetTime();
+    deltaTime               = currentFrameTime - lastFrameTime;
+    lastFrameTime           = currentFrameTime;
+}
+double WindowManager::getDeltaTime() {
+    return deltaTime;
+}
+double WindowManager::getFps() {
+    return deltaTime > 0.0 ? 1.0 / deltaTime : 0.0;
 }
