@@ -22,6 +22,8 @@
     #endif
 #endif
 
+struct GLFWwindow;
+
 class ENGINE_API Engine {
 public:
     static bool Initialize();
