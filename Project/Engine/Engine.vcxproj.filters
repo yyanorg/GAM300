@@ -29,6 +29,8 @@
     <ClInclude Include="include\ECS\Signature.hpp" />
     <ClInclude Include="include\ECS\System.hpp" />
     <ClInclude Include="include\ECS\SystemManager.hpp" />
+    <ClInclude Include="include\Asset Manager\Asset.hpp" />
+    <ClInclude Include="include\Asset Manager\AssetManager.hpp" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Engine.cpp" />
