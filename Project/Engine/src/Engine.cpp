@@ -9,6 +9,7 @@
 #include "WindowManager.hpp"
 #include "Input/InputManager.hpp"
 #include "ECS/ECSRegistry.hpp"
+#include "Asset Manager/MetaFilesManager.hpp"
 
 namespace TEMP {
 	std::string windowTitle = "GAM300";
@@ -118,6 +119,7 @@ bool Engine::Initialize() {
 	//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
 	// WOON LI TEST CODE
+	MetaFilesManager::InitializeAssetMetaFiles("Resources");
 
 	// Temp testing code - create some ECS managers and entities
 	ECSRegistry::GetInstance().CreateECSManager("MainWorld");

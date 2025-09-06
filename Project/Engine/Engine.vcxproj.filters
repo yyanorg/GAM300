@@ -34,6 +34,8 @@
     <ClInclude Include="include\WindowManager.hpp" />
     <ClInclude Include="include\Graphics\TextureManager.h" />
     <ClInclude Include="include\Graphics\Renderer.hpp" />
+    <ClInclude Include="include\Asset Manager\GUID.hpp" />
+    <ClInclude Include="include\Asset Manager\MetaFilesManager.hpp" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Engine.cpp" />
@@ -53,6 +55,8 @@
     <ClCompile Include="src\WindowManager.cpp" />
     <ClCompile Include="src\Graphics\TextureManager.cpp" />
     <ClCompile Include="src\Graphics\Renderer.cpp" />
+    <ClCompile Include="src\Asset Manager\GUID.cpp" />
+    <ClCompile Include="src\Asset Manager\MetaFilesManager.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="cpp.hint" />

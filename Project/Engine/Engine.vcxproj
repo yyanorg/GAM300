@@ -37,6 +37,8 @@
   <ItemGroup>
     <ClInclude Include="include\Asset Manager\Asset.hpp" />
     <ClInclude Include="include\Asset Manager\AssetManager.hpp" />
+    <ClInclude Include="include\Asset Manager\GUID.hpp" />
+    <ClInclude Include="include\Asset Manager\MetaFilesManager.hpp" />
     <ClInclude Include="include\ECS\Component.hpp" />
     <ClInclude Include="include\ECS\ComponentArray.hpp" />
     <ClInclude Include="include\ECS\ComponentManager.hpp" />
@@ -64,6 +66,8 @@
     <ClInclude Include="src\Input\InputManager.hpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="src\Asset Manager\GUID.cpp" />
+    <ClCompile Include="src\Asset Manager\MetaFilesManager.cpp" />
     <ClCompile Include="src\ECS\ECSManager.cpp" />
     <ClCompile Include="src\ECS\ECSRegistry.cpp" />
     <ClCompile Include="src\ECS\EntityManager.cpp" />

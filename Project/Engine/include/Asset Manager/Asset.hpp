@@ -4,5 +4,5 @@
 class IAsset {
 public:
 	virtual ~IAsset() = default;
-	virtual bool LoadFromFile(const std::string& path) = 0;
+	virtual bool LoadAsset(const std::string& path) = 0;
 };
