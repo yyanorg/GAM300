@@ -35,6 +35,8 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="include\Deserialization.hpp" />
+    <ClInclude Include="include\Deserialization.ipp" />
     <ClInclude Include="include\ECS\Component.hpp" />
     <ClInclude Include="include\ECS\ComponentArray.hpp" />
     <ClInclude Include="include\ECS\ComponentManager.hpp" />
@@ -62,6 +64,7 @@
     <ClInclude Include="src\Input\InputManager.hpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="src\Deserialization.cpp" />
     <ClCompile Include="src\ECS\ECSManager.cpp" />
     <ClCompile Include="src\ECS\ECSRegistry.cpp" />
     <ClCompile Include="src\ECS\EntityManager.cpp" />
