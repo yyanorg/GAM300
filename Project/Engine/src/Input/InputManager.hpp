@@ -1,8 +1,7 @@
 #pragma once
 
 #include <unordered_map>
-
-#include "Engine.h"
+#include <WindowManager.hpp>
 
 // #ifdef ENGINE_EXPORTS
 // #define ENGINE_API __declspec(dllexport)

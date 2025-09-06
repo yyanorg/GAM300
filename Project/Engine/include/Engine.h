@@ -1,4 +1,5 @@
 #pragma once
+#include "TestScene.hpp" // temp
 
 // #ifdef ENGINE_EXPORTS
 // #define ENGINE_API __declspec(dllexport)
@@ -36,4 +37,8 @@ public:
 
     static bool IsRunning();
     static void Shutdown();
+
+private:
+    // TEMP
+	static TestScene testScene;
 };
