@@ -37,6 +37,10 @@
   <ItemGroup>
     <ClInclude Include="include\Deserialization.hpp" />
     <ClInclude Include="include\Deserialization.ipp" />
+    <ClInclude Include="include\Asset Manager\Asset.hpp" />
+    <ClInclude Include="include\Asset Manager\AssetManager.hpp" />
+    <ClInclude Include="include\Asset Manager\GUID.hpp" />
+    <ClInclude Include="include\Asset Manager\MetaFilesManager.hpp" />
     <ClInclude Include="include\ECS\Component.hpp" />
     <ClInclude Include="include\ECS\ComponentArray.hpp" />
     <ClInclude Include="include\ECS\ComponentManager.hpp" />
@@ -53,6 +57,7 @@
     <ClInclude Include="include\Graphics\Mesh.h" />
     <ClInclude Include="include\Graphics\Model.h" />
     <ClInclude Include="include\Graphics\Renderer.hpp" />
+    <ClInclude Include="include\Graphics\RenderSystem.hpp" />
     <ClInclude Include="include\Graphics\ShaderClass.h" />
     <ClInclude Include="include\Graphics\stb_image.h" />
     <ClInclude Include="include\Graphics\Texture.h" />
@@ -60,11 +65,14 @@
     <ClInclude Include="include\Graphics\VAO.h" />
     <ClInclude Include="include\Graphics\VBO.h" />
     <ClInclude Include="include\pch.h" />
+    <ClInclude Include="include\TestScene.hpp" />
     <ClInclude Include="include\WindowManager.hpp" />
     <ClInclude Include="src\Input\InputManager.hpp" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Deserialization.cpp" />
+    <ClCompile Include="src\Asset Manager\GUID.cpp" />
+    <ClCompile Include="src\Asset Manager\MetaFilesManager.cpp" />
     <ClCompile Include="src\ECS\ECSManager.cpp" />
     <ClCompile Include="src\ECS\ECSRegistry.cpp" />
     <ClCompile Include="src\ECS\EntityManager.cpp" />
@@ -78,7 +86,7 @@
     <ClCompile Include="src\Graphics\EBO.cpp" />
     <ClCompile Include="src\Graphics\Mesh.cpp" />
     <ClCompile Include="src\Graphics\Model.cpp" />
-    <ClCompile Include="src\Graphics\Renderer.cpp" />
+    <ClCompile Include="src\Graphics\RenderSystem.cpp" />
     <ClCompile Include="src\Graphics\ShaderClass.cpp" />
     <ClCompile Include="src\Graphics\Texture.cpp" />
     <ClCompile Include="src\Graphics\TextureManager.cpp" />
@@ -91,6 +99,7 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='EditorDebug|x64'">Create</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="src\TestScene.cpp" />
     <ClCompile Include="src\WindowManager.cpp" />
   </ItemGroup>
   <ItemGroup>

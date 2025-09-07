@@ -2,20 +2,20 @@
 #include "Graphics/Model.h"
 #include "Graphics/TextureManager.h"
 #include <iostream>
+#include "Asset Manager/AssetManager.hpp"
 
-Model::Model(const std::string& filePath)
-{
-	loadModel(filePath);
-	/*std::cout << "Model loaded with " << meshes.size() << " meshes" << std::endl;
-	for (int i = 0; i < meshes.size(); i++)
-	{
-		std::cout << "Mesh " << i << ": " << meshes[i].vertices.size() << " vertices, "
-			<< meshes[i].indices.size() << " indices" << std::endl;
-	}*/
-}
+//Model::Model(const std::string& filePath)
+//{
+//	//loadModel(filePath);
+//	/*std::cout << "Model loaded with " << meshes.size() << " meshes" << std::endl;
+//	for (int i = 0; i < meshes.size(); i++)
+//	{
+//		std::cout << "Mesh " << i << ": " << meshes[i].vertices.size() << " vertices, "
+//			<< meshes[i].indices.size() << " indices" << std::endl;
+//	}*/
+//}
 
-void Model::loadModel(const std::string& path)
-{
+bool Model::LoadAsset(const std::string& path) {
 	Assimp::Importer importer;
 	// The function expects a file path and several post-processing options as its second argument
 	// aiProcess_Triangulate tells Assimp that if the model does not (entirely) consist of triangles, it should transform all the model's primitive shapes to triangles first.
@@ -24,14 +24,35 @@ void Model::loadModel(const std::string& path)
 	if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode)
 	{
 		std::cout << "ERROR:ASSIMP:: " << importer.GetErrorString() << std::endl;
-		return;
+		return false;
 	}
 
 	directory = path.substr(0, path.find_last_of('/'));
 
 	// Recursive function
 	processNode(scene->mRootNode, scene);
+
+	return true;
 }
+
+//void Model::loadModel(const std::string& path)
+//{
+//	Assimp::Importer importer;
+//	// The function expects a file path and several post-processing options as its second argument
+//	// aiProcess_Triangulate tells Assimp that if the model does not (entirely) consist of triangles, it should transform all the model's primitive shapes to triangles first.
+//	const aiScene* scene = importer.ReadFile(path, aiProcess_Triangulate | aiProcess_FlipUVs);
+//
+//	if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode)
+//	{
+//		std::cout << "ERROR:ASSIMP:: " << importer.GetErrorString() << std::endl;
+//		return;
+//	}
+//
+//	directory = path.substr(0, path.find_last_of('/'));
+//
+//	// Recursive function
+//	processNode(scene->mRootNode, scene);
+//}
 
 void Model::processNode(aiNode* node, const aiScene* scene)
 {
@@ -120,8 +141,9 @@ Mesh Model::processMesh(aiMesh* mesh, const aiScene* scene)
 
 std::vector<std::shared_ptr<Texture>> Model::loadMaterialTexture(aiMaterial* mat, aiTextureType type, std::string typeName)
 {
+	typeName;
 	std::vector<std::shared_ptr<Texture>> textures;
-	TextureManager& textureManager = TextureManager::getInstance();
+	//TextureManager& textureManager = TextureManager::getInstance();
 
 	for (unsigned int i = 0; i < mat->GetTextureCount(type); i++)
 	{
@@ -129,8 +151,9 @@ std::vector<std::shared_ptr<Texture>> Model::loadMaterialTexture(aiMaterial* mat
 		mat->GetTexture(type, i, &str);
 		std::string texturePath = directory + '/' + str.C_Str();
 
-		// Use the texture manager
-		auto texture = textureManager.loadTexture(texturePath, typeName);
+		// Use the asset manager
+		auto texture = AssetManager::GetInstance().GetTexture(texturePath, typeName, -1, GL_UNSIGNED_BYTE);
+		//auto texture = textureManager.loadTexture(texturePath, typeName);
 		if (texture) 
 		{
 			textures.push_back(texture); // Dereference shared_ptr
