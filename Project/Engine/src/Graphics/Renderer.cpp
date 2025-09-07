@@ -1,5 +1,6 @@
 #include "pch.h"
 #include "Graphics/Renderer.hpp"
+#include "Graphics/LightManager.hpp"
 
 Renderer& Renderer::getInstance() 
 {
@@ -18,64 +19,44 @@ bool Renderer::Initialise(int window_width, int window_height)
 	return true;
 }
 
-void Renderer::SetUpLighting(Shader& shader)
+void Renderer::applyLighting(Shader& shader) 
 {
-	// positions of the point lights
-	glm::vec3 pointLightPositions[] = {
-		glm::vec3(0.7f,  0.2f,  2.0f),
-		glm::vec3(2.3f, -3.3f, -4.0f),
-		glm::vec3(-4.0f,  2.0f, -12.0f),
-		glm::vec3(0.0f,  0.0f, -3.0f)
-	};
+    LightManager& lightManager = LightManager::getInstance();
 
-	// directional light
-	shader.setVec3("dirLight.direction", -0.2f, -1.0f, -0.3f);
-	shader.setVec3("dirLight.ambient", 0.05f, 0.05f, 0.05f);
-	shader.setVec3("dirLight.diffuse", 0.4f, 0.4f, 0.4f);
-	shader.setVec3("dirLight.specular", 0.5f, 0.5f, 0.5f);
-	// point light 1
-	shader.setVec3("pointLights[0].position", pointLightPositions[0]);
-	shader.setVec3("pointLights[0].ambient", 0.05f, 0.05f, 0.05f);
-	shader.setVec3("pointLights[0].diffuse", 0.8f, 0.8f, 0.8f);
-	shader.setVec3("pointLights[0].specular", 1.0f, 1.0f, 1.0f);
-	shader.setFloat("pointLights[0].constant", 1.0f);
-	shader.setFloat("pointLights[0].linear", 0.09f);
-	shader.setFloat("pointLights[0].quadratic", 0.032f);
-	// point light 2
-	shader.setVec3("pointLights[1].position", pointLightPositions[1]);
-	shader.setVec3("pointLights[1].ambient", 0.05f, 0.05f, 0.05f);
-	shader.setVec3("pointLights[1].diffuse", 0.8f, 0.8f, 0.8f);
-	shader.setVec3("pointLights[1].specular", 1.0f, 1.0f, 1.0f);
-	shader.setFloat("pointLights[1].constant", 1.0f);
-	shader.setFloat("pointLights[1].linear", 0.09f);
-	shader.setFloat("pointLights[1].quadratic", 0.032f);
-	// point light 3
-	shader.setVec3("pointLights[2].position", pointLightPositions[2]);
-	shader.setVec3("pointLights[2].ambient", 0.05f, 0.05f, 0.05f);
-	shader.setVec3("pointLights[2].diffuse", 0.8f, 0.8f, 0.8f);
-	shader.setVec3("pointLights[2].specular", 1.0f, 1.0f, 1.0f);
-	shader.setFloat("pointLights[2].constant", 1.0f);
-	shader.setFloat("pointLights[2].linear", 0.09f);
-	shader.setFloat("pointLights[2].quadratic", 0.032f);
-	// point light 4
-	shader.setVec3("pointLights[3].position", pointLightPositions[3]);
-	shader.setVec3("pointLights[3].ambient", 0.05f, 0.05f, 0.05f);
-	shader.setVec3("pointLights[3].diffuse", 0.8f, 0.8f, 0.8f);
-	shader.setVec3("pointLights[3].specular", 1.0f, 1.0f, 1.0f);
-	shader.setFloat("pointLights[3].constant", 1.0f);
-	shader.setFloat("pointLights[3].linear", 0.09f);
-	shader.setFloat("pointLights[3].quadratic", 0.032f);
-	// spotLight
-	shader.setVec3("spotLight.position", currentCamera->Position);
-	shader.setVec3("spotLight.direction", currentCamera->Front);
-	shader.setVec3("spotLight.ambient", 0.0f, 0.0f, 0.0f);
-	shader.setVec3("spotLight.diffuse", 1.0f, 1.0f, 1.0f);
-	shader.setVec3("spotLight.specular", 1.0f, 1.0f, 1.0f);
-	shader.setFloat("spotLight.constant", 1.0f);
-	shader.setFloat("spotLight.linear", 0.09f);
-	shader.setFloat("spotLight.quadratic", 0.032f);
-	shader.setFloat("spotLight.cutOff", glm::cos(glm::radians(12.5f)));
-	shader.setFloat("spotLight.outerCutOff", glm::cos(glm::radians(15.0f)));
+    // Apply directional light
+    const auto& dirLight = lightManager.getDirectionalLight();
+    shader.setVec3("dirLight.direction", dirLight.direction);
+    shader.setVec3("dirLight.ambient", dirLight.ambient);
+    shader.setVec3("dirLight.diffuse", dirLight.diffuse);
+    shader.setVec3("dirLight.specular", dirLight.specular);
+
+    // Apply point lights
+    const auto& pointLights = lightManager.getPointLights();
+    for (size_t i = 0; i < pointLights.size() && i < 4; i++) {
+        std::string base = "pointLights[" + std::to_string(i) + "]";
+        shader.setVec3(base + ".position", pointLights[i].position);
+        shader.setVec3(base + ".ambient", pointLights[i].ambient);
+        shader.setVec3(base + ".diffuse", pointLights[i].diffuse);
+        shader.setVec3(base + ".specular", pointLights[i].specular);
+        shader.setFloat(base + ".constant", pointLights[i].constant);
+        shader.setFloat(base + ".linear", pointLights[i].linear);
+        shader.setFloat(base + ".quadratic", pointLights[i].quadratic);
+    }
+
+    // Apply spotlight
+    if (lightManager.isSpotLightEnabled() && currentCamera) {
+        const auto& spotLight = lightManager.getSpotLight();
+        shader.setVec3("spotLight.position", currentCamera->Position);
+        shader.setVec3("spotLight.direction", currentCamera->Front);
+        shader.setVec3("spotLight.ambient", spotLight.ambient);
+        shader.setVec3("spotLight.diffuse", spotLight.diffuse);
+        shader.setVec3("spotLight.specular", spotLight.specular);
+        shader.setFloat("spotLight.constant", spotLight.constant);
+        shader.setFloat("spotLight.linear", spotLight.linear);
+        shader.setFloat("spotLight.quadratic", spotLight.quadratic);
+        shader.setFloat("spotLight.cutOff", spotLight.cutOff);
+        shader.setFloat("spotLight.outerCutOff", spotLight.outerCutOff);
+    }
 }
 
 void Renderer::BeginFrame()
@@ -134,7 +115,7 @@ void Renderer::Render()
 			// Material
 			item.Shader->setFloat("material.shininess", 32.0f);
 
-			SetUpLighting(*item.Shader);
+			applyLighting(*item.Shader);
         }
 
         item.Model->Draw(*item.Shader, *currentCamera);

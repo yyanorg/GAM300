@@ -21,7 +21,7 @@ void LightManager::setDirectionalLight(const glm::vec3 direction, const glm::vec
     setDirectionalLight(direction, color * 0.2f, color, color);
 }
 
-void LightManager::addPointLights(const glm::vec3& position, const glm::vec3& color, float intensity)
+void LightManager::addPointLight(const glm::vec3& position, const glm::vec3& color, float intensity)
 {
     PointLight light;
     light.position = position;

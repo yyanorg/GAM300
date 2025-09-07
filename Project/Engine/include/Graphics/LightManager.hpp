@@ -39,7 +39,7 @@ public:
     void setDirectionalLight(const glm::vec3& direction, const glm::vec3& ambient, const glm::vec3 diffuse, const glm::vec3& specular);
     void setDirectionalLight(const glm::vec3 direction, const glm::vec3& color);
 
-    void addPointLights(const glm::vec3& position, const glm::vec3& color, float intensity = 1.0f);
+    void addPointLight(const glm::vec3& position, const glm::vec3& color, float intensity = 1.0f);
     void addPointLight(const PointLight& light); 
     void removePointLight(size_t index);
     void clearPointLights();

@@ -3,6 +3,7 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include "Graphics/Renderer.hpp"
+#include "Graphics/LightManager.hpp"
 
 #include "Engine.h"
 
@@ -153,6 +154,37 @@ bool Engine::Initialize() {
 	// Sets camera
 	renderer.SetCamera(&camera);
 
+	// ---Set Up Lighting---
+	LightManager& lightManager = LightManager::getInstance();
+	const auto& pointLights = lightManager.getPointLights();
+	// Set up directional light
+	lightManager.setDirectionalLight(
+		glm::vec3(-0.2f, -1.0f, -0.3f),
+		glm::vec3(0.4f, 0.4f, 0.4f)
+	);
+
+	// Add point lights
+	glm::vec3 lightPositions[] = {
+		glm::vec3(0.7f,  0.2f,  2.0f),
+		glm::vec3(2.3f, -3.3f, -4.0f),
+		glm::vec3(-4.0f,  2.0f, -12.0f),
+		glm::vec3(0.0f,  0.0f, -3.0f)
+	};
+
+	for (int i = 0; i < 4; i++) 
+	{
+		lightManager.addPointLight(lightPositions[i], glm::vec3(0.8f, 0.8f, 0.8f));
+	}
+
+	// Set up spotlight
+	lightManager.setSpotLight(
+		glm::vec3(0.0f),
+		glm::vec3(0.0f, 0.0f, -1.0f),
+		glm::vec3(1.0f, 1.0f, 1.0f)
+	);
+
+	//lightManager.printLightStats();
+
 	// TRIED TO PUT THIS IN ENGINE::UPDATE(), DONT BOTHER ITS TOO MANY BUGS NOW
 
 	return true;
@@ -184,11 +216,12 @@ void Engine::Draw() {
 		renderer.EndFrame();
 
 		// Draw light cube
-		const glm::vec3* lightPositions = renderer.getPointLightPositions();
-		for (unsigned int i = 0; i < 4; i++) 
+		LightManager& lightManager = LightManager::getInstance();
+		const auto& pointLights = lightManager.getPointLights();
+		for (unsigned int i = 0; i < pointLights.size(); i++) 
 		{
 			glm::mat4 lightModel = glm::mat4(1.0f);
-			lightModel = glm::translate(lightModel, lightPositions[i]);
+			lightModel = glm::translate(lightModel, pointLights[i].position);
 			lightShader->setMat4("model", lightModel);
 			lightCubeMesh->Draw(*lightShader, camera);
 		}
