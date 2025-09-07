@@ -5,15 +5,18 @@
 #include <glad/glad.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp> 
+#include "Asset Manager/Asset.hpp"
 
 std::string get_file_contents(const char* filename);
 
-class Shader {
+class Shader : public IAsset {
 public:
 	GLuint ID;
 
-    Shader() {};
-	Shader(const char* vertexFile, const char* fragmentFile);
+    //Shader() {};
+	//Shader(const char* vertexFile, const char* fragmentFile);
+
+	bool LoadAsset(const std::string& path) override;
 
 	void Activate();
 	void Delete();

@@ -1,4 +1,5 @@
 #pragma once
+#include "TestScene.hpp" // temp
 
 // #ifdef ENGINE_EXPORTS
 // #define ENGINE_API __declspec(dllexport)
@@ -22,6 +23,8 @@
     #endif
 #endif
 
+struct GLFWwindow;
+
 class ENGINE_API Engine {
 public:
     static bool Initialize();
@@ -34,4 +37,8 @@ public:
 
     static bool IsRunning();
     static void Shutdown();
+
+private:
+    // TEMP
+	static TestScene testScene;
 };

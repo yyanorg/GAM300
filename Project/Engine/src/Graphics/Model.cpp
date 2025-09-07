@@ -1,22 +1,21 @@
 #include "pch.h"
 #include "Graphics/Model.h"
+#include "Graphics/TextureManager.h"
 #include <iostream>
+#include "Asset Manager/AssetManager.hpp"
 
-std::unordered_map<std::string, Texture> Model::textureCache;
+//Model::Model(const std::string& filePath)
+//{
+//	//loadModel(filePath);
+//	/*std::cout << "Model loaded with " << meshes.size() << " meshes" << std::endl;
+//	for (int i = 0; i < meshes.size(); i++)
+//	{
+//		std::cout << "Mesh " << i << ": " << meshes[i].vertices.size() << " vertices, "
+//			<< meshes[i].indices.size() << " indices" << std::endl;
+//	}*/
+//}
 
-Model::Model(const std::string& filePath)
-{
-	loadModel(filePath);
-	/*std::cout << "Model loaded with " << meshes.size() << " meshes" << std::endl;
-	for (int i = 0; i < meshes.size(); i++)
-	{
-		std::cout << "Mesh " << i << ": " << meshes[i].vertices.size() << " vertices, "
-			<< meshes[i].indices.size() << " indices" << std::endl;
-	}*/
-}
-
-void Model::loadModel(const std::string& path)
-{
+bool Model::LoadAsset(const std::string& path) {
 	Assimp::Importer importer;
 	// The function expects a file path and several post-processing options as its second argument
 	// aiProcess_Triangulate tells Assimp that if the model does not (entirely) consist of triangles, it should transform all the model's primitive shapes to triangles first.
@@ -25,14 +24,35 @@ void Model::loadModel(const std::string& path)
 	if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode)
 	{
 		std::cout << "ERROR:ASSIMP:: " << importer.GetErrorString() << std::endl;
-		return;
+		return false;
 	}
 
 	directory = path.substr(0, path.find_last_of('/'));
 
 	// Recursive function
 	processNode(scene->mRootNode, scene);
+
+	return true;
 }
+
+//void Model::loadModel(const std::string& path)
+//{
+//	Assimp::Importer importer;
+//	// The function expects a file path and several post-processing options as its second argument
+//	// aiProcess_Triangulate tells Assimp that if the model does not (entirely) consist of triangles, it should transform all the model's primitive shapes to triangles first.
+//	const aiScene* scene = importer.ReadFile(path, aiProcess_Triangulate | aiProcess_FlipUVs);
+//
+//	if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode)
+//	{
+//		std::cout << "ERROR:ASSIMP:: " << importer.GetErrorString() << std::endl;
+//		return;
+//	}
+//
+//	directory = path.substr(0, path.find_last_of('/'));
+//
+//	// Recursive function
+//	processNode(scene->mRootNode, scene);
+//}
 
 void Model::processNode(aiNode* node, const aiScene* scene)
 {
@@ -55,7 +75,7 @@ Mesh Model::processMesh(aiMesh* mesh, const aiScene* scene)
 {
 	std::vector<Vertex> vertices;
 	std::vector<GLuint> indices;
-	std::vector<Texture> textures;
+	std::vector<std::shared_ptr<Texture>> textures;
 
 	// Process vertices
 	for (unsigned int i = 0; i < mesh->mNumVertices; i++)
@@ -107,22 +127,23 @@ Mesh Model::processMesh(aiMesh* mesh, const aiScene* scene)
 	{
 		aiMaterial* material = scene->mMaterials[mesh->mMaterialIndex];
 
-		// Load diffuse textures
-		std::vector<Texture> diffuseMaps = loadMaterialTexture(material, aiTextureType_DIFFUSE, "diffuse");
-		textures.insert(textures.end(), diffuseMaps.begin(), diffuseMaps.end()); // why use insert and not push_back
+		// Load diffuse textures - now returns shared_ptr vector
+		std::vector<std::shared_ptr<Texture>> diffuseMaps = loadMaterialTexture(material, aiTextureType_DIFFUSE, "diffuse");
+		textures.insert(textures.end(), diffuseMaps.begin(), diffuseMaps.end());
 
-		// Load specular textures
-		std::vector<Texture> specularMaps = loadMaterialTexture(material, aiTextureType_SPECULAR, "specular");
+		// Load specular textures - now returns shared_ptr vector  
+		std::vector<std::shared_ptr<Texture>> specularMaps = loadMaterialTexture(material, aiTextureType_SPECULAR, "specular");
 		textures.insert(textures.end(), specularMaps.begin(), specularMaps.end());
 	}
 
 	return Mesh(vertices, indices, textures);
 }
 
-std::vector<Texture> Model::loadMaterialTexture(aiMaterial* mat, aiTextureType type, std::string typeName)
+std::vector<std::shared_ptr<Texture>> Model::loadMaterialTexture(aiMaterial* mat, aiTextureType type, std::string typeName)
 {
-	static int textureUnit = 0;
-	std::vector<Texture> textures;
+	typeName;
+	std::vector<std::shared_ptr<Texture>> textures;
+	//TextureManager& textureManager = TextureManager::getInstance();
 
 	for (unsigned int i = 0; i < mat->GetTextureCount(type); i++)
 	{
@@ -130,28 +151,12 @@ std::vector<Texture> Model::loadMaterialTexture(aiMaterial* mat, aiTextureType t
 		mat->GetTexture(type, i, &str);
 		std::string texturePath = directory + '/' + str.C_Str();
 
-		// Check if texture is already cached
-		auto it = textureCache.find(texturePath);
-		if (it != textureCache.end())
+		// Use the asset manager
+		auto texture = AssetManager::GetInstance().GetTexture(texturePath, typeName, -1, GL_UNSIGNED_BYTE);
+		//auto texture = textureManager.loadTexture(texturePath, typeName);
+		if (texture) 
 		{
-			std::cout << "Using cached texture: " << texturePath << std::endl;
-			textures.push_back(it->second);
-		}
-		else
-		{
-			std::cout << "Loading new texture: " << texturePath << std::endl;
-
-			GLenum format = GL_RGB;
-			if (texturePath.find(".png") != std::string::npos)
-			{
-				format = GL_RGBA;
-			}
-
-			Texture texture(texturePath.c_str(), typeName.c_str(), textureUnit++, format, GL_UNSIGNED_BYTE);
-
-			// Cache the texture
-			textureCache.emplace(texturePath, texture);
-			textures.push_back(texture);
+			textures.push_back(texture); // Dereference shared_ptr
 		}
 	}
 

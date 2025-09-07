@@ -1,8 +1,7 @@
 #pragma once
 
 #include <unordered_map>
-
-#include "Engine.h"
+#include <WindowManager.hpp>
 
 // #ifdef ENGINE_EXPORTS
 // #define ENGINE_API __declspec(dllexport)
@@ -10,7 +9,7 @@
 // #define ENGINE_API __declspec(dllimport)
 // #endif
 
-class ENGINE_API InputManager {
+class InputManager {
 public:
 	static void Initialize(GLFWwindow* window);
 	static void Update();

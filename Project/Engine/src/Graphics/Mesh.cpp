@@ -5,7 +5,7 @@
 const unsigned int SCR_WIDTH = 800;
 const unsigned int SCR_HEIGHT = 600;
 
-Mesh::Mesh(std::vector<Vertex>& vertices, std::vector<GLuint>& indices, std::vector<Texture>& textures) : vertices(vertices), indices(indices), textures(textures)
+Mesh::Mesh(std::vector<Vertex>& vertices, std::vector<GLuint>& indices, std::vector<std::shared_ptr<Texture>>& textures) : vertices(vertices), indices(indices), textures(textures)
 {
 	// Generates Vertex Array Object and binds it
 	vao.Bind();
@@ -39,24 +39,32 @@ void Mesh::Draw(Shader& shader, Camera& camera)
 	shader.Activate();
 	vao.Bind();
 
+	// Dynamic texture binding
+	unsigned int textureUnit = 0;
 	unsigned int numDiffuse = 0, numSpecular = 0;
 
-	// UNDERSTAND THIS FOR LOOP
-	for (unsigned int i = 0; i < textures.size(); i++)
+	for (unsigned int i = 0; i < textures.size() && textureUnit < 16; i++)
 	{
-		std::string num;
-		std::string type = textures[i].type;
+		if (!textures[i]) continue;
 
-		if (type == "diffuse")
-		{
+		std::string num;
+		std::string type = textures[i]->type;
+
+		if (type == "diffuse") {
 			num = std::to_string(numDiffuse++);
 		}
-		else if (type == "specular")
-		{
+		else if (type == "specular") {
 			num = std::to_string(numSpecular++);
 		}
-		shader.setInt(("material." + type + num).c_str(), i);
-		textures[i].Bind();
+
+		// Bind texture to current unit
+		glActiveTexture(GL_TEXTURE0 + textureUnit);
+		textures[i]->Bind();
+
+		// Set shader uniform
+		shader.setInt(("material." + type + num).c_str(), textureUnit);
+
+		textureUnit++;
 	}
 	// HOW ARE THE DIFFUSE AND SPECULAR MAP TEXTURE BEING ASSIGNED IN THE FRAGMENT SHADER
 

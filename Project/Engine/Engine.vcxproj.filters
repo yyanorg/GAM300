@@ -10,16 +10,6 @@
     <ClInclude Include="include\Engine.h" />
     <ClInclude Include="include\pch.h" />
     <ClInclude Include="src\Input\InputManager.hpp" />
-    <ClInclude Include="src\ECS\Entity.hpp" />
-    <ClInclude Include="src\ECS\ECSManager.hpp" />
-    <ClInclude Include="src\ECS\EntityManager.hpp" />
-    <ClInclude Include="src\ECS\Component.hpp" />
-    <ClInclude Include="src\ECS\ComponentArray.hpp" />
-    <ClInclude Include="src\ECS\ComponentManager.hpp" />
-    <ClInclude Include="src\ECS\Signature.hpp" />
-    <ClInclude Include="src\ECS\System.hpp" />
-    <ClInclude Include="src\ECS\SystemManager.hpp" />
-    <ClInclude Include="src\ECS\ECSRegistry.hpp" />
     <ClInclude Include="include\Graphics\Camera.h" />
     <ClInclude Include="include\Graphics\EBO.h" />
     <ClInclude Include="include\Graphics\Mesh.h" />
@@ -32,6 +22,27 @@
     <ClInclude Include="include\Math\Vector3D.h" />
     <ClInclude Include="include\Math\Matrix4x4.h" />
     <ClInclude Include="include\Math\Matrix3x3.h" />
+    <ClInclude Include="include\ECS\Component.hpp" />
+    <ClInclude Include="include\ECS\ComponentArray.hpp" />
+    <ClInclude Include="include\ECS\ComponentManager.hpp" />
+    <ClInclude Include="include\ECS\ECSManager.hpp" />
+    <ClInclude Include="include\ECS\ECSRegistry.hpp" />
+    <ClInclude Include="include\ECS\Entity.hpp" />
+    <ClInclude Include="include\ECS\EntityManager.hpp" />
+    <ClInclude Include="include\ECS\Signature.hpp" />
+    <ClInclude Include="include\ECS\System.hpp" />
+    <ClInclude Include="include\ECS\SystemManager.hpp" />
+    <ClInclude Include="include\Asset Manager\Asset.hpp" />
+    <ClInclude Include="include\Asset Manager\AssetManager.hpp" />
+    <ClInclude Include="include\WindowManager.hpp" />
+    <ClInclude Include="include\Graphics\TextureManager.h" />
+    <ClInclude Include="include\Graphics\RenderSystem.hpp" />
+    <ClInclude Include="include\Asset Manager\GUID.hpp" />
+    <ClInclude Include="include\Asset Manager\MetaFilesManager.hpp" />
+    <ClInclude Include="include\TestScene.hpp" />
+    <ClInclude Include="include\Graphics\Renderer.hpp" />
+    <ClInclude Include="include\Serialization\Deserialization.hpp" />
+    <ClInclude Include="include\Serialization\Deserialization.ipp" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Engine.cpp" />
@@ -51,6 +62,13 @@
     <ClCompile Include="src\Math\Vector3D.cpp" />
     <ClCompile Include="src\Math\Matrix4x4.cpp" />
     <ClCompile Include="src\Math\Matrix3x3.cpp" />
+    <ClCompile Include="src\WindowManager.cpp" />
+    <ClCompile Include="src\Graphics\TextureManager.cpp" />
+    <ClCompile Include="src\Serialization\Deserialization.cpp" />
+    <ClCompile Include="src\Graphics\RenderSystem.cpp" />
+    <ClCompile Include="src\Asset Manager\GUID.cpp" />
+    <ClCompile Include="src\Asset Manager\MetaFilesManager.cpp" />
+    <ClCompile Include="src\TestScene.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="cpp.hint" />
