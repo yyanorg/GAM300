@@ -38,8 +38,8 @@
     <ClInclude Include="include\Asset Manager\MetaFilesManager.hpp" />
     <ClInclude Include="include\TestScene.hpp" />
     <ClInclude Include="include\Graphics\Renderer.hpp" />
-    <ClInclude Include="include\Deserialization.hpp" />
-    <ClInclude Include="include\Deserialization.ipp" />
+    <ClInclude Include="include\Serialization\Deserialization.hpp" />
+    <ClInclude Include="include\Serialization\Deserialization.ipp" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Engine.cpp" />
@@ -58,7 +58,7 @@
     <ClCompile Include="src\Graphics\Model.cpp" />
     <ClCompile Include="src\WindowManager.cpp" />
     <ClCompile Include="src\Graphics\TextureManager.cpp" />
-    <ClCompile Include="src\Deserialization.cpp" />
+    <ClCompile Include="src\Serialization\Deserialization.cpp" />
     <ClCompile Include="src\Graphics\RenderSystem.cpp" />
     <ClCompile Include="src\Asset Manager\GUID.cpp" />
     <ClCompile Include="src\Asset Manager\MetaFilesManager.cpp" />
