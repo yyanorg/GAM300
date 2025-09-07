@@ -10,6 +10,7 @@
 * Institute of Technology is prohibited.
 *********************************************************************************/
 
+#include "pch.h"
 #include "Math/Vector3D.h"
 
 // Indexing

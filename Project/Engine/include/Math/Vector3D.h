@@ -24,10 +24,10 @@ struct Vector3D
 
 	//  Special helpers
 	static constexpr Vector3D Zero() { return { 0.f,0.f,0.f }; }
+	static constexpr Vector3D XAxis() { return { 1.f,0.f,0.f }; }
 	static constexpr Vector3D YAxis() { return { 0.f,1.f,0.f }; }
 	static constexpr Vector3D ZAxis() { return { 0.f,0.f,1.f }; }
 	static constexpr Vector3D Ones() { return { 1.f,1.f,1.f }; }
-	static constexpr Vector3D XAxis() { return { 1.f,0.f,0.f }; }
 
 	// Copy Constructor
 	Vector3D(const Vector3D&);
@@ -40,7 +40,6 @@ struct Vector3D
 	const float& operator[](int i) const;
 
 	// Assignment Operator
-	constexpr Vector3D operator+() const noexcept { return *this; }
 	constexpr Vector3D operator-() const noexcept { return { -x,-y,-z }; }
 
 	Vector3D operator+(const Vector3D&) const;
