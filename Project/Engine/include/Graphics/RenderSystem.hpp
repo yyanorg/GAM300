@@ -18,7 +18,7 @@ public:
 	~RenderSystem() = default;
 
 	bool Initialise(int window_width, int window_height);
-	void SetUpLighting(Shader& shader);
+	void applyLighting(Shader& shader);
 	void Shutdown();
 
 	//void BeginFrame();
