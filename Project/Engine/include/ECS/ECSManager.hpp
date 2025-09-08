@@ -5,6 +5,7 @@
 #include "EntityManager.hpp"
 #include "ComponentManager.hpp"
 #include "SystemManager.hpp"
+#include <Graphics/RenderSystem.hpp>
 
 class ECSManager {
 public:
@@ -68,11 +69,6 @@ public:
 	}
 
 	template <typename T>
-	ComponentID GetComponentID() {
-		return componentManager->GetComponentID<T>();
-	}
-
-	template <typename T>
 	std::shared_ptr<T> RegisterSystem() {
 		return systemManager->RegisterSystem<T>();
 	}
@@ -84,8 +80,14 @@ public:
 
 	// STORE SHARED POINTERS TO SYSTEMS HERE
 	// e.g., std::shared_ptr<TransformSystem> transformSystem;
+	std::shared_ptr<RenderSystem> renderSystem;
 
 private:
+	template <typename T>
+	ComponentID GetComponentID() {
+		return componentManager->GetComponentID<T>();
+	}
+
 	std::unique_ptr<EntityManager> entityManager;
 	std::unique_ptr<ComponentManager> componentManager;
 	std::unique_ptr<SystemManager> systemManager;

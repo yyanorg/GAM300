@@ -1,5 +1,4 @@
 #pragma once
-#include <glad/glad.h>
 #include "VBO.h"
 
 // VAO stores the state/configuration of how vertex attributes are read from the VBO(s). To remember how vertex data is laid out, so you don’t have to re-specify attribute pointers every time.

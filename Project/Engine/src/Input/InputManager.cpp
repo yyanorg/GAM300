@@ -27,7 +27,7 @@ void InputManager::Update()
 	prevKeyStates = keyStates;
 	prevMouseButtonStates = mouseButtonStates;
 
-	// WindowManager::PollEvents();
+	//WindowManager::PollEvents();
 }
 
 bool InputManager::GetKeyDown(int key)
