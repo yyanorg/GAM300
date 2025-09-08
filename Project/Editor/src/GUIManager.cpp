@@ -34,7 +34,6 @@ void GUIManager::Initialize() {
  //   io.BackendFlags |= ImGuiBackendFlags_PlatformHasViewports;
 	//io.BackendFlags |= ImGuiBackendFlags_RendererHasViewports;
     // Set up dark theme
-    io.IniFilename = "imgui.ini";  // Save layout to imgui.ini
     ImGui::StyleColorsDark();
 
     // Make sure the context is current
