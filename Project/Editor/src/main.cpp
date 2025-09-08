@@ -35,7 +35,6 @@ int main() {
         Engine::Draw();
         GUIManager::Render();
         Engine::EndDraw();
-        //ImGui::ShowDemoWindow();
 		
         // WindowManager handles buffer swapping for editor
         //WindowManager::SwapBuffers();

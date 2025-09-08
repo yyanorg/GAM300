@@ -2,10 +2,20 @@
 #include "pch.h"
 #include "GUIManager.hpp"
 #include "imgui.h"
+#include "imgui_internal.h"  // Required for DockBuilder functions
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_opengl3.h"
 #include "WindowManager.hpp"
 
+// Include panel headers
+#include "Panels/ScenePanel.hpp"
+#include "Panels/SceneHierarchyPanel.hpp"
+#include "Panels/InspectorPanel.hpp"
+#include "Panels/ConsolePanel.hpp"
+
+// Static member definitions
+std::unique_ptr<PanelManager> GUIManager::s_PanelManager = nullptr;
+bool GUIManager::s_DockspaceInitialized = false;
 
 void GUIManager::Initialize() {
     GLFWwindow* window = WindowManager::getWindow();
@@ -20,6 +30,10 @@ void GUIManager::Initialize() {
     ImGuiIO& io = ImGui::GetIO(); (void)io;
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;  // Enable Keyboard Controls
 	io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;      // Enable Docking
+	//io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;    // Enable Multi-Viewport / Platform Windows
+ //   io.BackendFlags |= ImGuiBackendFlags_PlatformHasViewports;
+	//io.BackendFlags |= ImGuiBackendFlags_RendererHasViewports;
+    // Set up dark theme
     io.IniFilename = "imgui.ini";  // Save layout to imgui.ini
     ImGui::StyleColorsDark();
 
@@ -32,122 +46,41 @@ void GUIManager::Initialize() {
     
     // Note: Framebuffer creation is delayed until first render call
     // This ensures GLAD is properly initialized first
+
+    // Initialize panel manager and default panels
+    s_PanelManager = std::make_unique<PanelManager>();
+    SetupDefaultPanels();
+
+    std::cout << "[GUIManager] Initialized with panel-based architecture" << std::endl;
 }
 
 
 void GUIManager::Render() {
-    
     // Start ImGui frame
     ImGui_ImplOpenGL3_NewFrame();
     ImGui_ImplGlfw_NewFrame();
     ImGui::NewFrame();
 
-    // Create a fullscreen dockspace
-    ImGuiViewport* viewport = ImGui::GetMainViewport();
-    ImGui::SetNextWindowPos(viewport->Pos);
-    ImGui::SetNextWindowSize(viewport->Size);
-    ImGui::SetNextWindowViewport(viewport->ID);
-    
-    ImGuiWindowFlags window_flags = ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoDocking;
-    window_flags |= ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove;
-    window_flags |= ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoNavFocus;
+    // Create main dockspace
+    CreateDockspace();
 
-    ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
-    ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
-    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
-    
-    ImGui::Begin("DockSpace", nullptr, window_flags);
-    ImGui::PopStyleVar(3);
+    // Render menu bar
+    RenderMenuBar();
 
-    // Create the docking space
+    // Render all open panels
+    if (s_PanelManager) {
+        s_PanelManager->RenderOpenPanels();
+    }
+
+    // Handle multi-viewport rendering
     ImGuiIO& io = ImGui::GetIO();
-    if (io.ConfigFlags & ImGuiConfigFlags_DockingEnable) {
-        ImGuiID dockspace_id = ImGui::GetID("MyDockSpace");
-        ImGui::DockSpace(dockspace_id, ImVec2(0.0f, 0.0f), ImGuiDockNodeFlags_None);
+    if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable) {
+        GLFWwindow* backup_current_context = glfwGetCurrentContext();
+        
+        glfwMakeContextCurrent(backup_current_context);
     }
 
-    // Menu bar
-    if (ImGui::BeginMenuBar()) {
-        if (ImGui::BeginMenu("File")) {
-            ImGui::MenuItem("New", "Ctrl+N");
-            ImGui::MenuItem("Open", "Ctrl+O");
-            ImGui::MenuItem("Save", "Ctrl+S");
-            ImGui::Separator();
-            ImGui::MenuItem("Exit");
-            ImGui::EndMenu();
-        }
-        if (ImGui::BeginMenu("View")) {
-            ImGui::MenuItem("Console");
-            ImGui::MenuItem("Inspector");
-            ImGui::MenuItem("Scene Hierarchy");
-            ImGui::EndMenu();
-        }
-        ImGui::EndMenuBar();
-    }
-
-    ImGui::End();
-
-    ImGui::Begin("Scene");
-    
-    // Get the content region size
-    ImVec2 viewportPanelSize = ImGui::GetContentRegionAvail();
-    int sceneViewWidth = (int)viewportPanelSize.x;
-    int sceneViewHeight = (int)viewportPanelSize.y;
-    
-    // Ensure minimum size
-    if (sceneViewWidth < 100) sceneViewWidth = 100;
-    if (sceneViewHeight < 100) sceneViewHeight = 100;
-    
-    // Render 3D scene using WindowManager
-    WindowManager::BeginSceneRender(sceneViewWidth, sceneViewHeight);
-    WindowManager::RenderScene();
-    WindowManager::EndSceneRender();
-    
-    // Get the texture from WindowManager and display it
-    unsigned int sceneTexture = WindowManager::GetSceneTexture();
-    if (sceneTexture != 0) {
-        ImGui::Image(
-            (void*)(intptr_t)sceneTexture,
-            ImVec2((float)sceneViewWidth, (float)sceneViewHeight),
-            ImVec2(0, 1), ImVec2(1, 0)  // Flip Y coordinate for OpenGL
-        );
-    } else {
-        ImGui::TextColored(ImVec4(1, 0, 0, 1), "Scene View - Framebuffer not ready");
-        ImGui::Text("Size: %dx%d", sceneViewWidth, sceneViewHeight);
-    }
-    
-    ImGui::End();
-
-    // Other dockable windows
-    ImGui::Begin("Console");
-    ImGui::Text("This is the console window hopefully soon");
-    ImGui::End();
-
-    ImGui::Begin("Inspector");
-    ImGui::Text("Inspector Window");
-    ImGui::Text("Transform");
-    static float posX = 0.0f, posY = 0.0f, posZ = 0.0f;
-    ImGui::SliderFloat("Position X", &posX, -100.0f, 100.0f);
-    ImGui::SliderFloat("Position Y", &posY, -100.0f, 100.0f);
-    ImGui::SliderFloat("Position Z", &posZ, -100.0f, 100.0f);
-    ImGui::End();
-
-    ImGui::Begin("Scene Hierarchy");
-    ImGui::Text("Scene Objects:");
-	if (ImGui::TreeNode("TESTING NOT DONE")) {
-		ImGui::Text("BABY");
-		ImGui::TreePop();
-	}
-    ImGui::End();
-
-    ImGui::Begin("Asset Browser");
-    ImGui::Text("Assets:");
-    ImGui::Button("texture1.png");
-    ImGui::Button("model.obj");
-    ImGui::Button("shader.glsl");
-    ImGui::End();
-
-    // Render ImGui on top of the scene
+    // Render ImGui
     ImGui::Render();
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
@@ -162,8 +95,107 @@ void GUIManager::Exit() {
     // WindowManager handles framebuffer cleanup
     WindowManager::DeleteSceneFramebuffer();
     
+    // Clean up panel manager
+    s_PanelManager.reset();
+
     // Clean up ImGui resources
     ImGui_ImplOpenGL3_Shutdown();
     ImGui_ImplGlfw_Shutdown();
     ImGui::DestroyContext();
+
+    std::cout << "[GUIManager] Shutdown complete" << std::endl;
+}
+
+void GUIManager::SetupDefaultPanels() {
+    if (!s_PanelManager) return;
+
+    // Register core editor panels
+    s_PanelManager->RegisterPanel(std::make_shared<SceneHierarchyPanel>());
+    s_PanelManager->RegisterPanel(std::make_shared<InspectorPanel>());
+    /*s_PanelManager->RegisterPanel(std::make_shared<ConsolePanel>());*/
+    s_PanelManager->RegisterPanel(std::make_shared<ScenePanel>());
+
+    std::cout << "[GUIManager] Default panels registered" << std::endl;
+}
+
+void GUIManager::CreateDockspace() {
+    // Create a fullscreen dockspace
+    ImGuiViewport* viewport = ImGui::GetMainViewport();
+    ImGui::SetNextWindowPos(viewport->Pos);
+    ImGui::SetNextWindowSize(viewport->Size);
+    ImGui::SetNextWindowViewport(viewport->ID);
+
+    ImGuiWindowFlags window_flags = ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoDocking;
+    window_flags |= ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove;
+    window_flags |= ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoNavFocus;
+
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
+
+    ImGui::Begin("DockSpace", nullptr, window_flags);
+    ImGui::PopStyleVar(3);
+
+    // Create the docking space
+    ImGuiIO& io = ImGui::GetIO();
+    if (io.ConfigFlags & ImGuiConfigFlags_DockingEnable) {
+        ImGuiID dockspace_id = ImGui::GetID("MyDockSpace");
+        ImGui::DockSpace(dockspace_id, ImVec2(0.0f, 0.0f), ImGuiDockNodeFlags_None);
+    }
+
+    ImGui::End();
+}
+
+void GUIManager::RenderMenuBar() {
+    if (ImGui::BeginMainMenuBar()) {
+        if (ImGui::BeginMenu("File")) {
+            if (ImGui::MenuItem("New Scene", "Ctrl+N")) {
+                // TODO: New scene functionality
+            }
+            if (ImGui::MenuItem("Open Scene", "Ctrl+O")) {
+                // TODO: Open scene functionality
+            }
+            if (ImGui::MenuItem("Save Scene", "Ctrl+S")) {
+                // TODO: Save scene functionality
+            }
+            ImGui::Separator();
+            if (ImGui::MenuItem("Exit", "Alt+F4")) {
+                // TODO: Exit application
+            }
+            ImGui::EndMenu();
+        }
+
+        if (ImGui::BeginMenu("Edit")) {
+            if (ImGui::MenuItem("Undo", "Ctrl+Z")) {
+                // TODO: Undo functionality
+            }
+            if (ImGui::MenuItem("Redo", "Ctrl+Y")) {
+                // TODO: Redo functionality
+            }
+            ImGui::EndMenu();
+        }
+
+        if (ImGui::BeginMenu("View")) {
+            if (s_PanelManager) {
+                // Panel toggles
+                for (const auto& panel : s_PanelManager->GetAllPanels()) {
+                    bool isOpen = panel->IsOpen();
+                    if (ImGui::MenuItem(panel->GetName().c_str(), nullptr, &isOpen)) {
+                        panel->SetOpen(isOpen);
+                    }
+                }
+                ImGui::Separator();
+            }
+            ImGui::EndMenu();
+        }
+
+        if (ImGui::BeginMenu("Help")) {
+            if (ImGui::MenuItem("About")) {
+                // TODO: About dialog
+            }
+            ImGui::EndMenu();
+        }
+
+        ImGui::EndMainMenuBar();
+    }
 }

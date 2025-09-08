@@ -3,8 +3,20 @@
   <ItemGroup>
     <ClCompile Include="src\main.cpp" />
     <ClCompile Include="src\GUIManager.cpp" />
+    <ClCompile Include="src\Panels\EditorPanel.cpp" />
+    <ClCompile Include="src\Panels\PanelManager.cpp" />
+    <ClCompile Include="src\Panels\ScenePanel.cpp" />
+    <ClCompile Include="src\Panels\SceneHierarchyPanel.cpp" />
+    <ClCompile Include="src\Panels\InspectorPanel.cpp" />
+    <ClCompile Include="src\Panels\ConsolePanel.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\GUIManager.hpp" />
+    <ClInclude Include="include\Panels\EditorPanel.hpp" />
+    <ClInclude Include="include\Panels\PanelManager.hpp" />
+    <ClInclude Include="include\Panels\ScenePanel.hpp" />
+    <ClInclude Include="include\Panels\SceneHierarchyPanel.hpp" />
+    <ClInclude Include="include\Panels\InspectorPanel.hpp" />
+    <ClInclude Include="include\Panels\ConsolePanel.hpp" />
   </ItemGroup>
 </Project>
