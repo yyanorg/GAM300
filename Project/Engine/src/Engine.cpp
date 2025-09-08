@@ -10,6 +10,8 @@
 #include "WindowManager.hpp"
 #include "Input/InputManager.hpp"
 #include "Asset Manager/MetaFilesManager.hpp"
+#include "ECS/ECSRegistry.hpp"
+#include "TestScene.hpp"
 
 namespace TEMP {
 	std::string windowTitle = "GAM300";
@@ -17,8 +19,9 @@ namespace TEMP {
 
 TestScene Engine::testScene;
 
-const unsigned int SCR_WIDTH = 800;
-const unsigned int SCR_HEIGHT = 600;
+
+const unsigned int SCR_WIDTH = 1600;
+const unsigned int SCR_HEIGHT = 900;
 
 //void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 //void mouse_callback(GLFWwindow* window, double xpos, double ypos);
@@ -123,7 +126,7 @@ bool Engine::Initialize() {
 	MetaFilesManager::InitializeAssetMetaFiles("Resources");
 
 	// Test scene
-	testScene.Initialize();
+	Engine::testScene.Initialize();
 
 	// ---Set Up Lighting---
 	LightManager& lightManager = LightManager::getInstance();
@@ -162,7 +165,7 @@ bool Engine::Initialize() {
 }
 
 void Engine::Update() {
-	testScene.Update();
+	Engine::testScene.Update();
 }
 
 void Engine::StartDraw() {
@@ -213,6 +216,9 @@ void Engine::Shutdown() {
 bool Engine::IsRunning() {
 	return !WindowManager::ShouldClose();
 }
+
+
+
 
 //// process all input: query GLFW whether relevant keys are pressed/released this frame and react accordingly
 //// ---------------------------------------------------------------------------------------------------------

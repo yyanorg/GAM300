@@ -1,3 +1,6 @@
+// Forward declaration for WindowManager
+class WindowManager;
+
 class GUIManager {
 public:
 	static void Initialize();

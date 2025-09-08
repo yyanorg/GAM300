@@ -55,6 +55,14 @@ public:
     static bool IsWindowFocused();
     static void window_focus_callback(GLFWwindow* window, int focused);
 
+    // Scene framebuffer functions
+    static unsigned int CreateSceneFramebuffer(int width, int height);
+    static void DeleteSceneFramebuffer();
+    static unsigned int GetSceneTexture();
+    static void BeginSceneRender(int width, int height);
+    static void EndSceneRender();
+    static void RenderScene();
+
 private:
 
     static bool isFocused;

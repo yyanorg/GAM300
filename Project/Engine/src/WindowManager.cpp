@@ -3,6 +3,7 @@
 #include <glad/glad.h>
 
 #include "WindowManager.hpp"
+#include "Engine.h"
 
 #define UNREFERENCED_PARAMETER(P) (P)
 
@@ -19,6 +20,13 @@ GLint WindowManager::windowedWidth = 1600;   // Default windowed size
 GLint WindowManager::windowedHeight = 900;  // Default windowed size
 GLint WindowManager::windowedPosX = 0;      // Default window position
 GLint WindowManager::windowedPosY = 0;      // Default window position
+
+// Scene framebuffer static members
+static unsigned int sceneFrameBuffer = 0;
+static unsigned int sceneColorTexture = 0;
+static unsigned int sceneDepthTexture = 0;
+static int sceneWidth = 1280;
+static int sceneHeight = 720;
 
 bool WindowManager::Initialize(GLint _width, GLint _height, const char* _title) {
     WindowManager::width = _width;
@@ -194,4 +202,102 @@ bool WindowManager::IsWindowMinimized() {
 
 bool WindowManager::IsWindowFocused() {
     return isFocused;
+}
+
+// Scene framebuffer functions
+unsigned int WindowManager::CreateSceneFramebuffer(int width, int height) 
+{
+    // Delete existing framebuffer if it exists
+    if (sceneFrameBuffer != 0) {
+        DeleteSceneFramebuffer();
+    }
+    
+    sceneWidth = width;
+    sceneHeight = height;
+    
+    // Generate framebuffer
+    glGenFramebuffers(1, &sceneFrameBuffer);
+    glBindFramebuffer(GL_FRAMEBUFFER, sceneFrameBuffer);
+    
+    // Create color texture
+    glGenTextures(1, &sceneColorTexture);
+    glBindTexture(GL_TEXTURE_2D, sceneColorTexture);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, sceneColorTexture, 0);
+    
+    // Create depth texture
+    glGenTextures(1, &sceneDepthTexture);
+    glBindTexture(GL_TEXTURE_2D, sceneDepthTexture);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT24, width, height, 0, GL_DEPTH_COMPONENT, GL_FLOAT, nullptr);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, sceneDepthTexture, 0);
+    
+    // Check framebuffer completeness
+    if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
+        std::cerr << "WindowManager: Framebuffer not complete!" << std::endl;
+    }
+    
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    
+    return sceneFrameBuffer;
+}
+
+void WindowManager::DeleteSceneFramebuffer() 
+{
+    if (sceneColorTexture != 0) {
+        glDeleteTextures(1, &sceneColorTexture);
+        sceneColorTexture = 0;
+    }
+    if (sceneDepthTexture != 0) {
+        glDeleteTextures(1, &sceneDepthTexture);
+        sceneDepthTexture = 0;
+    }
+    if (sceneFrameBuffer != 0) {
+        glDeleteFramebuffers(1, &sceneFrameBuffer);
+        sceneFrameBuffer = 0;
+    }
+}
+
+unsigned int WindowManager::GetSceneTexture() 
+{
+    return sceneColorTexture;
+}
+
+void WindowManager::BeginSceneRender(int width, int height) 
+{
+    // Create or resize framebuffer if needed
+    if (sceneFrameBuffer == 0 || width != ::sceneWidth || height != ::sceneHeight) {
+        CreateSceneFramebuffer(width, height);
+    }
+    
+    // Bind framebuffer and set viewport
+    glBindFramebuffer(GL_FRAMEBUFFER, sceneFrameBuffer);
+    glViewport(0, 0, width, height);
+    
+    // Enable depth testing for 3D rendering
+    glEnable(GL_DEPTH_TEST);
+    
+    
+}
+
+void WindowManager::EndSceneRender() 
+{
+    // Unbind framebuffer (render to screen again)
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+}
+
+void WindowManager::RenderScene() 
+{
+    try {
+        Engine::testScene.Update();
+    } catch (const std::exception& e) {
+        std::cerr << "Exception in RenderScene: " << e.what() << std::endl;
+    }
 }

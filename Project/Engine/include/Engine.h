@@ -35,10 +35,12 @@ public:
     static void Draw();
     static void EndDraw();
 
+
     static bool IsRunning();
     static void Shutdown();
 
-private:
     // TEMP
-	static TestScene testScene;
+    static TestScene testScene;
+
+private:
 };
