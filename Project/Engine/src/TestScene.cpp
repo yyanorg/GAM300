@@ -40,7 +40,7 @@ void TestScene::Initialize() {
 	//secondaryECS.ClearAllEntities();
 
 	// GRAPHICS TEST CODE
-	mainECS.renderSystem->Initialise(SCR_WIDTH, SCR_HEIGHT);
+	mainECS.renderSystem->Initialise(WindowManager::GetWindowWidth(), WindowManager::GetWindowHeight());
 
 	// Loads model
 	//backpackModel = std::make_shared<Model>("Resources/Models/backpack/backpack.obj");

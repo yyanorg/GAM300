@@ -3,7 +3,7 @@
 #include "Graphics/RenderSystem.hpp"
 #include "ECS/ECSRegistry.hpp"
 #include <Graphics/Renderer.hpp>
-
+#include "WindowManager.hpp"
 
 bool RenderSystem::Initialise(int window_width, int window_height)
 {
@@ -104,7 +104,7 @@ void RenderSystem::Render()
 			// This allows the camera to move and look in the right direction based on its position and orientation.
 
 			glm::mat4 view = currentCamera->GetViewMatrix();
-			glm::mat4 projection = glm::perspective(glm::radians(currentCamera->Zoom), (float)screenWidth / (float)screenHeight, 0.1f, 100.0f);
+			glm::mat4 projection = glm::perspective(glm::radians(currentCamera->Zoom), (float)WindowManager::GetWindowWidth() / (float)WindowManager::GetWindowHeight(), 0.1f, 100.0f);
 
 			renderer.shader->setMat4("view", view);
 			renderer.shader->setMat4("projection", projection);

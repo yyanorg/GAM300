@@ -35,8 +35,8 @@ private:
 
 	//std::vector<RenderItem> renderQueue;
 	Camera* currentCamera = nullptr;
-	int screenWidth = 800;
-	int screenHeight = 600;
+	int screenWidth{};
+	int screenHeight{};
 
 	// Remove later
 	glm::vec3 pointLightPositions[4] = {
