@@ -37,9 +37,21 @@
   <ItemGroup>
     <ClCompile Include="src\GUIManager.cpp" />
     <ClCompile Include="src\main.cpp" />
+    <ClCompile Include="src\Panels\ConsolePanel.cpp" />
+    <ClCompile Include="src\Panels\EditorPanel.cpp" />
+    <ClCompile Include="src\Panels\ScenePanel.cpp" />
+    <ClCompile Include="src\Panels\InspectorPanel.cpp" />
+    <ClCompile Include="src\Panels\PanelManager.cpp" />
+    <ClCompile Include="src\Panels\SceneHierarchyPanel.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\GUIManager.hpp" />
+    <ClInclude Include="include\Panels\ConsolePanel.hpp" />
+    <ClInclude Include="include\Panels\EditorPanel.hpp" />
+    <ClInclude Include="include\Panels\ScenePanel.hpp" />
+    <ClInclude Include="include\Panels\InspectorPanel.hpp" />
+    <ClInclude Include="include\Panels\PanelManager.hpp" />
+    <ClInclude Include="include\Panels\SceneHierarchyPanel.hpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Engine\Engine.vcxproj">
@@ -255,7 +267,7 @@
       <AdditionalDependencies>$(CoreLibraryDependencies);%(AdditionalDependencies);Engine.lib;Game.lib;glfw3.lib;assimp-vc143-mt.lib;opengl32.lib;imgui.lib</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
-      <Command>xcopy "$(SolutionDir)Resources" "$(OutDir)Resources\" /E /I /Y &amp;&amp; xcopy "$(SolutionDir)Libraries\assimp\bin\x64\*.dll" "$(OutDir)" /Y</Command>
+      <Command>xcopy "$(SolutionDir)Resources" "$(OutDir)Resources\" /E /I /Y &amp;&amp; xcopy "$(SolutionDir)Libraries\assimp\bin\x64\*.dll" "$(OutDir)" /Y &amp;&amp; copy /Y "$(SolutionDir)imgui.ini" "$(OutDir)imgui.ini"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -294,7 +306,7 @@
       <AdditionalDependencies>$(CoreLibraryDependencies);%(AdditionalDependencies);Engine.lib;Game.lib;glfw3.lib;assimp-vc143-mt.lib;opengl32.lib;imgui.lib</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
-      <Command>xcopy "$(SolutionDir)Resources" "$(OutDir)Resources\" /E /I /Y &amp;&amp; xcopy "$(SolutionDir)Libraries\assimp\bin\x64\*.dll" "$(OutDir)" /Y</Command>
+      <Command>xcopy "$(SolutionDir)Resources" "$(OutDir)Resources\" /E /I /Y &amp;&amp; xcopy "$(SolutionDir)Libraries\assimp\bin\x64\*.dll" "$(OutDir)" /Y &amp;&amp; copy /Y "$(SolutionDir)imgui.ini" "$(OutDir)imgui.ini"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
