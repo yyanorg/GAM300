@@ -2,20 +2,14 @@
 #include <memory>
 #include <vector>
 #include "ECS/System.hpp"
-#include "Graphics/Model.h"
+#include "Model.h"
 #include "Graphics/Camera.h"
 #include "Graphics/ShaderClass.h"
 
-struct RenderItem {
-	std::shared_ptr<Model> Model;
-	glm::mat4 transform;
-	std::shared_ptr<Shader> Shader;
-};
-
-class RenderSystem : public System {
+class ModelRenderSystem : public System {
 public:
-	RenderSystem() = default;
-	~RenderSystem() = default;
+	ModelRenderSystem() = default;
+	~ModelRenderSystem() = default;
 
 	bool Initialise(int window_width, int window_height);
 	void applyLighting(Shader& shader);

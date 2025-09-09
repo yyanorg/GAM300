@@ -1,11 +1,11 @@
 #include "pch.h"
 #include "Graphics/LightManager.hpp"
-#include "Graphics/RenderSystem.hpp"
+#include "Graphics/Model/ModelSystem.hpp"
 #include "ECS/ECSRegistry.hpp"
-#include <Graphics/Renderer.hpp>
+#include <Graphics/Model/ModelComponent.hpp>
 #include "WindowManager.hpp"
 
-bool RenderSystem::Initialise(int window_width, int window_height)
+bool ModelSystem::Initialise(int window_width, int window_height)
 {
     screenWidth = window_width;
     screenHeight = window_height;
@@ -16,7 +16,7 @@ bool RenderSystem::Initialise(int window_width, int window_height)
 	return true;
 }
 
-void RenderSystem::applyLighting(Shader& shader) 
+void ModelSystem::applyLighting(Shader& shader)
 {
     LightManager& lightManager = LightManager::getInstance();
 
@@ -61,7 +61,7 @@ void RenderSystem::applyLighting(Shader& shader)
 //    renderQueue.clear();
 //}
 
-void RenderSystem::Clear(float r, float g, float b, float a)
+void ModelSystem::Clear(float r, float g, float b, float a)
 {
     glClearColor(r, g, b, a);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -72,18 +72,18 @@ void RenderSystem::Clear(float r, float g, float b, float a)
 //    renderQueue.push_back({ model, transform, shader });
 //}
 
-void RenderSystem::SetCamera(Camera* camera)
+void ModelSystem::SetCamera(Camera* camera)
 {
     currentCamera = camera;
 }
 
-void RenderSystem::Render()
+void ModelSystem::Render()
 {
 	ECSManager& ecsManager = ECSRegistry::GetInstance().GetActiveECSManager();
 	for (const auto& entity : entities) {
-		auto& renderer = ecsManager.GetComponent<Renderer>(entity);
-		renderer.shader->Activate();
-		renderer.shader->setMat4("model", renderer.transform);
+		auto& modelEntity = ecsManager.GetComponent<ModelComponent>(entity);
+		modelEntity.shader->Activate();
+		modelEntity.shader->setMat4("model", modelEntity.transform);
 
 		if (currentCamera)
 		{
@@ -106,17 +106,17 @@ void RenderSystem::Render()
 			glm::mat4 view = currentCamera->GetViewMatrix();
 			glm::mat4 projection = glm::perspective(glm::radians(currentCamera->Zoom), (float)WindowManager::GetWindowWidth() / (float)WindowManager::GetWindowHeight(), 0.1f, 100.0f);
 
-			renderer.shader->setMat4("view", view);
-			renderer.shader->setMat4("projection", projection);
-			renderer.shader->setVec3("cameraPos", currentCamera->Position);
+			modelEntity.shader->setMat4("view", view);
+			modelEntity.shader->setMat4("projection", projection);
+			modelEntity.shader->setVec3("cameraPos", currentCamera->Position);
 
 			// Material
 			//renderer.shader->setFloat("material.shininess", 32.0f);
 
-			applyLighting(*renderer.shader);
+			applyLighting(*modelEntity.shader);
         }
 
-		renderer.model->Draw(*renderer.shader, *currentCamera);
+		modelEntity.model->Draw(*modelEntity.shader, *currentCamera);
 	}
 
    // for (const auto& item : renderQueue)
@@ -159,12 +159,12 @@ void RenderSystem::Render()
    // }
 }
 
-void RenderSystem::EndFrame()
+void ModelSystem::EndFrame()
 {
 
 }
 
-void RenderSystem::Shutdown()
+void ModelSystem::Shutdown()
 {
     //renderQueue.clear();
 }
