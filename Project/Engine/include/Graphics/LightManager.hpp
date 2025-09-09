@@ -1,6 +1,7 @@
 #pragma once
 #include <vector>
 #include "glm/glm.hpp"
+#include "ECS/System.hpp"
 
 struct DirectionalLight {
     glm::vec3 direction = glm::vec3(-0.2f, -1.0f, -0.3f);
@@ -32,7 +33,7 @@ struct SpotLight {
     float outerCutOff = 0.966f; // cos(15 degrees)
 };
 
-class LightManager {
+class LightManager : public System {
 public:
     static LightManager& getInstance();
 

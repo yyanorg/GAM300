@@ -1,5 +1,5 @@
 #include "pch.h"
-#include "Graphics/Model.h"
+#include "Graphics/Model/Model.h"
 #include "Graphics/TextureManager.h"
 #include <iostream>
 #include "Asset Manager/AssetManager.hpp"

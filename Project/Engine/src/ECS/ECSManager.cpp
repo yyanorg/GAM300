@@ -1,6 +1,6 @@
 #include "pch.h"
 #include "ECS/ECSManager.hpp"
-#include <Graphics/Renderer.hpp>
+#include <Graphics/Model/ModelSystem.hpp>
 
 void ECSManager::Initialize() {
 	entityManager = std::make_unique<EntityManager>();
