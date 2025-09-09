@@ -6,10 +6,10 @@
 #include "Graphics/Camera.h"
 #include "Graphics/ShaderClass.h"
 
-class ModelRenderSystem : public System {
+class ModelSystem : public System {
 public:
-	ModelRenderSystem() = default;
-	~ModelRenderSystem() = default;
+	ModelSystem() = default;
+	~ModelSystem() = default;
 
 	bool Initialise(int window_width, int window_height);
 	void applyLighting(Shader& shader);

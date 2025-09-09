@@ -57,9 +57,9 @@
     <ClInclude Include="include\Graphics\EBO.h" />
     <ClInclude Include="include\Graphics\LightManager.hpp" />
     <ClInclude Include="include\Graphics\Mesh.h" />
-    <ClInclude Include="include\Graphics\Model.h" />
-    <ClInclude Include="include\Graphics\Renderer.hpp" />
-    <ClInclude Include="include\Graphics\RenderSystem.hpp" />
+    <ClInclude Include="include\Graphics\Model\Model.h" />
+    <ClInclude Include="include\Graphics\Model\ModelComponent.hpp" />
+    <ClInclude Include="include\Graphics\Model\ModelSystem.hpp" />
     <ClInclude Include="include\Graphics\ShaderClass.h" />
     <ClInclude Include="include\Graphics\stb_image.h" />
     <ClInclude Include="include\Graphics\Texture.h" />
@@ -93,7 +93,7 @@
     <ClCompile Include="src\Graphics\LightManager.cpp" />
     <ClCompile Include="src\Graphics\Mesh.cpp" />
     <ClCompile Include="src\Graphics\Model.cpp" />
-    <ClCompile Include="src\Graphics\RenderSystem.cpp" />
+    <ClCompile Include="src\Graphics\Model\ModelSystem.cpp" />
     <ClCompile Include="src\Graphics\ShaderClass.cpp" />
     <ClCompile Include="src\Graphics\Texture.cpp" />
     <ClCompile Include="src\Graphics\TextureManager.cpp" />
