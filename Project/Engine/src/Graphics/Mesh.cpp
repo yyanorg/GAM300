@@ -7,6 +7,21 @@ const unsigned int SCR_HEIGHT = 600;
 
 Mesh::Mesh(std::vector<Vertex>& vertices, std::vector<GLuint>& indices, std::vector<std::shared_ptr<Texture>>& textures) : vertices(vertices), indices(indices), textures(textures)
 {
+	setupMesh();
+}
+
+Mesh::Mesh(std::vector<Vertex>& vertices, std::vector<GLuint>& indices, std::shared_ptr<Material> mat) : vertices(vertices), indices(indices), material(mat)
+{
+	setupMesh();
+}
+
+Mesh::~Mesh()
+{
+	vao.Delete();
+}
+
+void Mesh::setupMesh()
+{
 	// Generates Vertex Array Object and binds it
 	vao.Bind();
 
@@ -29,54 +44,52 @@ Mesh::Mesh(std::vector<Vertex>& vertices, std::vector<GLuint>& indices, std::vec
 	ebo.Unbind();
 }
 
-Mesh::~Mesh()
-{
-	vao.Delete();
-}
-
 void Mesh::Draw(Shader& shader, Camera& camera)
 {
-	shader.Activate();
-	vao.Bind();
+    shader.Activate();
+    vao.Bind();
 
-	// Dynamic texture binding
-	unsigned int textureUnit = 0;
-	unsigned int numDiffuse = 0, numSpecular = 0;
+    // Set camera matrices
+    glm::mat4 view = camera.GetViewMatrix();
+    shader.setMat4("view", view);
 
-	for (unsigned int i = 0; i < textures.size() && textureUnit < 16; i++)
-	{
-		if (!textures[i]) continue;
+    glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
+    shader.setMat4("projection", projection);
+    shader.setVec3("cameraPos", camera.Position);
 
-		std::string num;
-		std::string type = textures[i]->type;
+    // Apply material if available
+    if (material) 
+    {
+        //material->debugPrintProperties();
+        material->applyToShader(shader);
+    }
+    else 
+    {
+        // Fallback to old texture system for backward compatibility
+        unsigned int textureUnit = 0;
+        unsigned int numDiffuse = 0, numSpecular = 0;
 
-		if (type == "diffuse") {
-			num = std::to_string(numDiffuse++);
-		}
-		else if (type == "specular") {
-			num = std::to_string(numSpecular++);
-		}
+        for (unsigned int i = 0; i < textures.size() && textureUnit < 16; i++)
+        {
+            if (!textures[i]) continue;
 
-		// Bind texture to current unit
-		glActiveTexture(GL_TEXTURE0 + textureUnit);
-		textures[i]->Bind();
+            std::string num;
+            std::string type = textures[i]->type;
 
-		// Set shader uniform
-		shader.setInt(("material." + type + num).c_str(), textureUnit);
+            if (type == "diffuse") {
+                num = std::to_string(numDiffuse++);
+            }
+            else if (type == "specular") {
+                num = std::to_string(numSpecular++);
+            }
 
-		textureUnit++;
-	}
-	// HOW ARE THE DIFFUSE AND SPECULAR MAP TEXTURE BEING ASSIGNED IN THE FRAGMENT SHADER
+            glActiveTexture(GL_TEXTURE0 + textureUnit);
+            textures[i]->Bind();
+            shader.setInt(("material." + type + num).c_str(), textureUnit);
+            textureUnit++;
+        }
+    }
 
-	glm::mat4 view = camera.GetViewMatrix();
-	shader.setMat4("view", view);
-
-	// Projection, for perspective projection
-	glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
-	shader.setMat4("projection", projection);
-
-	//shaderProgram.setVec3("light.position", lightPos);
-	shader.setVec3("cameraPos", camera.Position);
-
-	glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, 0);
+    glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, 0);
 }
+

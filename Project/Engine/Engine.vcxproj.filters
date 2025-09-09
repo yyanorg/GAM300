@@ -44,6 +44,7 @@
     <ClInclude Include="include\Graphics\LightManager.hpp" />
     <ClInclude Include="include\Serialization\Deserialization.hpp" />
     <ClInclude Include="include\Serialization\Deserialization.ipp" />
+    <ClInclude Include="include\Graphics\Material.hpp" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Engine.cpp" />
@@ -71,6 +72,7 @@
     <ClCompile Include="src\Asset Manager\GUID.cpp" />
     <ClCompile Include="src\Asset Manager\MetaFilesManager.cpp" />
     <ClCompile Include="src\TestScene.cpp" />
+    <ClCompile Include="src\Graphics\Material.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="cpp.hint" />
