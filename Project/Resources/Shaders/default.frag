@@ -99,6 +99,27 @@ vec3 getMaterialAmbient() {
     return material.ambient;
 }
 
+vec3 getNormalFromMap() {
+    if (material.hasNormalMap) {
+        vec3 tangentNormal = texture(material.normalMap, TexCoords).xyz * 2.0 - 1.0;
+        
+        // For simple normal mapping without tangent space
+        // This is a simplified approach - for full normal mapping you'd need tangent vectors
+        vec3 Q1 = dFdx(FragPos);
+        vec3 Q2 = dFdy(FragPos);
+        vec2 st1 = dFdx(TexCoords);
+        vec2 st2 = dFdy(TexCoords);
+        
+        vec3 N = normalize(Normal);
+        vec3 T = normalize(Q1 * st2.t - Q2 * st1.t);
+        vec3 B = -normalize(cross(N, T));
+        mat3 TBN = mat3(T, B, N);
+        
+        return normalize(TBN * tangentNormal);
+    }
+    return normalize(Normal);
+}
+
 vec3 calculateDirectionLight(DirectionLight light, vec3 normal, vec3 view_direction)
 {
     vec3 light_direction = normalize(-light.direction);
@@ -177,7 +198,7 @@ vec3 calculateSpotlight(Spotlight light, vec3 normal, vec3 fragPos, vec3 view_di
 
 void main()
 {
-    vec3 norm = normalize(Normal);
+    vec3 norm = getNormalFromMap();
     vec3 viewDir = normalize(cameraPos - FragPos);
     
     // Calculate lighting
