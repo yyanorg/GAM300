@@ -111,7 +111,7 @@ void RenderSystem::Render()
 			renderer.shader->setVec3("cameraPos", currentCamera->Position);
 
 			// Material
-			renderer.shader->setFloat("material.shininess", 32.0f);
+			//renderer.shader->setFloat("material.shininess", 32.0f);
 
 			applyLighting(*renderer.shader);
         }

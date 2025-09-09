@@ -108,6 +108,8 @@ void Material::applyToShader(Shader& shader) const
 
 void Material::bindTextures(Shader& shader) const
 {
+	// Reset texture units to be safe
+	glActiveTexture(GL_TEXTURE0);
 	unsigned int textureUnit = 0;
 
 	// Set texture availability flags
@@ -199,4 +201,12 @@ std::string Material::textureTypeToString(TextureType type) const
 	}
 }
 
-
+void Material::debugPrintProperties() const
+{
+	std::cout << "Material: " << m_name << std::endl;
+	std::cout << "  Ambient: (" << m_ambient.x << ", " << m_ambient.y << ", " << m_ambient.z << ")" << std::endl;
+	std::cout << "  Diffuse: (" << m_diffuse.x << ", " << m_diffuse.y << ", " << m_diffuse.z << ")" << std::endl;
+	std::cout << "  Specular: (" << m_specular.x << ", " << m_specular.y << ", " << m_specular.z << ")" << std::endl;
+	std::cout << "  Has Diffuse Map: " << hasTexture(TextureType::DIFFUSE) << std::endl;
+	std::cout << "  Has Specular Map: " << hasTexture(TextureType::SPECULAR) << std::endl;
+}

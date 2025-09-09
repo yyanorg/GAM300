@@ -18,6 +18,7 @@ enum class TextureType {
 };
 
 class Material {
+public:
 	Material();
 	Material(const std::string& name);
 	~Material() = default;
@@ -54,6 +55,7 @@ class Material {
 	static std::shared_ptr<Material> createPlastic(const glm::vec3& color);
 	static std::shared_ptr<Material> createWood();
 
+	void debugPrintProperties() const;
 private:
 	std::string m_name;
 
