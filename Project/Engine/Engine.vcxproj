@@ -35,7 +35,10 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="include\Graphics\GraphicsManager.hpp" />
+    <ClInclude Include="include\Graphics\IRenderItem.hpp" />
     <ClInclude Include="include\Graphics\Material.hpp" />
+    <ClInclude Include="include\Graphics\Model\ModelRenderItem.hpp" />
     <ClInclude Include="include\Serialization\Deserialization.hpp" />
     <ClInclude Include="include\Serialization\Deserialization.ipp" />
     <ClInclude Include="include\Asset Manager\Asset.hpp" />
@@ -75,6 +78,7 @@
     <ClInclude Include="src\Input\InputManager.hpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="src\Graphics\GraphicsManager.cpp" />
     <ClCompile Include="src\Graphics\Material.cpp" />
     <ClCompile Include="src\Serialization\Deserialization.cpp" />
     <ClCompile Include="src\Asset Manager\GUID.cpp" />
@@ -92,7 +96,7 @@
     <ClCompile Include="src\Graphics\EBO.cpp" />
     <ClCompile Include="src\Graphics\LightManager.cpp" />
     <ClCompile Include="src\Graphics\Mesh.cpp" />
-    <ClCompile Include="src\Graphics\Model.cpp" />
+    <ClCompile Include="src\Graphics\Model\Model.cpp" />
     <ClCompile Include="src\Graphics\Model\ModelSystem.cpp" />
     <ClCompile Include="src\Graphics\ShaderClass.cpp" />
     <ClCompile Include="src\Graphics\Texture.cpp" />

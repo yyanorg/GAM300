@@ -45,6 +45,9 @@
     <ClInclude Include="include\Serialization\Deserialization.hpp" />
     <ClInclude Include="include\Serialization\Deserialization.ipp" />
     <ClInclude Include="include\Graphics\Material.hpp" />
+    <ClInclude Include="include\Graphics\IRenderItem.hpp" />
+    <ClInclude Include="include\Graphics\Model\ModelRenderItem.hpp" />
+    <ClInclude Include="include\Graphics\GraphicsManager.hpp" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Engine.cpp" />
@@ -60,7 +63,7 @@
     <ClCompile Include="src\Graphics\Texture.cpp" />
     <ClCompile Include="src\Graphics\Mesh.cpp" />
     <ClCompile Include="src\Graphics\ShaderClass.cpp" />
-    <ClCompile Include="src\Graphics\Model.cpp" />
+    <ClCompile Include="src\Graphics\Model\Model.cpp" />
     <ClCompile Include="src\Math\Vector3D.cpp" />
     <ClCompile Include="src\Math\Matrix4x4.cpp" />
     <ClCompile Include="src\Math\Matrix3x3.cpp" />
@@ -73,6 +76,7 @@
     <ClCompile Include="src\Asset Manager\MetaFilesManager.cpp" />
     <ClCompile Include="src\TestScene.cpp" />
     <ClCompile Include="src\Graphics\Material.cpp" />
+    <ClCompile Include="src\Graphics\GraphicsManager.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="cpp.hint" />
