@@ -60,6 +60,8 @@ private:
 	 */
 	static void RenderMenuBar();
 
+	static void CreateEditorTheme();
+
 	static std::unique_ptr<PanelManager> s_PanelManager;
 	static bool s_DockspaceInitialized;
 };
