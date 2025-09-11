@@ -23,6 +23,8 @@ void GUIManager::Initialize() {
 		std::cerr << "Error: GLFW window is null. Cannot initialize ImGui." << std::endl;
 		return;
 	}
+    // Make sure the context is current
+    glfwMakeContextCurrent(window);
 
     // ImGui initialization
     IMGUI_CHECKVERSION();
@@ -33,12 +35,9 @@ void GUIManager::Initialize() {
 	//io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;    // Enable Multi-Viewport / Platform Windows
  //   io.BackendFlags |= ImGuiBackendFlags_PlatformHasViewports;
 	//io.BackendFlags |= ImGuiBackendFlags_RendererHasViewports;
-    // Set up dark theme
-    ImGui::StyleColorsDark();
-
-    // Make sure the context is current
-    glfwMakeContextCurrent(window);
     
+	CreateEditorTheme();
+
     // Initialize platform/renderer bindings
     ImGui_ImplGlfw_InitForOpenGL(window, true);
     ImGui_ImplOpenGL3_Init("#version 450");
@@ -197,4 +196,72 @@ void GUIManager::RenderMenuBar() {
 
         ImGui::EndMainMenuBar();
     }
+}
+
+void GUIManager::CreateEditorTheme() {
+    float main_scale = ImGui_ImplGlfw_GetContentScaleForMonitor(glfwGetPrimaryMonitor());
+    // Set up dark theme
+    ImGuiIO& io = ImGui::GetIO();
+    ImGui::StyleColorsDark();
+    ImGuiStyle& style = ImGui::GetStyle();
+    io.Fonts->Clear();
+    io.Fonts->AddFontFromFileTTF("Resources/Inter.ttf", 18.0f);
+    style.ScaleAllSizes(main_scale);        // Bake a fixed style scale
+    io.ConfigDpiScaleFonts = true;          // This will scale fonts but _NOT_ scale sizes/padding
+    io.ConfigDpiScaleViewports = true;
+
+    ImVec4* colors = style.Colors;
+
+    // General Background colors
+    colors[ImGuiCol_WindowBg] = ImVec4(0.16f, 0.16f, 0.16f, 1.0f);     // Dark gray
+    colors[ImGuiCol_ChildBg] = ImVec4(0.20f, 0.20f, 0.20f, 1.0f);      // Slightly lighter gray
+    colors[ImGuiCol_PopupBg] = ImVec4(0.22f, 0.22f, 0.22f, 1.0f);      // Popup background
+
+    // Borders
+    colors[ImGuiCol_Border] = ImVec4(0.28f, 0.28f, 0.28f, 1.0f);       // Medium gray border
+    colors[ImGuiCol_BorderShadow] = ImVec4(0.10f, 0.10f, 0.10f, 0.5f); // Subtle shadow
+
+    // Text
+    colors[ImGuiCol_Text] = ImVec4(0.90f, 0.90f, 0.90f, 1.0f);         // White text
+    colors[ImGuiCol_TextDisabled] = ImVec4(0.50f, 0.50f, 0.50f, 1.0f); // Gray text for disabled items
+
+    // Headers
+    colors[ImGuiCol_Header] = ImVec4(0.26f, 0.26f, 0.26f, 1.0f);       // Header background
+    colors[ImGuiCol_HeaderHovered] = ImVec4(0.30f, 0.30f, 0.30f, 1.0f); // Hovered header
+    colors[ImGuiCol_HeaderActive] = ImVec4(0.33f, 0.33f, 0.33f, 1.0f); // Active header
+
+    // Buttons
+    colors[ImGuiCol_Button] = ImVec4(0.26f, 0.26f, 0.26f, 1.0f);       // Button background
+    colors[ImGuiCol_ButtonHovered] = ImVec4(0.30f, 0.30f, 0.30f, 1.0f); // Hovered button
+    colors[ImGuiCol_ButtonActive] = ImVec4(0.33f, 0.33f, 0.33f, 1.0f); // Active button
+
+    // Tabs
+    colors[ImGuiCol_Tab] = ImVec4(0.20f, 0.20f, 0.20f, 1.0f);          // Tab background
+    colors[ImGuiCol_TabHovered] = ImVec4(0.30f, 0.30f, 0.30f, 1.0f);   // Hovered tab
+    colors[ImGuiCol_TabActive] = ImVec4(0.26f, 0.26f, 0.26f, 1.0f);    // Active tab
+    colors[ImGuiCol_TabUnfocused] = ImVec4(0.18f, 0.18f, 0.18f, 1.0f); // Unfocused tab
+    colors[ImGuiCol_TabUnfocusedActive] = ImVec4(0.22f, 0.22f, 0.22f, 1.0f); // Unfocused active tab
+
+    // Title Bar (for windows)
+    colors[ImGuiCol_TitleBg] = ImVec4(0.16f, 0.16f, 0.16f, 1.0f);      // Title background
+    colors[ImGuiCol_TitleBgActive] = ImVec4(0.20f, 0.20f, 0.20f, 1.0f); // Active title background
+    colors[ImGuiCol_TitleBgCollapsed] = ImVec4(0.16f, 0.16f, 0.16f, 1.0f); // Collapsed title
+
+    // Menu Bar
+    colors[ImGuiCol_MenuBarBg] = ImVec4(0.20f, 0.20f, 0.20f, 1.0f);    // Menu bar background
+
+    // Scrollbars
+    colors[ImGuiCol_ScrollbarBg] = ImVec4(0.16f, 0.16f, 0.16f, 1.0f);  // Scrollbar background
+    colors[ImGuiCol_ScrollbarGrab] = ImVec4(0.28f, 0.28f, 0.28f, 1.0f); // Scrollbar grab
+    colors[ImGuiCol_ScrollbarGrabHovered] = ImVec4(0.33f, 0.33f, 0.33f, 1.0f); // Hovered grab
+    colors[ImGuiCol_ScrollbarGrabActive] = ImVec4(0.36f, 0.36f, 0.36f, 1.0f); // Active grab
+
+    // Slider
+    colors[ImGuiCol_SliderGrab] = ImVec4(0.28f, 0.28f, 0.28f, 1.0f);   // Slider grab
+    colors[ImGuiCol_SliderGrabActive] = ImVec4(0.33f, 0.33f, 0.33f, 1.0f); // Active slider
+
+    // Rounding settings for a polished look
+    style.WindowRounding = 4.0f;
+    style.FrameRounding = 4.0f;
+    style.GrabRounding = 4.0f;
 }
