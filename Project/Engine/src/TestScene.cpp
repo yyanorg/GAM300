@@ -18,13 +18,18 @@ void TestScene::Initialize() {
 	// Create an entity with a Renderer component in the main ECS manager
 	Entity testEntt = mainECS.CreateEntity();
 	mainECS.AddComponent<Renderer>(testEntt, Renderer{});
+	mainECS.AddComponent<Transform>(testEntt, Transform{});
 	Renderer& renderer = mainECS.GetComponent<Renderer>(testEntt);
 	renderer.model = AssetManager::GetInstance().GetAsset<Model>("Resources/Models/backpack/backpack.obj");
 	renderer.shader = AssetManager::GetInstance().GetAsset<Shader>("Resources/Shaders/default");
-	glm::mat4 transform = glm::mat4(1.0f);
-	transform = glm::translate(transform, glm::vec3(0.0f, 0.0f, 0.0f));
-	transform = glm::scale(transform, glm::vec3(0.1f, 0.1f, 0.1f));
-	renderer.transform = transform;
+	Transform& transform = mainECS.GetComponent<Transform>(testEntt);
+	transform.position = { 0, 0, 0 };
+	transform.scale = { .1, .1, .1 };
+	transform.rotation = { 0, 0, 0 };
+	//glm::mat4 transform = glm::mat4(1.0f);
+	//transform = glm::translate(transform, glm::vec3(0.0f, 0.0f, 0.0f));
+	//transform = glm::scale(transform, glm::vec3(0.1f, 0.1f, 0.1f));
+	//renderer.transform = transform;
 
 	//mainECS.CreateEntity();
 	//mainECS.CreateEntity();
@@ -40,6 +45,7 @@ void TestScene::Initialize() {
 	//secondaryECS.ClearAllEntities();
 
 	// GRAPHICS TEST CODE
+	mainECS.transformSystem->Initialise();
 	mainECS.renderSystem->Initialise(SCR_WIDTH, SCR_HEIGHT);
 
 	// Loads model
@@ -69,6 +75,8 @@ void TestScene::Update() {
 	lastFrame = currentFrame;
 
 	processInput();
+
+	mainECS.transformSystem->update();
 
 	//RenderSystem::getInstance().BeginFrame();
 	mainECS.renderSystem->Clear();

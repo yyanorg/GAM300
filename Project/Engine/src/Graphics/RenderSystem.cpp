@@ -83,7 +83,7 @@ void RenderSystem::Render()
 	for (const auto& entity : entities) {
 		auto& renderer = ecsManager.GetComponent<Renderer>(entity);
 		renderer.shader->Activate();
-		renderer.shader->setMat4("model", renderer.transform);
+		renderer.shader->setMat4("model", ecsManager.GetComponent<Transform>(entity).model);
 
 		if (currentCamera)
 		{

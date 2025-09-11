@@ -6,6 +6,7 @@
 #include "ComponentManager.hpp"
 #include "SystemManager.hpp"
 #include <Graphics/RenderSystem.hpp>
+#include <TransformSystem.hpp>
 
 class ECSManager {
 public:
@@ -79,7 +80,8 @@ public:
 	}
 
 	// STORE SHARED POINTERS TO SYSTEMS HERE
-	// e.g., std::shared_ptr<TransformSystem> transformSystem;
+	// e.g., 
+	std::shared_ptr<TransformSystem> transformSystem;
 	std::shared_ptr<RenderSystem> renderSystem;
 
 private:
