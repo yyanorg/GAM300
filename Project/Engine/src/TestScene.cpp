@@ -165,7 +165,7 @@ void TestScene::DrawLightCubes()
 		lightShader->setMat4("model", lightModel);
 		lightShader->setMat4("view", view);
 		lightShader->setMat4("projection", projection);
-		lightShader->setVec3("lightColor", pointLights[i].diffuse); // Use light color
+		//lightShader->setVec3("lightColor", pointLights[i].diffuse); // Use light color
 
 		lightCubeMesh->Draw(*lightShader, camera);
 	}

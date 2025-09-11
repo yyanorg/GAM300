@@ -81,6 +81,12 @@ bool Shader::LoadAsset(const std::string& path) {
 	glDeleteShader(vertexShader);
 	glDeleteShader(fragmentShader);
 
+	if (success) 
+	{
+		std::cout << "Successfully loaded shader ID: " << ID << " from: " << path << std::endl;
+		return true;
+	}
+
 	return true;
 }
 
@@ -212,7 +218,7 @@ GLint Shader::getUniformLocation(const std::string& name)
 	// Debug output for missing uniforms (can be removed later)
 	if (location == -1)
 	{
-		std::cout << "Warning: Uniform '" << name << "' not found in shader" << std::endl;
+		std::cout << "Warning: Uniform '" << name << "' not found in shader ID: " << ID << std::endl;
 	}
 
 	return location;
