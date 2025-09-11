@@ -97,10 +97,10 @@ void Material::applyToShader(Shader& shader) const
 	shader.setFloat("material.shininess", m_shininess);
 	shader.setFloat("material.opacity", m_opacity);
 
-	// Apply PBR properties
-	shader.setFloat("material.metallic", m_metallic);
-	shader.setFloat("material.roughness", m_roughness);
-	shader.setFloat("material.ao", m_ao);
+	// Apply PBR properties - For Future Use
+	//shader.setFloat("material.metallic", m_metallic);
+	//shader.setFloat("material.roughness", m_roughness);
+	//shader.setFloat("material.ao", m_ao);
 
 	// Bind textures
 	bindTextures(shader);
@@ -116,11 +116,12 @@ void Material::bindTextures(Shader& shader) const
 	shader.setBool("material.hasDiffuseMap", hasTexture(TextureType::DIFFUSE));
 	shader.setBool("material.hasSpecularMap", hasTexture(TextureType::SPECULAR));
 	shader.setBool("material.hasNormalMap", hasTexture(TextureType::NORMAL));
-	shader.setBool("material.hasHeightMap", hasTexture(TextureType::HEIGHT));
+	shader.setBool("material.hasEmissiveMap", hasTexture(TextureType::EMISSIVE));
+	// For Future Use
+	/*shader.setBool("material.hasHeightMap", hasTexture(TextureType::HEIGHT));
 	shader.setBool("material.hasAOMap", hasTexture(TextureType::AMBIENT_OCCLUSION));
 	shader.setBool("material.hasMetallicMap", hasTexture(TextureType::METALLIC));
-	shader.setBool("material.hasRoughnessMap", hasTexture(TextureType::ROUGHNESS));
-	shader.setBool("material.hasEmissiveMap", hasTexture(TextureType::EMISSIVE));
+	shader.setBool("material.hasRoughnessMap", hasTexture(TextureType::ROUGHNESS));*/
 
 	// Bind each texture type
 	for (const auto& [type, texture] : m_textures)

@@ -78,6 +78,8 @@ bool WindowManager::Initialize(GLint _width, GLint _height, const char* _title) 
         std::cout << "Failed to initialize GLAD" << std::endl;
         return -1;
     }
+    glEnable(GL_DEPTH_TEST);
+    glViewport(0, 0, _width, _height);
 
     return true;
 }

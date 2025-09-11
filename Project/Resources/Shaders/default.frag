@@ -10,28 +10,28 @@ struct Material {
     float opacity;
     
     // PBR properties
-    float metallic;
-    float roughness;
-    float ao;
+    //float metallic;
+    //float roughness;
+    //float ao;
     
     // Texture maps
     sampler2D diffuseMap;
     sampler2D specularMap;
     sampler2D normalMap;
-    sampler2D heightMap;
-    sampler2D aoMap;
-    sampler2D metallicMap;
-    sampler2D roughnessMap;
+    //sampler2D heightMap;
+    //sampler2D aoMap;
+    //sampler2D metallicMap;
+    //sampler2D roughnessMap;
     sampler2D emissiveMap;
     
     // Texture availability flags
     bool hasDiffuseMap;
     bool hasSpecularMap;
     bool hasNormalMap;
-    bool hasHeightMap;
-    bool hasAOMap;
-    bool hasMetallicMap;
-    bool hasRoughnessMap;
+    //bool hasHeightMap;
+    //bool hasAOMap;
+    //bool hasMetallicMap;
+    //bool hasRoughnessMap;
     bool hasEmissiveMap;
 };
 

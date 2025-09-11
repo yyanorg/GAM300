@@ -1,5 +1,5 @@
 #pragma once
-#include "Graphics/RenderSystem.hpp"
+#include "Graphics/GraphicsManager.hpp"
 
 class TestScene {
 public:
@@ -7,6 +7,8 @@ public:
 	void Update();
 	void Exit();
 	void processInput();
+
+	void DrawLightCubes();
 
 	const unsigned int SCR_WIDTH = 800;
 	const unsigned int SCR_HEIGHT = 600;

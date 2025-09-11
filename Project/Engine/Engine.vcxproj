@@ -35,7 +35,10 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="include\Graphics\GraphicsManager.hpp" />
+    <ClInclude Include="include\Graphics\IRenderComponent.hpp" />
     <ClInclude Include="include\Graphics\Material.hpp" />
+    <ClInclude Include="include\Graphics\Model\ModelRenderComponent.hpp" />
     <ClInclude Include="include\Serialization\Deserialization.hpp" />
     <ClInclude Include="include\Serialization\Deserialization.ipp" />
     <ClInclude Include="include\Asset Manager\Asset.hpp" />
@@ -57,9 +60,8 @@
     <ClInclude Include="include\Graphics\EBO.h" />
     <ClInclude Include="include\Graphics\LightManager.hpp" />
     <ClInclude Include="include\Graphics\Mesh.h" />
-    <ClInclude Include="include\Graphics\Model.h" />
-    <ClInclude Include="include\Graphics\Renderer.hpp" />
-    <ClInclude Include="include\Graphics\RenderSystem.hpp" />
+    <ClInclude Include="include\Graphics\Model\Model.h" />
+    <ClInclude Include="include\Graphics\Model\ModelSystem.hpp" />
     <ClInclude Include="include\Graphics\ShaderClass.h" />
     <ClInclude Include="include\Graphics\stb_image.h" />
     <ClInclude Include="include\Graphics\Texture.h" />
@@ -75,6 +77,7 @@
     <ClInclude Include="src\Input\InputManager.hpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="src\Graphics\GraphicsManager.cpp" />
     <ClCompile Include="src\Graphics\Material.cpp" />
     <ClCompile Include="src\Serialization\Deserialization.cpp" />
     <ClCompile Include="src\Asset Manager\GUID.cpp" />
@@ -92,8 +95,8 @@
     <ClCompile Include="src\Graphics\EBO.cpp" />
     <ClCompile Include="src\Graphics\LightManager.cpp" />
     <ClCompile Include="src\Graphics\Mesh.cpp" />
-    <ClCompile Include="src\Graphics\Model.cpp" />
-    <ClCompile Include="src\Graphics\RenderSystem.cpp" />
+    <ClCompile Include="src\Graphics\Model\Model.cpp" />
+    <ClCompile Include="src\Graphics\Model\ModelSystem.cpp" />
     <ClCompile Include="src\Graphics\ShaderClass.cpp" />
     <ClCompile Include="src\Graphics\Texture.cpp" />
     <ClCompile Include="src\Graphics\TextureManager.cpp" />

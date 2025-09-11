@@ -2,12 +2,15 @@
 #include "TestScene.hpp"
 #include "Input/InputManager.hpp"
 #include "ECS/ECSRegistry.hpp"
-#include <Graphics/Renderer.hpp>
 #include "Asset Manager/AssetManager.hpp"
 
 void TestScene::Initialize() {
 	// Initialization code for the test scene
 	
+	// Initialize GraphicsManager first
+	GraphicsManager& gfxManager = GraphicsManager::GetInstance();
+	gfxManager.Initialize(WindowManager::GetWindowWidth(), WindowManager::GetWindowHeight());
+
 	// WOON LI TEST CODE
 	// Temp testing code - create some ECS managers and entities
 	ECSRegistry::GetInstance().CreateECSManager("MainWorld");
@@ -17,14 +20,12 @@ void TestScene::Initialize() {
 
 	// Create an entity with a Renderer component in the main ECS manager
 	Entity testEntt = mainECS.CreateEntity();
-	mainECS.AddComponent<Renderer>(testEntt, Renderer{});
-	Renderer& renderer = mainECS.GetComponent<Renderer>(testEntt);
-	renderer.model = AssetManager::GetInstance().GetAsset<Model>("Resources/Models/backpack/backpack.obj");
-	renderer.shader = AssetManager::GetInstance().GetAsset<Shader>("Resources/Shaders/default");
 	glm::mat4 transform = glm::mat4(1.0f);
 	transform = glm::translate(transform, glm::vec3(0.0f, 0.0f, 0.0f));
 	transform = glm::scale(transform, glm::vec3(0.1f, 0.1f, 0.1f));
-	renderer.transform = transform;
+	mainECS.AddComponent<ModelRenderComponent>(testEntt, ModelRenderComponent{ AssetManager::GetInstance().GetAsset<Model>("Resources/Models/backpack/backpack.obj"),
+		AssetManager::GetInstance().GetAsset<Shader>("Resources/Shaders/default"),
+		transform});
 
 	//mainECS.CreateEntity();
 	//mainECS.CreateEntity();
@@ -40,7 +41,7 @@ void TestScene::Initialize() {
 	//secondaryECS.ClearAllEntities();
 
 	// GRAPHICS TEST CODE
-	mainECS.renderSystem->Initialise(WindowManager::GetWindowWidth(), WindowManager::GetWindowHeight());
+	mainECS.modelSystem->Initialise();
 
 	// Loads model
 	//backpackModel = std::make_shared<Model>("Resources/Models/backpack/backpack.obj");
@@ -53,7 +54,7 @@ void TestScene::Initialize() {
 	lightCubeMesh = std::make_shared<Mesh>(lightVertices, lightIndices, emptyTextures);
 
 	// Sets camera
-	mainECS.renderSystem->SetCamera(&camera);
+	gfxManager.SetCamera(&camera);
 
 	// Initialize systems.
 
@@ -63,6 +64,7 @@ void TestScene::Initialize() {
 void TestScene::Update() {
 	// Update logic for the test scene
 	ECSManager& mainECS = ECSRegistry::GetInstance().GetECSManager("MainWorld");
+	GraphicsManager& gfxManager = GraphicsManager::GetInstance();
 
 	float currentFrame = (float)glfwGetTime();
 	deltaTime = currentFrame - lastFrame;
@@ -71,26 +73,27 @@ void TestScene::Update() {
 	processInput();
 
 	//RenderSystem::getInstance().BeginFrame();
-	mainECS.renderSystem->Clear();
+	gfxManager.BeginFrame();
+	gfxManager.Clear();
 
 	//glm::mat4 transform = glm::mat4(1.0f);
 	//transform = glm::translate(transform, glm::vec3(0.0f, 0.0f, 0.0f));
 	//transform = glm::scale(transform, glm::vec3(0.1f, 0.1f, 0.1f));
 	//RenderSystem::getInstance().Submit(backpackModel, transform, shader);
 
-	mainECS.renderSystem->Render();
-	mainECS.renderSystem->EndFrame();
-
-	// Draw light cube
-	const glm::vec3* lightPositions = mainECS.renderSystem->getPointLightPositions();
-	for (unsigned int i = 0; i < 4; i++)
+	gfxManager.SetCamera(&camera);
+	if (mainECS.modelSystem)
 	{
-		glm::mat4 lightModel = glm::mat4(1.0f);
-		lightModel = glm::translate(lightModel, lightPositions[i]);
-		lightShader->setMat4("model", lightModel);
-		lightCubeMesh->Draw(*lightShader, camera);
+		mainECS.modelSystem->Update();
 	}
 
+	gfxManager.Render();
+
+	// 5. Draw light cubes manually (temporary - you can make this a system later)
+	DrawLightCubes();
+
+	// 6. End frame
+	gfxManager.EndFrame();
 	// Update systems.
 }
 
@@ -134,4 +137,36 @@ void TestScene::processInput()
 	lastY = ypos;
 
 	camera.ProcessMouseMovement((float)xoffset, (float)yoffset);
+}
+
+void TestScene::DrawLightCubes() 
+{
+	// Get light positions from LightManager instead of renderSystem
+	LightManager& lightManager = LightManager::getInstance();
+	const auto& pointLights = lightManager.getPointLights();
+
+	// Draw light cubes at point light positions
+	for (size_t i = 0; i < pointLights.size() && i < 4; i++) {
+		lightShader->Activate();
+
+		// Set up matrices for light cube
+		glm::mat4 lightModel = glm::mat4(1.0f);
+		lightModel = glm::translate(lightModel, pointLights[i].position);
+		lightModel = glm::scale(lightModel, glm::vec3(0.2f)); // Make them smaller
+
+		// Set up view and projection matrices
+		glm::mat4 view = camera.GetViewMatrix();
+		glm::mat4 projection = glm::perspective(
+			glm::radians(camera.Zoom),
+			(float)WindowManager::GetWindowWidth() / (float)WindowManager::GetWindowHeight(),
+			0.1f, 100.0f
+		);
+
+		lightShader->setMat4("model", lightModel);
+		lightShader->setMat4("view", view);
+		lightShader->setMat4("projection", projection);
+		//lightShader->setVec3("lightColor", pointLights[i].diffuse); // Use light color
+
+		lightCubeMesh->Draw(*lightShader, camera);
+	}
 }
