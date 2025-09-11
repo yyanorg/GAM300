@@ -2,8 +2,6 @@
 #include "TestScene.hpp"
 #include "Input/InputManager.hpp"
 #include "ECS/ECSRegistry.hpp"
-#include <Graphics/GraphicsManager.hpp>
-#include <Graphics/Model/ModelComponent.hpp>
 #include "Asset Manager/AssetManager.hpp"
 
 void TestScene::Initialize() {
@@ -22,14 +20,12 @@ void TestScene::Initialize() {
 
 	// Create an entity with a Renderer component in the main ECS manager
 	Entity testEntt = mainECS.CreateEntity();
-	mainECS.AddComponent<ModelComponent>(testEntt, ModelComponent{});
-	ModelComponent& modelComp = mainECS.GetComponent<ModelComponent>(testEntt);
-	modelComp.model = AssetManager::GetInstance().GetAsset<Model>("Resources/Models/backpack/backpack.obj");
-	modelComp.shader = AssetManager::GetInstance().GetAsset<Shader>("Resources/Shaders/default");
 	glm::mat4 transform = glm::mat4(1.0f);
 	transform = glm::translate(transform, glm::vec3(0.0f, 0.0f, 0.0f));
 	transform = glm::scale(transform, glm::vec3(0.1f, 0.1f, 0.1f));
-	modelComp.transform = transform;
+	mainECS.AddComponent<ModelRenderComponent>(testEntt, ModelRenderComponent{ AssetManager::GetInstance().GetAsset<Model>("Resources/Models/backpack/backpack.obj"),
+		AssetManager::GetInstance().GetAsset<Shader>("Resources/Shaders/default"),
+		transform});
 
 	//mainECS.CreateEntity();
 	//mainECS.CreateEntity();

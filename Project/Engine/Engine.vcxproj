@@ -36,9 +36,9 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\Graphics\GraphicsManager.hpp" />
-    <ClInclude Include="include\Graphics\IRenderItem.hpp" />
+    <ClInclude Include="include\Graphics\IRenderComponent.hpp" />
     <ClInclude Include="include\Graphics\Material.hpp" />
-    <ClInclude Include="include\Graphics\Model\ModelRenderItem.hpp" />
+    <ClInclude Include="include\Graphics\Model\ModelRenderComponent.hpp" />
     <ClInclude Include="include\Serialization\Deserialization.hpp" />
     <ClInclude Include="include\Serialization\Deserialization.ipp" />
     <ClInclude Include="include\Asset Manager\Asset.hpp" />
@@ -61,7 +61,6 @@
     <ClInclude Include="include\Graphics\LightManager.hpp" />
     <ClInclude Include="include\Graphics\Mesh.h" />
     <ClInclude Include="include\Graphics\Model\Model.h" />
-    <ClInclude Include="include\Graphics\Model\ModelComponent.hpp" />
     <ClInclude Include="include\Graphics\Model\ModelSystem.hpp" />
     <ClInclude Include="include\Graphics\ShaderClass.h" />
     <ClInclude Include="include\Graphics\stb_image.h" />

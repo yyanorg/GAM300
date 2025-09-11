@@ -1,11 +1,12 @@
 #include "pch.h"
 #include "Graphics/GraphicsManager.hpp"
-#include "Graphics/Model/ModelRenderItem.hpp"
-#include "Graphics/LightManager.hpp"
-#include "Graphics/Camera.h"
-#include "Graphics/ShaderClass.h"
-#include "Graphics/Model/Model.h"
 #include "WindowManager.hpp"
+
+GraphicsManager& GraphicsManager::GetInstance()
+{
+	static GraphicsManager instance;
+	return instance;
+}
 
 bool GraphicsManager::Initialize(int window_width, int window_height)
 {
@@ -40,9 +41,9 @@ void GraphicsManager::SetCamera(Camera* camera)
 	currentCamera = camera;
 }
 
-void GraphicsManager::Submit(std::unique_ptr<IRenderItem> renderItem)
+void GraphicsManager::Submit(std::unique_ptr<IRenderComponent> renderItem)
 {
-	if (renderItem && renderItem->IsVisible())
+	if (renderItem && renderItem->isVisible)
 	{
 		renderQueue.push_back(std::move(renderItem));
 	}
@@ -52,7 +53,7 @@ void GraphicsManager::SubmitModel(std::shared_ptr<Model> model, std::shared_ptr<
 {
 	if (model && shader) 
 	{
-		auto renderItem = std::make_unique<ModelRenderItem>(model, shader, transform);
+		auto renderItem = std::make_unique<ModelRenderComponent>(model, shader, transform);
 		Submit(std::move(renderItem));
 	}
 }
@@ -67,8 +68,8 @@ void GraphicsManager::Render()
 
 	// Sort render queue by render order (lower numbers render first)
 	std::sort(renderQueue.begin(), renderQueue.end(),
-		[](const std::unique_ptr<IRenderItem>& a, const std::unique_ptr<IRenderItem>& b) {
-			return a->GetRenderOrder() < b->GetRenderOrder();
+		[](const std::unique_ptr<IRenderComponent>& a, const std::unique_ptr<IRenderComponent>& b) {
+			return a->renderOrder < b->renderOrder;
 		});
 
 	// Render all items in the queue
@@ -76,7 +77,7 @@ void GraphicsManager::Render()
 	{
 		// Cast to ModelRenderItem since that's what we have for now
 		// Later you can add a switch statement for different types
-		const ModelRenderItem* modelItem = dynamic_cast<const ModelRenderItem*>(renderItem.get());
+		const ModelRenderComponent* modelItem = dynamic_cast<const ModelRenderComponent*>(renderItem.get());
 		if (modelItem) 
 		{
 			RenderModel(*modelItem);
@@ -84,9 +85,9 @@ void GraphicsManager::Render()
 	}
 }
 
-void GraphicsManager::RenderModel(const ModelRenderItem& item)
+void GraphicsManager::RenderModel(const ModelRenderComponent& item)
 {
-	if (!item.IsVisible() || !item.model || !item.shader) 
+	if (!item.isVisible || !item.model || !item.shader) 
 	{
 		return;
 	}

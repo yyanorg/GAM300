@@ -2,7 +2,7 @@
 #include "Graphics/LightManager.hpp"
 #include "Graphics/Model/ModelSystem.hpp"
 #include "ECS/ECSRegistry.hpp"
-#include <Graphics/Model/ModelComponent.hpp>
+#include <Graphics/Model/ModelRenderComponent.hpp>
 #include "WindowManager.hpp"
 #include "Graphics/GraphicsManager.hpp"
 
@@ -20,7 +20,7 @@ void ModelSystem::Update()
     // Submit all visible models to the graphics manager
     for (const auto& entity : entities) 
     {
-        auto& modelComponent = ecsManager.GetComponent<ModelComponent>(entity);
+        auto& modelComponent = ecsManager.GetComponent<ModelRenderComponent>(entity);
 
         if (modelComponent.isVisible && modelComponent.model && modelComponent.shader) 
         {

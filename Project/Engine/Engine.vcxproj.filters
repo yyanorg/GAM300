@@ -40,13 +40,12 @@
     <ClInclude Include="include\Asset Manager\GUID.hpp" />
     <ClInclude Include="include\Asset Manager\MetaFilesManager.hpp" />
     <ClInclude Include="include\TestScene.hpp" />
-    <ClInclude Include="include\Graphics\Model\ModelComponent.hpp" />
     <ClInclude Include="include\Graphics\LightManager.hpp" />
     <ClInclude Include="include\Serialization\Deserialization.hpp" />
     <ClInclude Include="include\Serialization\Deserialization.ipp" />
     <ClInclude Include="include\Graphics\Material.hpp" />
-    <ClInclude Include="include\Graphics\IRenderItem.hpp" />
-    <ClInclude Include="include\Graphics\Model\ModelRenderItem.hpp" />
+    <ClInclude Include="include\Graphics\IRenderComponent.hpp" />
+    <ClInclude Include="include\Graphics\Model\ModelRenderComponent.hpp" />
     <ClInclude Include="include\Graphics\GraphicsManager.hpp" />
   </ItemGroup>
   <ItemGroup>

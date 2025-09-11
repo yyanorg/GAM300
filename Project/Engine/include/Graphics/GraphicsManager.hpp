@@ -2,12 +2,12 @@
 #include <vector>
 #include <memory>
 #include <glm/glm.hpp>
-#include "IRenderItem.hpp"
-
-class Camera;
-class Shader;
-class Model;
-class ModelRenderItem;
+#include "IRenderComponent.hpp"
+#include "Graphics/LightManager.hpp"
+#include "Graphics/Camera.h"
+#include "Graphics/ShaderClass.h"
+#include "Graphics/Model/Model.h"
+#include "Model/ModelRenderComponent.hpp"
 
 class GraphicsManager {
 public:
@@ -27,7 +27,7 @@ public:
     Camera* GetCurrentCamera() const { return currentCamera; }
 
     // Render queue management
-    void Submit(std::unique_ptr<IRenderItem> renderItem);
+    void Submit(std::unique_ptr<IRenderComponent> renderItem);
     void SubmitModel(std::shared_ptr<Model> model, std::shared_ptr<Shader> shader, const glm::mat4& transform);
 
     // Main rendering
@@ -41,11 +41,11 @@ private:
     GraphicsManager& operator=(const GraphicsManager&) = delete;
 
     // Private rendering methods
-    void RenderModel(const ModelRenderItem& item);
+    void RenderModel(const ModelRenderComponent& item);
     void ApplyLighting(Shader& shader);
     void SetupMatrices(Shader& shader, const glm::mat4& modelMatrix);
 
-    std::vector<std::unique_ptr<IRenderItem>> renderQueue;
+    std::vector<std::unique_ptr<IRenderComponent>> renderQueue;
     Camera* currentCamera = nullptr;
     int screenWidth = 0;
     int screenHeight = 0;
