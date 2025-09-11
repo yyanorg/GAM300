@@ -110,7 +110,7 @@ void GUIManager::SetupDefaultPanels() {
     // Register core editor panels
     s_PanelManager->RegisterPanel(std::make_shared<SceneHierarchyPanel>());
     s_PanelManager->RegisterPanel(std::make_shared<InspectorPanel>());
-    /*s_PanelManager->RegisterPanel(std::make_shared<ConsolePanel>());*/
+    s_PanelManager->RegisterPanel(std::make_shared<ConsolePanel>());
     s_PanelManager->RegisterPanel(std::make_shared<ScenePanel>());
 
     std::cout << "[GUIManager] Default panels registered" << std::endl;
