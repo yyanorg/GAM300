@@ -1,23 +1,20 @@
 #include "Panels/ConsolePanel.hpp"
 #include "imgui.h"
 #include <algorithm>
+#include "pch.h"
 
 // Include Engine logging to access the GUI queue
 #include "Logging.hpp"
 
 ConsolePanel::ConsolePanel() 
     : EditorPanel("Console", true) {
-    // Add some initial log messages
-    AddLog("Editor initialized successfully", 0);
-    AddLog("Loading assets...", 0);
-    AddLog("Some non-critical warning", 1);
+    ENGINE_LOG_INFO("Console initializing...");
 }
 
 void ConsolePanel::OnImGuiRender() {
-    // IMPORTANT: Drain Engine log queue FIRST, before any ImGui rendering
-    // This ensures new messages appear immediately
+    // Drain Engine log queue FIRST, before any ImGui rendering, to ensure new messages appear immediately
     DrainEngineLogQueue();
-
+    
     if (ImGui::Begin(m_Name.c_str(), &m_IsOpen)) {
         // Filter checkboxes
         ImGui::Checkbox("Info", &m_ShowInfo); ImGui::SameLine();
@@ -59,10 +56,18 @@ void ConsolePanel::OnImGuiRender() {
             if (show) {
                 ImGui::PushStyleColor(ImGuiCol_Text, color);
                 
+                // Format timestamp to readable time
+                std::time_t timeT = static_cast<std::time_t>(entry.timestamp);
+                std::tm timeInfo;
+                char timeBuffer[100];
+                localtime_s(&timeInfo, &timeT);
+
+                std::strftime(timeBuffer, sizeof(timeBuffer), "%m/%d/%Y %I:%M:%S %p", &timeInfo);
+                
                 // Add timestamp and level prefix
                 const char* levelStr = (entry.level == 0) ? "[INFO]" : 
                                       (entry.level == 1) ? "[WARN]" : "[ERROR]";
-                ImGui::Text("[%.2f] %s %s", entry.timestamp, levelStr, entry.message.c_str());
+                ImGui::Text("[%s] %s %s", timeBuffer, levelStr, entry.message.c_str());
                 
                 ImGui::PopStyleColor();
             }
@@ -108,14 +113,10 @@ void ConsolePanel::DrainEngineLogQueue() {
 
     // Drain all pending messages from the queue
     while (logQueue.TryPop(message)) {
-        // Convert Engine log level to our console panel level
-        int level = ConvertEngineLogLevel(message.level);
-
-        // Use the timestamp provided by the engine message
         // Create log entry
         LogEntry entry;
         entry.message = message.text;
-        entry.level = level;
+        entry.level = ConvertEngineLogLevel(message.level);
         entry.timestamp = message.timestamp;
 
         m_LogEntries.push_back(entry);
