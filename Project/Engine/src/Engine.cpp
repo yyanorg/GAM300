@@ -5,6 +5,7 @@
 #include "Graphics/LightManager.hpp"
 
 #include "Engine.h"
+#include "Logging.hpp"
 
 #include "WindowManager.hpp"
 #include "Input/InputManager.hpp"
@@ -29,10 +30,15 @@ const unsigned int SCR_HEIGHT = 900;
 //std::shared_ptr<Mesh> lightCubeMesh;
 
 bool Engine::Initialize() {
+	// Initialize logging system first
+	if (!EngineLogging::Initialize()) {
+		std::cerr << "[Engine] Failed to initialize logging system!" << std::endl;
+		return false;
+	}
 
 	WindowManager::Initialize(SCR_WIDTH, SCR_HEIGHT, TEMP::windowTitle.c_str());
 
-    std::cout << "[Engine] Initializing..." << std::endl;
+    ENGINE_LOG_INFO("Engine initializing...");
 
 	// WOON LI TEST CODE
 	InputManager::Initialize(WindowManager::getWindow());
@@ -72,6 +78,12 @@ bool Engine::Initialize() {
 
 	//lightManager.printLightStats();
 
+	ENGINE_LOG_INFO("Engine initialization completed successfully");
+	
+	// Add some test logging messages
+	ENGINE_LOG_WARN("This is a test warning message");
+	ENGINE_LOG_ERROR("This is a test error message");
+	
 	return true;
 }
 
@@ -94,6 +106,8 @@ void Engine::EndDraw() {
 }
 
 void Engine::Shutdown() {
+	ENGINE_LOG_INFO("Engine shutdown started");
+    EngineLogging::Shutdown();
     std::cout << "[Engine] Shutdown complete" << std::endl;
 }
 

@@ -2,6 +2,9 @@
 #include "imgui.h"
 #include <algorithm>
 
+// Include Engine logging to access the GUI queue
+#include "Logging.hpp"
+
 ConsolePanel::ConsolePanel() 
     : EditorPanel("Console", true) {
     // Add some initial log messages
@@ -11,6 +14,10 @@ ConsolePanel::ConsolePanel()
 }
 
 void ConsolePanel::OnImGuiRender() {
+    // IMPORTANT: Drain Engine log queue FIRST, before any ImGui rendering
+    // This ensures new messages appear immediately
+    DrainEngineLogQueue();
+
     if (ImGui::Begin(m_Name.c_str(), &m_IsOpen)) {
         // Filter checkboxes
         ImGui::Checkbox("Info", &m_ShowInfo); ImGui::SameLine();
@@ -35,7 +42,7 @@ void ConsolePanel::OnImGuiRender() {
             ImVec4 color = ImVec4(1.0f, 1.0f, 1.0f, 1.0f); // Default white
 
             switch (entry.level) {
-                case 0: // Info
+                case 0: // Info/Debug/Trace
                     show = m_ShowInfo;
                     color = ImVec4(0.8f, 0.8f, 0.8f, 1.0f); // Light gray
                     break;
@@ -43,7 +50,7 @@ void ConsolePanel::OnImGuiRender() {
                     show = m_ShowWarnings;
                     color = ImVec4(1.0f, 1.0f, 0.0f, 1.0f); // Yellow
                     break;
-                case 2: // Error
+                case 2: // Error/Critical
                     show = m_ShowErrors;
                     color = ImVec4(1.0f, 0.4f, 0.4f, 1.0f); // Red
                     break;
@@ -91,6 +98,49 @@ void ConsolePanel::OnImGuiRender() {
         }
     }
     ImGui::End();
+}
+
+void ConsolePanel::DrainEngineLogQueue() {
+    // Get the GUI log queue from the Engine
+    EngineLogging::GuiLogQueue& logQueue = EngineLogging::GetGuiLogQueue();
+
+    EngineLogging::LogMessage message("", EngineLogging::LogLevel::Info);
+
+    // Drain all pending messages from the queue
+    while (logQueue.TryPop(message)) {
+        // Convert Engine log level to our console panel level
+        int level = ConvertEngineLogLevel(message.level);
+
+        // Use the timestamp provided by the engine message
+        // Create log entry
+        LogEntry entry;
+        entry.message = message.text;
+        entry.level = level;
+        entry.timestamp = message.timestamp;
+
+        m_LogEntries.push_back(entry);
+
+        // Keep only the most recent entries
+        if (m_LogEntries.size() > static_cast<size_t>(m_MaxLogEntries)) {
+            m_LogEntries.erase(m_LogEntries.begin());
+        }
+    }
+}
+
+int ConsolePanel::ConvertEngineLogLevel(EngineLogging::LogLevel level) {
+    switch (level) {
+        case EngineLogging::LogLevel::Trace:
+        case EngineLogging::LogLevel::Debug:
+        case EngineLogging::LogLevel::Info:
+            return 0; // Info
+        case EngineLogging::LogLevel::Warn:
+            return 1; // Warning
+        case EngineLogging::LogLevel::Error:
+        case EngineLogging::LogLevel::Critical:
+            return 2; // Error
+        default:
+            return 0; // Default to Info
+    }
 }
 
 void ConsolePanel::AddLog(const std::string& message, int level) {
