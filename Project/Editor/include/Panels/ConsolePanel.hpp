@@ -2,6 +2,14 @@
 
 #include "EditorPanel.hpp"
 #include "pch.h"
+
+// Forward declaration to avoid including the full Engine logging header
+namespace EngineLogging {
+    enum class LogLevel;
+    struct LogMessage;
+    class GuiLogQueue;
+}
+
 /**
  * @brief Console panel for displaying logs, warnings, and errors.
  * 
@@ -33,9 +41,19 @@ public:
 private:
     struct LogEntry {
         std::string message;
-        int level; // 0=Info, 1=Warning, 2=Error
-        float timestamp;
+        int level = 0; // 0=Info, 1=Warning, 2=Error
+        double timestamp = 0.0f;
     };
+
+    /**
+     * @brief Drain messages from the Engine logging queue and add them to the console.
+     */
+    void DrainEngineLogQueue();
+
+    /**
+     * @brief Convert Engine log level to console panel level.
+     */
+    int ConvertEngineLogLevel(EngineLogging::LogLevel level);
 
     std::vector<LogEntry> m_LogEntries;
     bool m_ShowInfo = true;
