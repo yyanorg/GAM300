@@ -69,14 +69,14 @@ namespace EngineLogging {
     ENGINE_API GuiLogQueue& GetGuiLogQueue();
     
     // Logging functions
-    void LogTrace(const std::string& message);
-    void LogDebug(const std::string& message);
-    void LogInfo(const std::string& message);
-    void LogWarn(const std::string& message);
-    void LogError(const std::string& message);
-    void LogCritical(const std::string& message);
+    void ENGINE_API LogTrace(const std::string& message);
+    void ENGINE_API LogDebug(const std::string& message);
+    void ENGINE_API LogInfo(const std::string& message);
+    void ENGINE_API LogWarn(const std::string& message);
+    void ENGINE_API LogError(const std::string& message);
+    void ENGINE_API LogCritical(const std::string& message);
     
-} // namespace EngineLogging
+}
 
 // Convenience macros for Engine logging
 #define ENGINE_LOG_TRACE(msg)    EngineLogging::LogTrace(msg)

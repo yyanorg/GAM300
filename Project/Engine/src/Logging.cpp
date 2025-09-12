@@ -1,24 +1,16 @@
 #include "pch.h"
 #include "Logging.hpp"
 
-#if __has_include("spdlog/spdlog.h")
-    #include "spdlog/spdlog.h" 
-    #include "spdlog/sinks/stdout_color_sinks.h"
-    #include "spdlog/sinks/basic_file_sink.h"
-    #include "spdlog/sinks/base_sink.h"
-    #include "spdlog/pattern_formatter.h"
-    #define SPDLOG_AVAILABLE 1
-#else
-    #define SPDLOG_AVAILABLE 0
-    #include <iostream>
-    #include <fstream>
-#endif
+#include "spdlog/spdlog.h" 
+#include "spdlog/sinks/stdout_color_sinks.h"
+#include "spdlog/sinks/basic_file_sink.h"
+#include "spdlog/sinks/base_sink.h"
+#include "spdlog/pattern_formatter.h"
 
 #include <filesystem>
 
 namespace EngineLogging {
-        
-#if SPDLOG_AVAILABLE
+       
     // Custom GUI sink that pushes to thread-safe queue
     class GuiSink : public spdlog::sinks::base_sink<std::mutex> {
     public:
@@ -40,6 +32,7 @@ namespace EngineLogging {
             
             // Format the message
             std::string message = fmt::to_string(msg.payload);
+            assert(!message.empty() && "Log message should not be empty");
             
             // Push to GUI queue
             m_GuiQueue.Push(LogMessage(message, level));
@@ -55,20 +48,24 @@ namespace EngineLogging {
 
     // Static instances
     static std::shared_ptr<spdlog::logger> s_Logger;
-#endif
+
     static GuiLogQueue s_GuiLogQueue;
     static bool s_Initialized = false;
 
     // GuiLogQueue implementation
     void GuiLogQueue::Push(const LogMessage& message) {
+        assert(!message.text.empty() && "Log message text cannot be empty");
+        
         std::lock_guard<std::mutex> lock(m_Mutex);
         
         // Remove old messages if queue is full
         while (m_Queue.size() >= MAX_QUEUE_SIZE) {
+            assert(!m_Queue.empty() && "Queue should not be empty when size >= MAX_QUEUE_SIZE");
             m_Queue.pop();
         }
         
         m_Queue.push(message);
+        assert(m_Queue.size() <= MAX_QUEUE_SIZE && "Queue size should not exceed maximum");
     }
 
     bool GuiLogQueue::TryPop(LogMessage& message) {
@@ -78,6 +75,7 @@ namespace EngineLogging {
         }
         
         message = m_Queue.front();
+        assert(!message.text.empty() && "Popped message should not be empty");
         m_Queue.pop();
         return true;
     }
@@ -86,6 +84,7 @@ namespace EngineLogging {
         std::lock_guard<std::mutex> lock(m_Mutex);
         std::queue<LogMessage> empty;
         m_Queue.swap(empty);
+        assert(m_Queue.empty() && "Queue should be empty after clear");
     }
 
     size_t GuiLogQueue::Size() const {
@@ -102,30 +101,36 @@ namespace EngineLogging {
         try {
             // Create logs directory if it doesn't exist
             std::filesystem::create_directories("logs");
+            assert(std::filesystem::exists("logs") && "Logs directory should exist after creation");
 
-#if SPDLOG_AVAILABLE
             // Create sinks
             auto console_sink = std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
+            assert(console_sink != nullptr && "Console sink creation failed");
             console_sink->set_level(spdlog::level::trace);
             console_sink->set_pattern("[%Y-%m-%d %H:%M:%S.%e] [%l] %v");
 
             auto file_sink = std::make_shared<spdlog::sinks::basic_file_sink_mt>("logs/engine.log", true);
+            assert(file_sink != nullptr && "File sink creation failed");
             file_sink->set_level(spdlog::level::trace);
             file_sink->set_pattern("[%Y-%m-%d %H:%M:%S.%e] [%l] %v");
 
             auto gui_sink = std::make_shared<GuiSink>(s_GuiLogQueue);
+            assert(gui_sink != nullptr && "GUI sink creation failed");
             gui_sink->set_level(spdlog::level::trace);
-            gui_sink->set_pattern("%v"); // Simple pattern for GUI, no timestamp needed
+            gui_sink->set_pattern("%v");
 
             // Create logger with multiple sinks
             std::vector<spdlog::sink_ptr> sinks{ console_sink, file_sink, gui_sink };
+            assert(!sinks.empty() && "Sinks vector should not be empty");
+            
             s_Logger = std::make_shared<spdlog::logger>("engine", sinks.begin(), sinks.end());
+            assert(s_Logger != nullptr && "Logger creation failed");
+            
             s_Logger->set_level(spdlog::level::trace);
             s_Logger->flush_on(spdlog::level::warn);
 
             // Register as default logger
             spdlog::set_default_logger(s_Logger);
-#endif
 
             s_Initialized = true;
             
@@ -148,32 +153,31 @@ namespace EngineLogging {
 
         LogInfo("Shutting down logging system");
         
-#if SPDLOG_AVAILABLE
         if (s_Logger) {
             s_Logger->flush();
             s_Logger.reset();
         }
         
         spdlog::shutdown();
-#endif
         s_GuiLogQueue.Clear();
         s_Initialized = false;
     }
 
     GuiLogQueue& GetGuiLogQueue() {
+        assert(s_Initialized && "Logging system must be initialized before accessing GUI queue");
         return s_GuiLogQueue;
     }
 
     // Internal helper for logging
     void LogInternal(LogLevel level, const std::string& message) {
+        assert(!message.empty() && "Log message cannot be empty");
+        
         if (!s_Initialized) {
             return;
         }
 
-        // Always add to GUI queue for the console panel
-        s_GuiLogQueue.Push(LogMessage(message, level));
-
-#if SPDLOG_AVAILABLE
+        assert(s_Logger != nullptr && "Logger should be valid when initialized");
+        
         if (s_Logger) {
             switch (level) {
                 case LogLevel::Trace:    s_Logger->trace(message); break;
@@ -184,19 +188,6 @@ namespace EngineLogging {
                 case LogLevel::Critical: s_Logger->critical(message); break;
             }
         }
-#else
-        // Fallback to console output when spdlog isn't available
-        const char* levelStr = "";
-        switch (level) {
-            case LogLevel::Trace:    levelStr = "[TRACE]"; break;
-            case LogLevel::Debug:    levelStr = "[DEBUG]"; break;
-            case LogLevel::Info:     levelStr = "[INFO]"; break;
-            case LogLevel::Warn:     levelStr = "[WARN]"; break;
-            case LogLevel::Error:    levelStr = "[ERROR]"; break;
-            case LogLevel::Critical: levelStr = "[CRITICAL]"; break;
-        }
-        std::cout << levelStr << " " << message << std::endl;
-#endif
     }
 
     // Public logging functions
@@ -224,4 +215,4 @@ namespace EngineLogging {
         LogInternal(LogLevel::Critical, message);
     }
 
-} // namespace EngineLogging
+}

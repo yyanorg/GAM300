@@ -1,5 +1,6 @@
 #include "Panels/SceneHierarchyPanel.hpp"
 #include "imgui.h"
+#include "pch.h"
 
 SceneHierarchyPanel::SceneHierarchyPanel() 
     : EditorPanel("Scene Hierarchy", true) {
@@ -50,6 +51,8 @@ void SceneHierarchyPanel::OnImGuiRender() {
 }
 
 void SceneHierarchyPanel::DrawEntityNode(const std::string& entityName, int entityId, bool hasChildren) {
+    assert(!entityName.empty() && "Entity name cannot be empty");
+    
     ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_SpanAvailWidth;
     
     if (!hasChildren) {

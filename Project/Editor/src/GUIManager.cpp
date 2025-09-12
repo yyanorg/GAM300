@@ -19,16 +19,15 @@ bool GUIManager::s_DockspaceInitialized = false;
 
 void GUIManager::Initialize() {
     GLFWwindow* window = WindowManager::getWindow();
-	if (!window) {
-		std::cerr << "Error: GLFW window is null. Cannot initialize ImGui." << std::endl;
-		return;
-	}
+    assert(window != nullptr && "GLFW window must be valid before initializing ImGui");
+    
     // Make sure the context is current
     glfwMakeContextCurrent(window);
 
     // ImGui initialization
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
+    
     ImGuiIO& io = ImGui::GetIO(); (void)io;
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;  // Enable Keyboard Controls
 	io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;      // Enable Docking
@@ -47,6 +46,8 @@ void GUIManager::Initialize() {
 
     // Initialize panel manager and default panels
     s_PanelManager = std::make_unique<PanelManager>();
+    assert(s_PanelManager != nullptr && "Failed to create PanelManager");
+    
     SetupDefaultPanels();
 
     std::cout << "[GUIManager] Initialized with panel-based architecture" << std::endl;
@@ -54,6 +55,8 @@ void GUIManager::Initialize() {
 
 
 void GUIManager::Render() {
+    assert(s_PanelManager != nullptr && "PanelManager must be initialized before rendering");
+    
     // Start ImGui frame
     ImGui_ImplOpenGL3_NewFrame();
     ImGui_ImplGlfw_NewFrame();
@@ -74,6 +77,7 @@ void GUIManager::Render() {
     ImGuiIO& io = ImGui::GetIO();
     if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable) {
         GLFWwindow* backup_current_context = glfwGetCurrentContext();
+        assert(backup_current_context != nullptr && "No current GLFW context");
         
         glfwMakeContextCurrent(backup_current_context);
     }
@@ -105,13 +109,24 @@ void GUIManager::Exit() {
 }
 
 void GUIManager::SetupDefaultPanels() {
-    if (!s_PanelManager) return;
+    assert(s_PanelManager != nullptr && "PanelManager must be initialized before setting up panels");
 
     // Register core editor panels
-    s_PanelManager->RegisterPanel(std::make_shared<SceneHierarchyPanel>());
-    s_PanelManager->RegisterPanel(std::make_shared<InspectorPanel>());
-    s_PanelManager->RegisterPanel(std::make_shared<ConsolePanel>());
-    s_PanelManager->RegisterPanel(std::make_shared<ScenePanel>());
+    auto sceneHierarchyPanel = std::make_shared<SceneHierarchyPanel>();
+    assert(sceneHierarchyPanel != nullptr && "Failed to create SceneHierarchyPanel");
+    s_PanelManager->RegisterPanel(sceneHierarchyPanel);
+    
+    auto inspectorPanel = std::make_shared<InspectorPanel>();
+    assert(inspectorPanel != nullptr && "Failed to create InspectorPanel");
+    s_PanelManager->RegisterPanel(inspectorPanel);
+    
+    auto consolePanel = std::make_shared<ConsolePanel>();
+    assert(consolePanel != nullptr && "Failed to create ConsolePanel");
+    s_PanelManager->RegisterPanel(consolePanel);
+    
+    auto scenePanel = std::make_shared<ScenePanel>();
+    assert(scenePanel != nullptr && "Failed to create ScenePanel");
+    s_PanelManager->RegisterPanel(scenePanel);
 
     std::cout << "[GUIManager] Default panels registered" << std::endl;
 }
