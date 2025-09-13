@@ -96,27 +96,25 @@ GUID_128 MetaFilesManager::GetGUID128FromAssetFile(const std::string& assetPath)
 
 bool MetaFilesManager::MetaFileUpdated(const std::string& assetPath) {
 	std::filesystem::path metaPath = std::filesystem::path(assetPath + ".meta");
-	if (std::filesystem::exists(metaPath)) {
-		std::ifstream metaFS(metaPath);
-		std::string line{};
-		bool hasVersion = false;
-		while (std::getline(metaFS, line)) {
-			size_t pos = line.find("Version:");
-			if (pos != std::string::npos) {
-				hasVersion = true;
-				int version = std::stoi(line.substr(pos + 9));
-				if (version != CURRENT_METADATA_VERSION) {
-					return false;
-				}
-				else return true;
-			}
-		}
+	assert(std::filesystem::exists(metaPath) && "Meta file does not exist.");
 
-		if (!hasVersion) {
-			// If no version found, consider it outdated.
-			return false;
+	std::ifstream metaFS(metaPath);
+	std::string line{};
+	bool hasVersion = false;
+	while (std::getline(metaFS, line)) {
+		size_t pos = line.find("Version:");
+		if (pos != std::string::npos) {
+			hasVersion = true;
+			int version = std::stoi(line.substr(pos + 9));
+			if (version != CURRENT_METADATA_VERSION) {
+				return false;
+			}
+			else return true;
 		}
 	}
+
+	// If no version found, consider it outdated.
+	return false;
 }
 
 GUID_128 MetaFilesManager::UpdateMetaFile(const std::string& assetPath) {

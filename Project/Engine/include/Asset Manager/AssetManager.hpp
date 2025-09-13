@@ -48,7 +48,7 @@ public:
 			guid = MetaFilesManager::GenerateMetaFile(filePath);
 		}
 		else {
-			GUID_128 guid = MetaFilesManager::GetGUID128FromAssetFile(filePath);
+			guid = MetaFilesManager::GetGUID128FromAssetFile(filePath);
 		}
 
 		auto it = assetMap.find(guid);
