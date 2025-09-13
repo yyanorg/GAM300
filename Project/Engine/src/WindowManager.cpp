@@ -21,6 +21,9 @@ GLint WindowManager::windowedHeight = 900;  // Default windowed size
 GLint WindowManager::windowedPosX = 0;      // Default window position
 GLint WindowManager::windowedPosY = 0;      // Default window position
 
+double WindowManager::deltaTime = 0.0;
+double WindowManager::lastFrameTime = 0.0;
+
 // Scene framebuffer static members
 static unsigned int sceneFrameBuffer = 0;
 static unsigned int sceneColorTexture = 0;
@@ -204,6 +207,36 @@ bool WindowManager::IsWindowMinimized() {
 
 bool WindowManager::IsWindowFocused() {
     return isFocused;
+}
+
+void WindowManager::updateDeltaTime() {
+    const double targetDeltaTime = 1.0 / 60.0; // cap at 60fps
+
+    double currentTime = glfwGetTime();
+    double frameTime = currentTime - lastFrameTime;
+
+    double remainingTime = targetDeltaTime - frameTime;
+
+    //Limit to 60 FPS?
+    //// Sleep only if we have at least 5 ms remaining
+    //if (remainingTime > 0.005) {
+    //    std::this_thread::sleep_for(std::chrono::milliseconds((int)((remainingTime - 0.001) * 1000)));
+    //}
+    //// Busy-wait the last few milliseconds
+    //while ((glfwGetTime() - lastFrameTime) < targetDeltaTime) {}
+
+    // Update deltaTime
+    currentTime = glfwGetTime();
+    deltaTime = currentTime - lastFrameTime;
+    lastFrameTime = currentTime;
+    glfwSwapInterval(1);
+}
+
+double WindowManager::getDeltaTime() {
+    return deltaTime;
+}
+double WindowManager::getFps() {
+    return deltaTime > 0.0 ? 1.0 / deltaTime : 0.0;
 }
 
 // Scene framebuffer functions

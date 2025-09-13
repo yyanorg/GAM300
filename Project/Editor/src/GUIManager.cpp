@@ -83,6 +83,13 @@ void GUIManager::Render() {
     }
 
     // Render ImGui
+    ImGui::SetNextWindowPos(ImVec2(10, 150), ImGuiCond_Once);
+    ImGui::Begin("Performance");
+    ImGui::Text("FPS: %.1f", WindowManager::getFps());
+    ImGui::Text("Delta Time: %.3f ms", WindowManager::getDeltaTime() * 1000.0);
+    ImGui::End();
+
+    // Render ImGui on top of the scene
     ImGui::Render();
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
