@@ -199,15 +199,6 @@ bool WindowManager::IsWindowFocused() {
     return isFocused;
 }
 
-//void WindowManager::updateDeltaTime() {
-//    double currentFrameTime = glfwGetTime();
-//    deltaTime = currentFrameTime - lastFrameTime;
-//    lastFrameTime = currentFrameTime;
-//
-//    //glfwMakeContextCurrent(ptrWindow);
-//    //glfwSwapInterval(1);    //enable Vsync (only limited to your own monitor)
-//}
-
 void WindowManager::updateDeltaTime() {
     const double targetDeltaTime = 1.0 / 60.0; // cap at 60fps
 
@@ -216,17 +207,19 @@ void WindowManager::updateDeltaTime() {
 
     double remainingTime = targetDeltaTime - frameTime;
 
-    // Sleep only if we have at least 5 ms remaining
-    if (remainingTime > 0.005) {
-        std::this_thread::sleep_for(std::chrono::milliseconds((int)((remainingTime - 0.001) * 1000)));
-    }
-    // Busy-wait the last few milliseconds
-    while ((glfwGetTime() - lastFrameTime) < targetDeltaTime) {}
+    //Limit to 60 FPS?
+    //// Sleep only if we have at least 5 ms remaining
+    //if (remainingTime > 0.005) {
+    //    std::this_thread::sleep_for(std::chrono::milliseconds((int)((remainingTime - 0.001) * 1000)));
+    //}
+    //// Busy-wait the last few milliseconds
+    //while ((glfwGetTime() - lastFrameTime) < targetDeltaTime) {}
 
     // Update deltaTime
     currentTime = glfwGetTime();
     deltaTime = currentTime - lastFrameTime;
     lastFrameTime = currentTime;
+    glfwSwapInterval(1);
 }
 
 double WindowManager::getDeltaTime() {
