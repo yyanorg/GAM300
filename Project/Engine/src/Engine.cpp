@@ -86,7 +86,7 @@ bool Engine::Initialize() {
 }
 
 void Engine::Update() {
-	SceneManager::GetInstance().UpdateScene(0.02); // REPLACE WITH DT LATER
+	SceneManager::GetInstance().UpdateScene(WindowManager::getDeltaTime()); // REPLACE WITH DT LATER
 }
 
 void Engine::StartDraw() {

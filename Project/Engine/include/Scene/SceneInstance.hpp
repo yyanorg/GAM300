@@ -12,7 +12,7 @@ public:
 	void Update(double dt) override;
 	void Draw() override;
 	void Exit() override;
-	void processInput(); // temp function
+	void processInput(float deltaTime); // temp function
 
 	void DrawLightCubes();
 
@@ -24,9 +24,6 @@ public:
 	float lastX = SCR_WIDTH / 2.0f;
 	float lastY = SCR_HEIGHT / 2.0f;
 	bool firstMouse = true;
-
-	float deltaTime = 0.0f;
-	float lastFrame = 0.0f;
 
 	std::vector<Vertex> lightVertices = {
 		// Back face (4 vertices: 0-3)

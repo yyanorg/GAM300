@@ -58,11 +58,7 @@ void SceneInstance::Update(double dt) {
 	// Update logic for the test scene
 	//ECSManager& mainECS = ECSRegistry::GetInstance().GetECSManager(scenePath);
 
-	float currentFrame = (float)glfwGetTime();
-	deltaTime = currentFrame - lastFrame;
-	lastFrame = currentFrame;
-
-	processInput();
+	processInput((float)WindowManager::getDeltaTime());
 
 	// Update systems.
 }
@@ -104,7 +100,7 @@ void SceneInstance::Exit() {
 	std::cout << "TestScene Exited" << std::endl;
 }
 
-void SceneInstance::processInput()
+void SceneInstance::processInput(float deltaTime)
 {
 	if (InputManager::GetKeyDown(GLFW_KEY_ESCAPE))
 		glfwSetWindowShouldClose(WindowManager::getWindow(), true);
