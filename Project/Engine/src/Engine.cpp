@@ -7,17 +7,15 @@
 #include "Engine.h"
 #include "Logging.hpp"
 
-#include "WindowManager.hpp"
-#include "Input/InputManager.hpp"
-#include "Asset Manager/MetaFilesManager.hpp"
-#include "ECS/ECSRegistry.hpp"
-#include "TestScene.hpp"
+#include <WindowManager.hpp>
+#include <Input/InputManager.hpp>
+#include <Asset Manager/MetaFilesManager.hpp>
+#include <ECS/ECSRegistry.hpp>
+#include <Scene/SceneManager.hpp>
 
 namespace TEMP {
 	std::string windowTitle = "GAM300";
 }
-
-TestScene Engine::testScene;
 
 const unsigned int SCR_WIDTH = 1600;
 const unsigned int SCR_HEIGHT = 900;
@@ -44,8 +42,8 @@ bool Engine::Initialize() {
 	InputManager::Initialize(WindowManager::getWindow());
 	MetaFilesManager::InitializeAssetMetaFiles("Resources");
 
-	// Test scene
-	Engine::testScene.Initialize();
+	// Load test scene
+	SceneManager::GetInstance().LoadTestScene();
 
 	// ---Set Up Lighting---
 	LightManager& lightManager = LightManager::getInstance();
@@ -88,14 +86,14 @@ bool Engine::Initialize() {
 }
 
 void Engine::Update() {
-	Engine::testScene.Update();
+	SceneManager::GetInstance().UpdateScene(0.02); // REPLACE WITH DT LATER
 }
 
 void Engine::StartDraw() {
 }
 
-void Engine::Draw() 
-{
+void Engine::Draw() {
+	SceneManager::GetInstance().DrawScene();
 	
 }
 

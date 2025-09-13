@@ -7,7 +7,7 @@
 
 Texture::Texture() : ID(0), type(type), unit(0) {}
 
-Texture::Texture(const char* image, const char* texType, GLuint slot, GLenum format, GLenum pixelType)
+Texture::Texture(const char* image, const char* texType, GLuint slot, GLenum pixelType)
 {
 	// Assigns the type of the texture ot the texture object
 	type = texType;
@@ -19,6 +19,26 @@ Texture::Texture(const char* image, const char* texType, GLuint slot, GLenum for
 	stbi_set_flip_vertically_on_load(true);
 	// Reads the image from a file and stores it in bytes
 	unsigned char* bytes = stbi_load(image, &widthImg, &heightImg, &numColCh, 0);
+
+	// Get the image format and set it accordingly.
+	GLenum format;
+	switch (numColCh) {
+		case 1:
+			format = GL_RED;
+			break;
+		case 2:
+			format = GL_RG;
+			break;
+		case 3:
+			format = GL_RGB; 
+			break;
+		case 4:
+			format = GL_RGBA;
+			break;
+		default:
+			format = GL_RGB;
+			break;
+	}
 
 	// Generates an OpenGL texture object
 	glGenTextures(1, &ID);

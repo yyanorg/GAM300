@@ -1,47 +1,38 @@
 #include "pch.h"
-#include "TestScene.hpp"
-#include "Input/InputManager.hpp"
-#include "ECS/ECSRegistry.hpp"
-#include "Asset Manager/AssetManager.hpp"
+#include <Scene/SceneInstance.hpp>
+#include <Input/InputManager.hpp>
+#include <ECS/ECSRegistry.hpp>
+#include <Asset Manager/AssetManager.hpp>
 
-void TestScene::Initialize() {
-	// Initialization code for the test scene
+void SceneInstance::Initialize() {
+	// Initialization code for the scene
 	
 	// Initialize GraphicsManager first
 	GraphicsManager& gfxManager = GraphicsManager::GetInstance();
 	gfxManager.Initialize(WindowManager::GetWindowWidth(), WindowManager::GetWindowHeight());
 
 	// WOON LI TEST CODE
-	// Temp testing code - create some ECS managers and entities
-	ECSRegistry::GetInstance().CreateECSManager("MainWorld");
-	//ECSRegistry::GetInstance().CreateECSManager("SecondaryWorld");
-	ECSManager& mainECS = ECSRegistry::GetInstance().GetECSManager("MainWorld");
-	//ECSManager& secondaryECS = ECSRegistry::GetInstance().GetECSManager("SecondaryWorld");
+	ECSManager& ecsManager = ECSRegistry::GetInstance().GetECSManager(scenePath);
 
-	// Create an entity with a Renderer component in the main ECS manager
-	Entity testEntt = mainECS.CreateEntity();
+	// Create a backpack entity with a Renderer component in the main ECS manager
+	Entity backpackEntt = ecsManager.CreateEntity();
 	glm::mat4 transform = glm::mat4(1.0f);
 	transform = glm::translate(transform, glm::vec3(0.0f, 0.0f, 0.0f));
 	transform = glm::scale(transform, glm::vec3(0.1f, 0.1f, 0.1f));
-	mainECS.AddComponent<ModelRenderComponent>(testEntt, ModelRenderComponent{ AssetManager::GetInstance().GetAsset<Model>("Resources/Models/backpack/backpack.obj"),
+	ecsManager.AddComponent<ModelRenderComponent>(backpackEntt, ModelRenderComponent{ AssetManager::GetInstance().GetAsset<Model>("Resources/Models/backpack/backpack.obj"),
 		AssetManager::GetInstance().GetAsset<Shader>("Resources/Shaders/default"),
 		transform});
 
-	//mainECS.CreateEntity();
-	//mainECS.CreateEntity();
-	//mainECS.CreateEntity();
-	//mainECS.CreateEntity();
-
-	//mainECS.DestroyEntity(2);
-
-	//secondaryECS.CreateEntity();
-	//secondaryECS.CreateEntity();
-	//secondaryECS.CreateEntity();
-
-	//secondaryECS.ClearAllEntities();
+	Entity backpackEntt2 = ecsManager.CreateEntity();
+	glm::mat4 transform2 = glm::mat4(1.0f);
+	transform2 = glm::translate(transform2, glm::vec3(1.0f, -0.5f, 0.0f));
+	transform2 = glm::scale(transform2, glm::vec3(0.2f, 0.2f, 0.2f));
+	ecsManager.AddComponent<ModelRenderComponent>(backpackEntt2, ModelRenderComponent{ AssetManager::GetInstance().GetAsset<Model>("Resources/Models/backpack/backpack.obj"),
+		AssetManager::GetInstance().GetAsset<Shader>("Resources/Shaders/default"),
+		transform2 });
 
 	// GRAPHICS TEST CODE
-	mainECS.modelSystem->Initialise();
+	ecsManager.modelSystem->Initialise();
 
 	// Loads model
 	//backpackModel = std::make_shared<Model>("Resources/Models/backpack/backpack.obj");
@@ -61,10 +52,11 @@ void TestScene::Initialize() {
 	std::cout << "TestScene Initialized" << std::endl;
 }
 
-void TestScene::Update() {
+void SceneInstance::Update(double dt) {
+	dt;
+
 	// Update logic for the test scene
-	ECSManager& mainECS = ECSRegistry::GetInstance().GetECSManager("MainWorld");
-	GraphicsManager& gfxManager = GraphicsManager::GetInstance();
+	//ECSManager& mainECS = ECSRegistry::GetInstance().GetECSManager(scenePath);
 
 	float currentFrame = (float)glfwGetTime();
 	deltaTime = currentFrame - lastFrame;
@@ -72,6 +64,13 @@ void TestScene::Update() {
 
 	processInput();
 
+	// Update systems.
+}
+
+void SceneInstance::Draw() {
+	ECSManager& mainECS = ECSRegistry::GetInstance().GetECSManager(scenePath);
+
+	GraphicsManager& gfxManager = GraphicsManager::GetInstance();
 	//RenderSystem::getInstance().BeginFrame();
 	gfxManager.BeginFrame();
 	gfxManager.Clear();
@@ -94,18 +93,18 @@ void TestScene::Update() {
 
 	// 6. End frame
 	gfxManager.EndFrame();
-	// Update systems.
 }
 
-void TestScene::Exit() {
+void SceneInstance::Exit() {
 	// Cleanup code for the test scene
 
 	// Exit systems.
+	//ECSRegistry::GetInstance().GetECSManager(scenePath).modelSystem->Exit();
 
 	std::cout << "TestScene Exited" << std::endl;
 }
 
-void TestScene::processInput()
+void SceneInstance::processInput()
 {
 	if (InputManager::GetKeyDown(GLFW_KEY_ESCAPE))
 		glfwSetWindowShouldClose(WindowManager::getWindow(), true);
@@ -120,8 +119,8 @@ void TestScene::processInput()
 	if (InputManager::GetKey(GLFW_KEY_D))
 		camera.Position += glm::normalize(glm::cross(camera.Front, camera.Up)) * cameraSpeed;
 
-	double xpos = InputManager::GetMouseX();
-	double ypos = InputManager::GetMouseY();
+	float xpos = (float)InputManager::GetMouseX();
+	float ypos = (float)InputManager::GetMouseY();
 
 	if (firstMouse)
 	{
@@ -130,16 +129,16 @@ void TestScene::processInput()
 		firstMouse = false;
 	}
 
-	double xoffset = xpos - lastX;
-	double yoffset = lastY - ypos; // reversed since y-coordinates go from bottom to top
+	float xoffset = xpos - lastX;
+	float yoffset = lastY - ypos; // reversed since y-coordinates go from bottom to top
 
 	lastX = xpos;
 	lastY = ypos;
 
-	camera.ProcessMouseMovement((float)xoffset, (float)yoffset);
+	camera.ProcessMouseMovement(xoffset, yoffset);
 }
 
-void TestScene::DrawLightCubes() 
+void SceneInstance::DrawLightCubes() 
 {
 	// Get light positions from LightManager instead of renderSystem
 	LightManager& lightManager = LightManager::getInstance();

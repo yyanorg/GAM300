@@ -1,12 +1,18 @@
 #pragma once
-#include "Graphics/GraphicsManager.hpp"
+#include <Scene/Scene.hpp>
+#include <Graphics/GraphicsManager.hpp>
 
-class TestScene {
+class SceneInstance : public IScene {
 public:
-	void Initialize();
-	void Update();
-	void Exit();
-	void processInput();
+	SceneInstance() = default;
+	SceneInstance(const std::string& path) : IScene(path) {}
+	~SceneInstance() override = default;
+
+	void Initialize() override;
+	void Update(double dt) override;
+	void Draw() override;
+	void Exit() override;
+	void processInput(); // temp function
 
 	void DrawLightCubes();
 

@@ -298,7 +298,7 @@ void WindowManager::EndSceneRender()
 void WindowManager::RenderScene() 
 {
     try {
-        Engine::testScene.Update();
+        Engine::Draw();
     } catch (const std::exception& e) {
         std::cerr << "Exception in RenderScene: " << e.what() << std::endl;
     }

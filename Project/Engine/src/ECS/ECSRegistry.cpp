@@ -11,11 +11,11 @@ ECSRegistry& ECSRegistry::GetInstance() {
 ECSManager& ECSRegistry::CreateECSManager(const std::string& name) {
 	assert(ecsManagers.find(name) == ecsManagers.end() && "ECSManager with the given name already exists.");
 
-	ecsManagers[name] = std::make_shared<ECSManager>();
+	ecsManagers[name] = std::make_unique<ECSManager>();
 
 	// If there's no active ECSManager, set the newly created one as active.
-	if (activeECSManager.get() == nullptr) {
-		activeECSManager = ecsManagers[name];
+	if (activeECSManagerName.empty()) {
+		SetActiveECSManager(name);
 	}
 
 	std::cout << "[ECSRegistry] Created ECSManager '" << name << "'." << std::endl;
@@ -29,18 +29,17 @@ ECSManager& ECSRegistry::GetECSManager(const std::string& name) {
 
 void ECSRegistry::DestroyECSManager(const std::string& name) {
 	assert(ecsManagers.find(name) != ecsManagers.end() && "ECSManager with the given name does not exist.");
-	auto ecsManagerToDelete = ecsManagers[name];
-	assert(ecsManagerToDelete != activeECSManager && "Destroying active ECS manager.");
+	assert(name != activeECSManagerName && "Destroying active ECS manager.");
 	
 	ecsManagers.erase(name);
 }
 
 void ECSRegistry::SetActiveECSManager(const std::string& name) {
 	assert(ecsManagers.find(name) != ecsManagers.end() && "ECSManager with the given name does not exist.");
-	activeECSManager = ecsManagers[name];
+	activeECSManagerName = name;
 }
 
 ECSManager& ECSRegistry::GetActiveECSManager() {
-	assert(activeECSManager.get() != nullptr && "No active ECSManager set.");
-	return *activeECSManager;
+	assert(!activeECSManagerName.empty() && "No active ECSManager set.");
+	return *ecsManagers[activeECSManagerName];
 }

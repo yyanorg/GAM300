@@ -32,7 +32,7 @@ int main() {
 
         // Render 3D content to FBO
         Engine::StartDraw();
-        Engine::Draw();
+        //Engine::Draw();
         GUIManager::Render();
         Engine::EndDraw();
 		
