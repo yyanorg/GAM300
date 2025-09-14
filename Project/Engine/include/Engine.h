@@ -24,6 +24,12 @@
 
 struct GLFWwindow;
 
+enum class GameState {
+    EDIT_MODE,
+    PLAY_MODE,
+    PAUSED_MODE
+};
+
 class ENGINE_API Engine {
 public:
     static bool Initialize();
@@ -34,9 +40,17 @@ public:
     static void Draw();
     static void EndDraw();
 
-
     static bool IsRunning();
     static void Shutdown();
 
+    // Game state management
+    static void SetGameState(GameState state);
+    static GameState GetGameState();
+    static bool ShouldRunGameLogic();
+    static bool IsEditMode();
+    static bool IsPlayMode();
+    static bool IsPaused();
+
 private:
+    static GameState s_CurrentGameState;
 };

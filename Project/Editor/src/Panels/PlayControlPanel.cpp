@@ -67,7 +67,7 @@ void PlayControlPanel::OnImGuiRender() {
                 }
             }
         } else {
-            if (ImGui::Button("⏸ Pause", ImVec2(80.0f, 0.0f))) {
+            if (ImGui::Button("|| Pause", ImVec2(80.0f, 0.0f))) {
                 editorState.Pause();
             }
         }
@@ -75,7 +75,7 @@ void PlayControlPanel::OnImGuiRender() {
         ImGui::SameLine();
 
         // Stop button
-        if (ImGui::Button("⏹ Stop", ImVec2(70.0f, 0.0f))) {
+        if (ImGui::Button("■ Stop", ImVec2(70.0f, 0.0f))) {
             editorState.Stop();
             // Auto-switch to Scene panel when stopping
             auto scenePanel = GUIManager::GetPanelManager().GetPanel("Scene");

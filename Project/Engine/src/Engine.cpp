@@ -17,6 +17,9 @@ namespace TEMP {
 	std::string windowTitle = "GAM300";
 }
 
+// Static member definition
+GameState Engine::s_CurrentGameState = GameState::EDIT_MODE;
+
 const unsigned int SCR_WIDTH = 1600;
 const unsigned int SCR_HEIGHT = 900;
 
@@ -86,7 +89,10 @@ bool Engine::Initialize() {
 }
 
 void Engine::Update() {
-	SceneManager::GetInstance().UpdateScene(WindowManager::getDeltaTime()); // REPLACE WITH DT LATER
+	// Only update the scene if the game should be running (not paused)
+	if (ShouldRunGameLogic()) {
+		SceneManager::GetInstance().UpdateScene(WindowManager::getDeltaTime()); // REPLACE WITH DT LATER
+	}
 }
 
 void Engine::StartDraw() {
@@ -99,8 +105,13 @@ void Engine::Draw() {
 
 void Engine::EndDraw() {
 	glfwSwapBuffers(WindowManager::getWindow());
-	InputManager::Update();
-	glfwPollEvents();
+
+	// Only process input if the game should be running (not paused)
+	if (ShouldRunGameLogic()) {
+		InputManager::Update();
+	}
+
+	glfwPollEvents(); // Always poll events for UI and window management
 }
 
 void Engine::Shutdown() {
@@ -111,4 +122,29 @@ void Engine::Shutdown() {
 
 bool Engine::IsRunning() {
 	return !WindowManager::ShouldClose();
+}
+
+// Game state management functions
+void Engine::SetGameState(GameState state) {
+	s_CurrentGameState = state;
+}
+
+GameState Engine::GetGameState() {
+	return s_CurrentGameState;
+}
+
+bool Engine::ShouldRunGameLogic() {
+	return s_CurrentGameState == GameState::PLAY_MODE;
+}
+
+bool Engine::IsEditMode() {
+	return s_CurrentGameState == GameState::EDIT_MODE;
+}
+
+bool Engine::IsPlayMode() {
+	return s_CurrentGameState == GameState::PLAY_MODE;
+}
+
+bool Engine::IsPaused() {
+	return s_CurrentGameState == GameState::PAUSED_MODE;
 }

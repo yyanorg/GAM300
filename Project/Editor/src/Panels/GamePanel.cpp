@@ -2,6 +2,7 @@
 #include "imgui.h"
 #include "WindowManager.hpp"
 #include "EditorState.hpp"
+#include "Engine.h"
 
 GamePanel::GamePanel()
     : EditorPanel("Game", true) {
@@ -21,8 +22,8 @@ void GamePanel::OnImGuiRender() {
 
         EditorState& editorState = EditorState::GetInstance();
 
-        // Only render the game when in play mode
-        if (editorState.ShouldRunGameLogic()) {
+        // Render the game when in play mode or paused (show frozen game scene)
+        if (Engine::ShouldRunGameLogic() || Engine::IsPaused()) {
             // Render 3D scene with game logic running
             WindowManager::BeginSceneRender(gameViewWidth, gameViewHeight);
             WindowManager::RenderScene(); // This will run with game logic
@@ -55,7 +56,7 @@ void GamePanel::OnImGuiRender() {
             
             // Show current state
             ImGui::SetCursorPos(ImVec2(textPos.x - 20.0f, textPos.y + 30.0f));
-            const char* stateText = editorState.IsPaused() ? "Game Paused" : "Edit Mode";
+            const char* stateText = Engine::IsPaused() ? "Game Paused" : "Edit Mode";
             ImGui::TextColored(ImVec4(0.5f, 0.5f, 0.5f, 1.0f), stateText);
         }
     }

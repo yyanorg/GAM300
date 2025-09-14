@@ -1,5 +1,6 @@
 #pragma once
 #include <optional>
+#include "Engine.h"
 
 // Forward declare Entity type
 using Entity = uint32_t;
@@ -21,15 +22,15 @@ public:
 
     static EditorState& GetInstance();
     
-    // State management
+    // State management (delegates to Engine)
     void SetState(State newState);
-    State GetState() const { return m_CurrentState; }
-    
-    // Convenience methods
-    bool IsEditMode() const { return m_CurrentState == State::EDIT_MODE; }
-    bool IsPlayMode() const { return m_CurrentState == State::PLAY_MODE; }
-    bool IsPaused() const { return m_CurrentState == State::PAUSED; }
-    bool ShouldRunGameLogic() const { return m_CurrentState == State::PLAY_MODE; }
+    State GetState() const;
+
+    // Convenience methods (delegates to Engine)
+    bool IsEditMode() const { return Engine::IsEditMode(); }
+    bool IsPlayMode() const { return Engine::IsPlayMode(); }
+    bool IsPaused() const { return Engine::IsPaused(); }
+    bool ShouldRunGameLogic() const { return Engine::ShouldRunGameLogic(); }
     
     // State transitions
     void Play();
@@ -47,7 +48,7 @@ private:
     ~EditorState() = default;
     EditorState(const EditorState&) = delete;
     EditorState& operator=(const EditorState&) = delete;
-    
-    State m_CurrentState = State::EDIT_MODE;
+
+    // Only store entity selection, game state is managed by Engine
     Entity m_SelectedEntity = INVALID_ENTITY;
 };

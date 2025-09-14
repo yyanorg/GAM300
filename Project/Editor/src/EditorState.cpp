@@ -7,10 +7,17 @@ EditorState& EditorState::GetInstance() {
 }
 
 void EditorState::SetState(State newState) {
-    if (m_CurrentState != newState) {
-        State oldState = m_CurrentState;
-        m_CurrentState = newState;
-        
+    State oldState = GetState();
+    if (oldState != newState) {
+        // Convert EditorState::State to Engine::GameState and delegate to Engine
+        GameState engineState;
+        switch (newState) {
+            case State::EDIT_MODE: engineState = GameState::EDIT_MODE; break;
+            case State::PLAY_MODE: engineState = GameState::PLAY_MODE; break;
+            case State::PAUSED: engineState = GameState::PAUSED_MODE; break;
+        }
+        Engine::SetGameState(engineState);
+
         // Log state changes for debugging
         const char* stateNames[] = { "EDIT_MODE", "PLAY_MODE", "PAUSED" };
         std::cout << "[EditorState] State changed from " << stateNames[static_cast<int>(oldState)]
@@ -18,16 +25,28 @@ void EditorState::SetState(State newState) {
     }
 }
 
+EditorState::State EditorState::GetState() const {
+    // Convert Engine::GameState to EditorState::State
+    GameState engineState = Engine::GetGameState();
+    switch (engineState) {
+        case GameState::EDIT_MODE: return State::EDIT_MODE;
+        case GameState::PLAY_MODE: return State::PLAY_MODE;
+        case GameState::PAUSED_MODE: return State::PAUSED;
+        default: return State::EDIT_MODE;
+    }
+}
+
 void EditorState::Play() {
-    if (m_CurrentState == State::EDIT_MODE) {
+    State currentState = GetState();
+    if (currentState == State::EDIT_MODE) {
         SetState(State::PLAY_MODE);
-    } else if (m_CurrentState == State::PAUSED) {
+    } else if (currentState == State::PAUSED) {
         SetState(State::PLAY_MODE);
     }
 }
 
 void EditorState::Pause() {
-    if (m_CurrentState == State::PLAY_MODE) {
+    if (GetState() == State::PLAY_MODE) {
         SetState(State::PAUSED);
     }
 }
