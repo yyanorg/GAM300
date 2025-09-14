@@ -18,6 +18,7 @@ void TestScene::Initialize() {
 
 	// Create an entity with a Renderer component in the main ECS manager
 	Entity testEntt = mainECS.CreateEntity();
+<<<<<<< Updated upstream
 	mainECS.AddComponent<Renderer>(testEntt, Renderer{});
 	Renderer& renderer = mainECS.GetComponent<Renderer>(testEntt);
 	renderer.model = AssetManager::GetInstance().GetAsset<Model>("Resources/Models/backpack/backpack.obj");
@@ -29,6 +30,11 @@ void TestScene::Initialize() {
 	std::cout << "[TestScene] Created backpack entity with ID: " << testEntt << std::endl;
 
 	glm::mat4 transform = glm::mat4(1.0f);
+=======
+	std::cout << "[TestScene] Created backpack entity with ID: " << testEntt << std::endl;
+
+	glm::mat4 transform = glm::mat4(1.0f);
+>>>>>>> Stashed changes
 	transform = glm::translate(transform, glm::vec3(0.0f, -1.0f, -5.0f));  // Move it away from camera and down a bit
 	transform = glm::scale(transform, glm::vec3(0.5f, 0.5f, 0.5f));  // Larger scale to make it more visible
 	mainECS.AddComponent<ModelRenderComponent>(testEntt, ModelRenderComponent{ AssetManager::GetInstance().GetAsset<Model>("Resources/Models/backpack/backpack.obj"),

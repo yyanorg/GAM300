@@ -2,7 +2,28 @@
 
 #include "Graphics/Mesh.h"
 
+<<<<<<< Updated upstream
 Mesh::Mesh(std::vector<Vertex> &vertices, std::vector<GLuint> &indices, std::vector<std::shared_ptr<Texture>> &textures) : vertices(vertices), indices(indices), textures(textures)
+=======
+// Removed hardcoded screen dimensions - matrices are now handled by GraphicsManager
+
+Mesh::Mesh(std::vector<Vertex>& vertices, std::vector<GLuint>& indices, std::vector<std::shared_ptr<Texture>>& textures) : vertices(vertices), indices(indices), textures(textures)
+{
+	setupMesh();
+}
+
+Mesh::Mesh(std::vector<Vertex>& vertices, std::vector<GLuint>& indices, std::shared_ptr<Material> mat) : vertices(vertices), indices(indices), material(mat)
+{
+	setupMesh();
+}
+
+Mesh::~Mesh()
+{
+	vao.Delete();
+}
+
+void Mesh::setupMesh()
+>>>>>>> Stashed changes
 {
 	// Generates Vertex Array Object and binds it
 	vao.Bind();
@@ -26,7 +47,11 @@ Mesh::Mesh(std::vector<Vertex> &vertices, std::vector<GLuint> &indices, std::vec
 	ebo.Unbind();
 }
 
+<<<<<<< Updated upstream
 Mesh::~Mesh()
+=======
+void Mesh::Draw(Shader& shader, const Camera& camera)
+>>>>>>> Stashed changes
 {
 	vao.Delete();
 	void Mesh::Draw(Shader & shader, const Camera &camera)
@@ -34,6 +59,7 @@ Mesh::~Mesh()
 		shader.Activate();
 		vao.Bind();
 
+<<<<<<< Updated upstream
 		// Only set camera position for lighting calculations
 		// Note: view and projection matrices are already set by GraphicsManager::SetupMatrices()
 		shader.setVec3("cameraPos", camera.Position);
@@ -49,6 +75,11 @@ Mesh::~Mesh()
 			// Fallback to old texture system for backward compatibility
 			unsigned int textureUnit = 0;
 			unsigned int numDiffuse = 0, numSpecular = 0;
+=======
+    // Only set camera position for lighting calculations
+    // Note: view and projection matrices are already set by GraphicsManager::SetupMatrices()
+    shader.setVec3("cameraPos", camera.Position);
+>>>>>>> Stashed changes
 
 			for (unsigned int i = 0; i < textures.size() && textureUnit < 16; i++)
 			{
