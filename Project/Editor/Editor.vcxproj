@@ -43,7 +43,6 @@
     <ClCompile Include="src\main.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="include\GUIManager.hpp" />
     <ClCompile Include="src\Panels\ConsolePanel.cpp" />
     <ClCompile Include="src\Panels\EditorPanel.cpp" />
     <ClCompile Include="src\Panels\GamePanel.cpp" />
