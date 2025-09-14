@@ -2,14 +2,15 @@
 
 #include "Graphics/Mesh.h"
 
-// Removed hardcoded screen dimensions - matrices are now handled by GraphicsManager
+const unsigned int SCR_WIDTH = 800;
+const unsigned int SCR_HEIGHT = 600;
 
 Mesh::Mesh(std::vector<Vertex> &vertices, std::vector<GLuint> &indices, std::vector<std::shared_ptr<Texture>> &textures) : vertices(vertices), indices(indices), textures(textures)
 {
 	setupMesh();
 }
 
-Mesh::Mesh(std::vector<Vertex> &vertices, std::vector<GLuint> &indices, std::shared_ptr<Material> mat) : vertices(vertices), indices(indices), material(mat)
+Mesh::Mesh(std::vector<Vertex>& vertices, std::vector<GLuint>& indices, std::shared_ptr<Material> mat) : vertices(vertices), indices(indices), material(mat)
 {
 	setupMesh();
 }
@@ -30,13 +31,13 @@ void Mesh::setupMesh()
 	EBO ebo(indices);
 
 	// Position
-	vao.LinkAttrib(vbo, 0, 3, GL_FLOAT, sizeof(Vertex), (void *)0); // Compiler knows the exact size of your Vertex struct (including any padding) no need 11 * sizeof(float)
+	vao.LinkAttrib(vbo, 0, 3, GL_FLOAT, sizeof(Vertex), (void*)0); // Compiler knows the exact size of your Vertex struct (including any padding) no need 11 * sizeof(float)
 	// Normal
-	vao.LinkAttrib(vbo, 1, 3, GL_FLOAT, sizeof(Vertex), (void *)(3 * sizeof(float)));
+	vao.LinkAttrib(vbo, 1, 3, GL_FLOAT, sizeof(Vertex), (void*)(3 * sizeof(float)));
 	// Color
-	vao.LinkAttrib(vbo, 2, 3, GL_FLOAT, sizeof(Vertex), (void *)(6 * sizeof(float)));
+	vao.LinkAttrib(vbo, 2, 3, GL_FLOAT, sizeof(Vertex), (void*)(6 * sizeof(float)));
 	// Texture
-	vao.LinkAttrib(vbo, 3, 2, GL_FLOAT, sizeof(Vertex), (void *)(9 * sizeof(float)));
+	vao.LinkAttrib(vbo, 3, 2, GL_FLOAT, sizeof(Vertex), (void*)(9 * sizeof(float)));
 
 	vao.Unbind();
 	vbo.Unbind();
