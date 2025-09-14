@@ -12,20 +12,21 @@ void PlayControlPanel::OnImGuiRender() {
     ImGuiViewport* viewport = ImGui::GetMainViewport();
     float menuBarHeight = ImGui::GetFrameHeight();
 
-    // Position it at the top center, below the menu bar
-    ImVec2 toolbarPos = ImVec2(viewport->Pos.x, viewport->Pos.y + menuBarHeight);
-    ImVec2 toolbarSize = ImVec2(viewport->Size.x, ImGui::GetFrameHeight() + 16.0f); // Thicker toolbar
+    // Position it at the top center, below the menu bar - extend height to cover separator
+    ImVec2 toolbarPos = ImVec2(viewport->Pos.x, viewport->Pos.y + menuBarHeight - 1.0f);
+    ImVec2 toolbarSize = ImVec2(viewport->Size.x, ImGui::GetFrameHeight() + 18.0f);
 
     ImGui::SetNextWindowPos(toolbarPos);
     ImGui::SetNextWindowSize(toolbarSize);
 
-    // Make it non-movable, non-resizable, no title bar
     ImGuiWindowFlags flags = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize |
                             ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollbar |
                             ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoDocking;
 
-    // Set window padding for better spacing
-    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 6.0f));
+    // Set window padding and rounding for better spacing
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(8.0f, 4.0f));
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
 
     if (ImGui::Begin("##PlayControlsToolbar", nullptr, flags)) {
         EditorState& editorState = EditorState::GetInstance();
@@ -97,5 +98,5 @@ void PlayControlPanel::OnImGuiRender() {
         ImGui::PopStyleVar(); // FramePadding
     }
     ImGui::End();
-    ImGui::PopStyleVar(); // WindowPadding
+    ImGui::PopStyleVar(3); // WindowPadding, WindowRounding, WindowBorderSize
 }
