@@ -47,6 +47,8 @@
     <ClCompile Include="src\Panels\InspectorPanel.cpp" />
     <ClCompile Include="src\Panels\PanelManager.cpp" />
     <ClCompile Include="src\Panels\SceneHierarchyPanel.cpp" />
+    <ClCompile Include="src\Panels\GamePanel.cpp" />
+    <ClCompile Include="src\Panels\PlayControlPanel.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\Libraries\ImGui\ImGuizmo.cpp" />
@@ -64,6 +66,7 @@
     <ClInclude Include="include\Panels\InspectorPanel.hpp" />
     <ClInclude Include="include\Panels\PanelManager.hpp" />
     <ClInclude Include="include\Panels\SceneHierarchyPanel.hpp" />
+    <ClInclude Include="include\Panels\PlayControlPanel.hpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Engine\Engine.vcxproj">

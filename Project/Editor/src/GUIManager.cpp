@@ -14,6 +14,8 @@
 #include "Panels/SceneHierarchyPanel.hpp"
 #include "Panels/InspectorPanel.hpp"
 #include "Panels/ConsolePanel.hpp"
+#include "Panels/GamePanel.hpp"
+#include "Panels/PlayControlPanel.hpp"
 
 // Static member definitions
 std::unique_ptr<PanelManager> GUIManager::s_PanelManager = nullptr;
@@ -139,6 +141,14 @@ void GUIManager::SetupDefaultPanels() {
     auto scenePanel = std::make_shared<ScenePanel>();
     assert(scenePanel != nullptr && "Failed to create ScenePanel");
     s_PanelManager->RegisterPanel(scenePanel);
+
+    auto gamePanel = std::make_shared<GamePanel>();
+    assert(gamePanel != nullptr && "Failed to create GamePanel");
+    s_PanelManager->RegisterPanel(gamePanel);
+
+    auto playControlPanel = std::make_shared<PlayControlPanel>();
+    assert(playControlPanel != nullptr && "Failed to create PlayControlPanel");
+    s_PanelManager->RegisterPanel(playControlPanel);
 
     std::cout << "[GUIManager] Default panels registered" << std::endl;
 }
