@@ -6,8 +6,10 @@
 #include "ComponentManager.hpp"
 #include "SystemManager.hpp"
 #include <Graphics/RenderSystem.hpp>
+#include <Graphics/Model/ModelSystem.hpp>
+#include "../Engine.h"  // For ENGINE_API macro
 
-class ECSManager {
+class ENGINE_API ECSManager {
 public:
 	ECSManager() { Initialize(); };
 	~ECSManager() {};

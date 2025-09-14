@@ -4,6 +4,9 @@
 
 #include "WindowManager.hpp"
 #include "Engine.h"
+#include "ECS/ECSRegistry.hpp"
+#include "Graphics/GraphicsManager.hpp"
+#include "Graphics/Camera.h"
 
 #define UNREFERENCED_PARAMETER(P) (P)
 
@@ -27,6 +30,9 @@ static unsigned int sceneColorTexture = 0;
 static unsigned int sceneDepthTexture = 0;
 static int sceneWidth = 1280;
 static int sceneHeight = 720;
+
+// Static editor camera that doesn't respond to input
+static Camera* editorCamera = nullptr;
 
 bool WindowManager::Initialize(GLint _width, GLint _height, const char* _title) {
     WindowManager::width = _width;
@@ -263,6 +269,13 @@ void WindowManager::DeleteSceneFramebuffer()
         glDeleteFramebuffers(1, &sceneFrameBuffer);
         sceneFrameBuffer = 0;
     }
+    
+    // Clean up editor camera
+    if (editorCamera) {
+        delete editorCamera;
+        editorCamera = nullptr;
+        std::cout << "[WindowManager] Editor camera deleted" << std::endl;
+    }
 }
 
 unsigned int WindowManager::GetSceneTexture() 
@@ -299,5 +312,55 @@ void WindowManager::RenderScene()
         Engine::testScene.Update();
     } catch (const std::exception& e) {
         std::cerr << "Exception in RenderScene: " << e.what() << std::endl;
+    }
+}
+
+void WindowManager::RenderSceneForEditor() 
+{
+    // Use default camera parameters for the original function
+    RenderSceneForEditor(glm::vec3(0.0f, 0.0f, 5.0f), glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(0.0f, 1.0f, 0.0f), 45.0f);
+}
+
+void WindowManager::RenderSceneForEditor(const glm::vec3& cameraPos, const glm::vec3& cameraFront, const glm::vec3& cameraUp, float cameraZoom)
+{
+    try {
+        // Initialize static editor camera if not already done
+        if (!editorCamera) {
+            editorCamera = new Camera(glm::vec3(0.0f, 0.0f, 3.0f));
+        }
+        
+        // Update the static camera with the provided parameters
+        editorCamera->Position = cameraPos;
+        editorCamera->Front = cameraFront;
+        editorCamera->Up = cameraUp;
+        editorCamera->Zoom = cameraZoom;
+        
+        // Get the ECS manager and graphics manager
+        ECSManager& mainECS = ECSRegistry::GetInstance().GetECSManager("MainWorld");
+        GraphicsManager& gfxManager = GraphicsManager::GetInstance();
+        
+        // Set the static editor camera (this won't be updated by input)
+        gfxManager.SetCamera(editorCamera);
+        
+        // Begin frame and clear (without input processing)
+        gfxManager.BeginFrame();
+        gfxManager.Clear();
+        
+        // Update model system for rendering (without input-based updates)
+        if (mainECS.modelSystem) {
+            mainECS.modelSystem->Update();
+        }
+        
+        // Render the scene
+        gfxManager.Render();
+        
+        // Draw light cubes using the static editor camera (not the game camera)
+        Engine::testScene.DrawLightCubes(*editorCamera);
+        
+        // End frame
+        gfxManager.EndFrame();
+        
+    } catch (const std::exception& e) {
+        std::cerr << "Exception in RenderSceneForEditor: " << e.what() << std::endl;
     }
 }

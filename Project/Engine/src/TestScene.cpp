@@ -11,6 +11,7 @@ void TestScene::Initialize() {
 	// WOON LI TEST CODE
 	// Temp testing code - create some ECS managers and entities
 	ECSRegistry::GetInstance().CreateECSManager("MainWorld");
+	ECSRegistry::GetInstance().SetActiveECSManager("MainWorld");  // Set as active for editor access
 	//ECSRegistry::GetInstance().CreateECSManager("SecondaryWorld");
 	ECSManager& mainECS = ECSRegistry::GetInstance().GetECSManager("MainWorld");
 	//ECSManager& secondaryECS = ECSRegistry::GetInstance().GetECSManager("SecondaryWorld");
@@ -25,6 +26,16 @@ void TestScene::Initialize() {
 	transform = glm::translate(transform, glm::vec3(0.0f, 0.0f, 0.0f));
 	transform = glm::scale(transform, glm::vec3(0.1f, 0.1f, 0.1f));
 	renderer.transform = transform;
+	std::cout << "[TestScene] Created backpack entity with ID: " << testEntt << std::endl;
+
+	glm::mat4 transform = glm::mat4(1.0f);
+	transform = glm::translate(transform, glm::vec3(0.0f, -1.0f, -5.0f));  // Move it away from camera and down a bit
+	transform = glm::scale(transform, glm::vec3(0.5f, 0.5f, 0.5f));  // Larger scale to make it more visible
+	mainECS.AddComponent<ModelRenderComponent>(testEntt, ModelRenderComponent{ AssetManager::GetInstance().GetAsset<Model>("Resources/Models/backpack/backpack.obj"),
+		AssetManager::GetInstance().GetAsset<Shader>("Resources/Shaders/default"),
+		transform});
+
+	std::cout << "[TestScene] Added ModelRenderComponent to entity " << testEntt << std::endl;
 
 	//mainECS.CreateEntity();
 	//mainECS.CreateEntity();
@@ -134,4 +145,41 @@ void TestScene::processInput()
 	lastY = ypos;
 
 	camera.ProcessMouseMovement((float)xoffset, (float)yoffset);
+}
+
+void TestScene::DrawLightCubes() 
+{
+	DrawLightCubes(camera);
+}
+
+void TestScene::DrawLightCubes(const Camera& cameraOverride) 
+{
+	// Get light positions from LightManager instead of renderSystem
+	LightManager& lightManager = LightManager::getInstance();
+	const auto& pointLights = lightManager.getPointLights();
+
+	// Draw light cubes at point light positions
+	for (size_t i = 0; i < pointLights.size() && i < 4; i++) {
+		lightShader->Activate();
+
+		// Set up matrices for light cube
+		glm::mat4 lightModel = glm::mat4(1.0f);
+		lightModel = glm::translate(lightModel, pointLights[i].position);
+		lightModel = glm::scale(lightModel, glm::vec3(0.2f)); // Make them smaller
+
+		// Set up view and projection matrices using the provided camera
+		glm::mat4 view = cameraOverride.GetViewMatrix();
+		glm::mat4 projection = glm::perspective(
+			glm::radians(cameraOverride.Zoom),
+			(float)WindowManager::GetWindowWidth() / (float)WindowManager::GetWindowHeight(),
+			0.1f, 100.0f
+		);
+
+		lightShader->setMat4("model", lightModel);
+		lightShader->setMat4("view", view);
+		lightShader->setMat4("projection", projection);
+		//lightShader->setVec3("lightColor", pointLights[i].diffuse); // Use light color
+
+		lightCubeMesh->Draw(*lightShader, cameraOverride);
+	}
 }

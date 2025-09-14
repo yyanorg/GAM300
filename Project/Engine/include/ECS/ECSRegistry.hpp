@@ -2,6 +2,7 @@
 
 #include <unordered_map>
 #include "ECSManager.hpp"
+#include "../Engine.h"  // For ENGINE_API macro
 
 /**
  * \class ECSRegistry
@@ -11,7 +12,7 @@
  * This design improves engine flexibility by enabling better scene management, isolated simulations, and potential
  * parallel execution of different worlds.
  */
-class ECSRegistry {
+class ENGINE_API ECSRegistry {
 public:
 	// Delete copy constructor and assignment operator to enforce singleton pattern.
 	ECSRegistry(const ECSRegistry&) = delete;

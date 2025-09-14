@@ -8,6 +8,9 @@ public:
 	void Exit();
 	void processInput();
 
+	void DrawLightCubes();
+	void DrawLightCubes(const Camera& cameraOverride);
+
 	const unsigned int SCR_WIDTH = 800;
 	const unsigned int SCR_HEIGHT = 600;
 
