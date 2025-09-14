@@ -154,10 +154,17 @@ void GUIManager::SetupDefaultPanels() {
 }
 
 void GUIManager::CreateDockspace() {
-    // Create a fullscreen dockspace
+    // Create a fullscreen dockspace, accounting for the play controls toolbar
     ImGuiViewport* viewport = ImGui::GetMainViewport();
-    ImGui::SetNextWindowPos(viewport->Pos);
-    ImGui::SetNextWindowSize(viewport->Size);
+    float menuBarHeight = ImGui::GetFrameHeight();
+    float toolbarHeight = ImGui::GetFrameHeight() + 16.0f; // Match toolbar height from PlayControlPanel
+
+    // Position dockspace below menu bar and toolbar
+    ImVec2 dockspacePos = ImVec2(viewport->Pos.x, viewport->Pos.y + menuBarHeight + toolbarHeight);
+    ImVec2 dockspaceSize = ImVec2(viewport->Size.x, viewport->Size.y - menuBarHeight - toolbarHeight);
+
+    ImGui::SetNextWindowPos(dockspacePos);
+    ImGui::SetNextWindowSize(dockspaceSize);
     ImGui::SetNextWindowViewport(viewport->ID);
 
     ImGuiWindowFlags window_flags = ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoDocking;
@@ -176,6 +183,35 @@ void GUIManager::CreateDockspace() {
     if (io.ConfigFlags & ImGuiConfigFlags_DockingEnable) {
         ImGuiID dockspace_id = ImGui::GetID("MyDockSpace");
         ImGui::DockSpace(dockspace_id, ImVec2(0.0f, 0.0f), ImGuiDockNodeFlags_None);
+
+        // Check if we need to initialize the default layout
+        // Only do this if no docking data exists for this dockspace
+        if (!s_DockspaceInitialized) {
+            s_DockspaceInitialized = true;
+
+            // Check if the dockspace already has nodes (from saved layout)
+            ImGuiDockNode* node = ImGui::DockBuilderGetNode(dockspace_id);
+            if (!node || !node->IsSplitNode()) {
+                // No saved layout exists, create default layout
+                ImGui::DockBuilderRemoveNode(dockspace_id);
+                ImGui::DockBuilderAddNode(dockspace_id, ImGuiDockNodeFlags_DockSpace);
+                ImGui::DockBuilderSetNodeSize(dockspace_id, dockspaceSize);
+
+                // Create the splits
+                ImGuiID dock_left, dock_right, dock_down;
+                ImGui::DockBuilderSplitNode(dockspace_id, ImGuiDir_Left, 0.2f, &dock_left, &dock_right);
+                ImGui::DockBuilderSplitNode(dock_right, ImGuiDir_Down, 0.3f, &dock_down, &dock_right);
+
+                // Dock the panels to default positions
+                ImGui::DockBuilderDockWindow("Scene Hierarchy", dock_left);
+                ImGui::DockBuilderDockWindow("Scene Panel", dock_right);
+                ImGui::DockBuilderDockWindow("Game", dock_right);
+                ImGui::DockBuilderDockWindow("Inspector", dock_left);
+                ImGui::DockBuilderDockWindow("Console", dock_down);
+
+                ImGui::DockBuilderFinish(dockspace_id);
+            }
+        }
     }
 
     ImGui::End();

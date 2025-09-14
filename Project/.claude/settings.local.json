@@ -1,7 +1,8 @@
 {
   "permissions": {
     "allow": [
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "Read(//mnt/c/Users/growt/Pictures/**)"
     ],
     "deny": [],
     "ask": []
