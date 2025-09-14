@@ -55,6 +55,7 @@ target_include_directories(Engine
         ${CMAKE_SOURCE_DIR}/Libraries/glm
         ${CMAKE_SOURCE_DIR}/Libraries/Assimp/include
         ${CMAKE_SOURCE_DIR}/Libraries/freetype/include
+        ${CMAKE_SOURCE_DIR}/Libraries/spdlog/include
 )
 
 # Link libraries for Linux

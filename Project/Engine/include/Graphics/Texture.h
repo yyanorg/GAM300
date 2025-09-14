@@ -11,7 +11,7 @@ public:
 	GLuint unit;
 
 	Texture();
-	Texture(const char* image, const char* texType, GLuint slot, GLenum format, GLenum pixelType);
+	Texture(const char* image, const char* texType, GLuint slot, GLenum pixelType);
 
 	bool LoadAsset(const std::string& path) override;
 	GLenum GetFormatFromExtension(const std::string& filePath);

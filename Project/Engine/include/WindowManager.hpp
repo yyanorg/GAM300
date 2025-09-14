@@ -56,6 +56,10 @@ public:
     static bool IsWindowFocused();
     static void window_focus_callback(GLFWwindow* window, int focused);
 
+    static void updateDeltaTime();
+    static double getDeltaTime();
+    static double getFps();
+
     // Scene framebuffer functions
     static unsigned int CreateSceneFramebuffer(int width, int height);
     static void DeleteSceneFramebuffer();
@@ -84,4 +88,7 @@ private:
     static GLint viewportHeight;
 
     static const char* title;
+
+    static double deltaTime;
+    static double lastFrameTime;
 };

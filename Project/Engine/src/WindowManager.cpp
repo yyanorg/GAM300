@@ -7,6 +7,8 @@
 #include "ECS/ECSRegistry.hpp"
 #include "Graphics/GraphicsManager.hpp"
 #include "Graphics/Camera.h"
+#include "Scene/SceneManager.hpp"
+#include "Scene/SceneInstance.hpp"
 
 #define UNREFERENCED_PARAMETER(P) (P)
 
@@ -23,6 +25,9 @@ GLint WindowManager::windowedWidth = 1600;   // Default windowed size
 GLint WindowManager::windowedHeight = 900;  // Default windowed size
 GLint WindowManager::windowedPosX = 0;      // Default window position
 GLint WindowManager::windowedPosY = 0;      // Default window position
+
+double WindowManager::deltaTime = 0.0;
+double WindowManager::lastFrameTime = 0.0;
 
 // Scene framebuffer static members
 static unsigned int sceneFrameBuffer = 0;
@@ -84,6 +89,8 @@ bool WindowManager::Initialize(GLint _width, GLint _height, const char* _title) 
         std::cout << "Failed to initialize GLAD" << std::endl;
         return -1;
     }
+    glEnable(GL_DEPTH_TEST);
+    glViewport(0, 0, _width, _height);
 
     return true;
 }
@@ -210,6 +217,36 @@ bool WindowManager::IsWindowFocused() {
     return isFocused;
 }
 
+void WindowManager::updateDeltaTime() {
+    const double targetDeltaTime = 1.0 / 60.0; // cap at 60fps
+
+    double currentTime = glfwGetTime();
+    double frameTime = currentTime - lastFrameTime;
+
+    double remainingTime = targetDeltaTime - frameTime;
+
+    //Limit to 60 FPS?
+    //// Sleep only if we have at least 5 ms remaining
+    //if (remainingTime > 0.005) {
+    //    std::this_thread::sleep_for(std::chrono::milliseconds((int)((remainingTime - 0.001) * 1000)));
+    //}
+    //// Busy-wait the last few milliseconds
+    //while ((glfwGetTime() - lastFrameTime) < targetDeltaTime) {}
+
+    // Update deltaTime
+    currentTime = glfwGetTime();
+    deltaTime = currentTime - lastFrameTime;
+    lastFrameTime = currentTime;
+    glfwSwapInterval(1);
+}
+
+double WindowManager::getDeltaTime() {
+    return deltaTime;
+}
+double WindowManager::getFps() {
+    return deltaTime > 0.0 ? 1.0 / deltaTime : 0.0;
+}
+
 // Scene framebuffer functions
 unsigned int WindowManager::CreateSceneFramebuffer(int width, int height) 
 {
@@ -309,7 +346,7 @@ void WindowManager::EndSceneRender()
 void WindowManager::RenderScene() 
 {
     try {
-        Engine::testScene.Update();
+        Engine::Draw();
     } catch (const std::exception& e) {
         std::cerr << "Exception in RenderScene: " << e.what() << std::endl;
     }
@@ -336,7 +373,7 @@ void WindowManager::RenderSceneForEditor(const glm::vec3& cameraPos, const glm::
         editorCamera->Zoom = cameraZoom;
         
         // Get the ECS manager and graphics manager
-        ECSManager& mainECS = ECSRegistry::GetInstance().GetECSManager("MainWorld");
+        ECSManager& mainECS = ECSRegistry::GetInstance().GetECSManager("TestScene");
         GraphicsManager& gfxManager = GraphicsManager::GetInstance();
         
         // Set the static editor camera (this won't be updated by input)
@@ -355,7 +392,10 @@ void WindowManager::RenderSceneForEditor(const glm::vec3& cameraPos, const glm::
         gfxManager.Render();
         
         // Draw light cubes using the static editor camera (not the game camera)
-        Engine::testScene.DrawLightCubes(*editorCamera);
+        SceneInstance* currentScene = static_cast<SceneInstance*>(SceneManager::GetInstance().GetCurrentScene());
+        if (currentScene) {
+            currentScene->DrawLightCubes(*editorCamera);
+        }
         
         // End frame
         gfxManager.EndFrame();

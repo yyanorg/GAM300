@@ -22,6 +22,9 @@
     <ClInclude Include="include\EditorCamera.hpp" />
     <ClInclude Include="include\EditorInputManager.hpp" />
     <ClInclude Include="include\RaycastUtil.hpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="include\GUIManager.hpp" />
     <ClInclude Include="include\Panels\EditorPanel.hpp" />
     <ClInclude Include="include\Panels\PanelManager.hpp" />
     <ClInclude Include="include\Panels\ScenePanel.hpp" />
