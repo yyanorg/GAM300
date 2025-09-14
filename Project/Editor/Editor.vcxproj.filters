@@ -3,9 +3,6 @@
   <ItemGroup>
     <ClCompile Include="src\main.cpp" />
     <ClCompile Include="src\GUIManager.cpp" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="include\GUIManager.hpp" />
     <ClCompile Include="src\EditorState.cpp" />
     <ClCompile Include="src\EditorCamera.cpp" />
     <ClCompile Include="src\EditorInputManager.cpp" />

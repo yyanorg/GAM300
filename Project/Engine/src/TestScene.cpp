@@ -19,18 +19,21 @@ void TestScene::Initialize()
 
 	// Create an entity with a Renderer component in the main ECS manager
 	Entity testEntt = mainECS.CreateEntity();
-	mainECS.AddComponent<Renderer>(testEntt, Renderer{});
-	Renderer &renderer = mainECS.GetComponent<Renderer>(testEntt);
-	renderer.model = AssetManager::GetInstance().GetAsset<Model>("Resources/Models/backpack/backpack.obj");
-	renderer.shader = AssetManager::GetInstance().GetAsset<Shader>("Resources/Shaders/default");
-	glm::mat4 transform = glm::mat4(1.0f);
-	transform = glm::translate(transform, glm::vec3(0.0f, 0.0f, 0.0f));
-	transform = glm::scale(transform, glm::vec3(0.1f, 0.1f, 0.1f));
-	renderer.transform = transform;
 	std::cout << "[TestScene] Created backpack entity with ID: " << testEntt << std::endl;
 
 	glm::mat4 transform = glm::mat4(1.0f);
-	std::cout << "[TestScene] Created backpack entity with ID: " << testEntt << std::endl;
+	transform = glm::translate(transform, glm::vec3(0.0f, -1.0f, -5.0f)); // Move it away from camera and down a bit
+	transform = glm::scale(transform, glm::vec3(0.5f, 0.5f, 0.5f));		  // Larger scale to make it more visible
+	mainECS.AddComponent<ModelRenderComponent>(testEntt, ModelRenderComponent{AssetManager::GetInstance().GetAsset<Model>("Resources/Models/backpack/backpack.obj"),
+																			  AssetManager::GetInstance().GetAsset<Shader>("Resources/Shaders/default"),
+																			  transform});
+
+	std::cout << "[TestScene] Added ModelRenderComponent to entity " << testEntt << std::endl;
+
+	// mainECS.CreateEntity();
+	// mainECS.CreateEntity();
+	// mainECS.CreateEntity();
+	// mainECS.CreateEntity();
 
 	glm::mat4 transform = glm::mat4(1.0f);
 	std::cout << "[TestScene] Created backpack entity with ID: " << testEntt << std::endl;
@@ -157,6 +160,11 @@ void TestScene::processInput()
 }
 
 void TestScene::DrawLightCubes()
+{
+	DrawLightCubes(camera);
+}
+
+void TestScene::DrawLightCubes(const Camera &cameraOverride)
 {
 	DrawLightCubes(camera);
 }

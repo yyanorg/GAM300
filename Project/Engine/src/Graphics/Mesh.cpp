@@ -2,8 +2,9 @@
 
 #include "Graphics/Mesh.h"
 
-Mesh::Mesh(std::vector<Vertex> &vertices, std::vector<GLuint> &indices, std::vector<std::shared_ptr<Texture>> &textures) : vertices(vertices), indices(indices), textures(textures)
-																																									 Mesh::Mesh(std::vector<Vertex> & vertices, std::vector<GLuint> & indices, std::vector<std::shared_ptr<Texture>> & textures) : vertices(vertices), indices(indices), textures(textures)
+// Removed hardcoded screen dimensions - matrices are now handled by GraphicsManager
+
+Mesh::Mesh(std::vector<Vertex>& vertices, std::vector<GLuint>& indices, std::vector<std::shared_ptr<Texture>>& textures) : vertices(vertices), indices(indices), textures(textures)
 {
 	setupMesh();
 }
@@ -42,7 +43,7 @@ void Mesh::setupMesh()
 	ebo.Unbind();
 }
 
-Mesh::~Mesh() void Mesh::Draw(Shader &shader, const Camera &camera) void Mesh::Draw(Shader &shader, const Camera &camera)
+void Mesh::Draw(Shader& shader, const Camera& camera)
 {
 	vao.Delete();
 	void Mesh::Draw(Shader & shader, const Camera &camera)
@@ -50,28 +51,9 @@ Mesh::~Mesh() void Mesh::Draw(Shader &shader, const Camera &camera) void Mesh::D
 		shader.Activate();
 		vao.Bind();
 
-		// Only set camera position for lighting calculations
-		// Note: view and projection matrices are already set by GraphicsManager::SetupMatrices()
-		shader.setVec3("cameraPos", camera.Position);
-
-		// Apply material if available
-		if (material)
-		{
-			// material->debugPrintProperties();
-			material->applyToShader(shader);
-		}
-		else
-		{
-			// Fallback to old texture system for backward compatibility
-			unsigned int textureUnit = 0;
-			unsigned int numDiffuse = 0, numSpecular = 0;
-			// Only set camera position for lighting calculations
-			// Note: view and projection matrices are already set by GraphicsManager::SetupMatrices()
-			shader.setVec3("cameraPos", camera.Position);
-			for (unsigned int i = 0; i < textures.size() && textureUnit < 16; i++)
-			{
-				if (!textures[i])
-					continue;
+    // Only set camera position for lighting calculations
+    // Note: view and projection matrices are already set by GraphicsManager::SetupMatrices()
+    shader.setVec3("cameraPos", camera.Position);
 
 				std::string num;
 				std::string type = textures[i]->type;
