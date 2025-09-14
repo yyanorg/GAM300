@@ -14,8 +14,8 @@
     <ClCompile Include="src\Panels\InspectorPanel.cpp" />
     <ClCompile Include="src\Panels\ConsolePanel.cpp" />
     <ClCompile Include="src\Panels\GamePanel.cpp" />
-    <ClCompile Include="..\Libraries\ImGui\ImGuizmo.cpp" />
     <ClCompile Include="src\Panels\PlayControlPanel.cpp" />
+    <ClCompile Include="src\Panels\PerformancePanel.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\GUIManager.hpp" />

@@ -36,9 +36,8 @@ void GUIManager::Initialize() {
 	ImGuiIO& io = ImGui::GetIO(); (void)io;
 	io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;  // Enable Keyboard Controls
 	io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;      // Enable Docking
-	//io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;    // Enable Multi-Viewport / Platform Windows
- //   io.BackendFlags |= ImGuiBackendFlags_PlatformHasViewports;
-	//io.BackendFlags |= ImGuiBackendFlags_RendererHasViewports;
+
+	io.IniFilename = "imgui.ini";
 	
 	CreateEditorTheme();
 
