@@ -20,7 +20,7 @@ struct Vector3D
 
 	// Constructs
 	constexpr Vector3D() : x(0.f), y(0.f), z(0.f) {}
-	constexpr Vector3D(float x_, float y_, float z_) : x(x_), y(y_), z(z_) {}
+	constexpr Vector3D(float x_ = 0.f, float y_ = 0.f, float z_ = 0.f) : x(x_), y(y_), z(z_) {}
 
 	//  Special helpers
 	static constexpr Vector3D Zero() { return { 0.f,0.f,0.f }; }
