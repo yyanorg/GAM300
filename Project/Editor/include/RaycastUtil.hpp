@@ -5,6 +5,7 @@
 #include <vector>
 #include <limits>
 #include "EditorState.hpp"  // This already defines Entity and INVALID_ENTITY
+#include "Math/Matrix4x4.h"
 
 /**
  * @brief Utility class for raycasting in 3D space for entity selection.
@@ -44,7 +45,7 @@ public:
      */
     static Ray ScreenToWorldRay(float mouseX, float mouseY,
                                float screenWidth, float screenHeight,
-                               const glm::mat4& viewMatrix, const glm::mat4& projMatrix);
+                               const Matrix4x4& viewMatrix, const Matrix4x4& projMatrix);
 
     /**
      * @brief Test ray intersection with axis-aligned bounding box.
@@ -61,7 +62,7 @@ public:
      * @param modelSize Optional model size (default 1x1x1 cube)
      * @return AABB in world space
      */
-    static AABB CreateAABBFromTransform(const glm::mat4& transform,
+    static AABB CreateAABBFromTransform(const Matrix4x4& transform,
                                        const glm::vec3& modelSize = glm::vec3(1.0f));
 
     /**
@@ -86,6 +87,7 @@ public:
      * @return true if entity transform was updated successfully, false otherwise
      */
     static bool SetEntityTransform(Entity entity, const float matrix[16]);
+
 
 private:
     static constexpr float EPSILON = 1e-6f;

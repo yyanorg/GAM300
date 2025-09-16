@@ -51,6 +51,7 @@ private:
     void ApplyLighting(Shader& shader);
     void SetupMatrices(Shader& shader, const glm::mat4& modelMatrix);
     glm::mat4 ConvertMatrix4x4ToGLM(const Matrix4x4& m);
+    Matrix4x4 ConvertGLMToMatrix4x4(const glm::mat4& m);
 
     // Private text rendering methods
     void RenderText(const TextRenderComponent& item);
