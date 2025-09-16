@@ -7,9 +7,10 @@
 
 /**
  * @brief Scene editing panel with ImGuizmo integration.
- * 
- * This panel provides scene editing capabilities with gizmos for 
+ *
+ * This panel provides scene editing capabilities with gizmos for
  * transforming objects, grid visualization, and other scene editing tools.
+ * Updated to use camelCase member variables without m_ prefix.
  */
 class ScenePanel : public EditorPanel {
 public:
@@ -23,21 +24,21 @@ public:
 
 private:
     // ImGuizmo state
-    ImGuizmo::OPERATION m_GizmoOperation = ImGuizmo::TRANSLATE;
-    ImGuizmo::MODE m_GizmoMode = ImGuizmo::WORLD;
+    ImGuizmo::OPERATION gizmoOperation = ImGuizmo::TRANSLATE;
+    ImGuizmo::MODE gizmoMode = ImGuizmo::WORLD;
 
     // Editor modes
-    bool m_IsNormalPanMode = false;  // Q key mode - no gizmos, LMB panning
+    bool isNormalPanMode = false;  // Q key mode - no gizmos, LMB panning
     
     // Editor camera for this panel
-    EditorCamera m_EditorCamera;
+    EditorCamera editorCamera;
 
     // Input tracking for camera (reverted from EditorInputManager for working orbit)
-    glm::vec2 m_LastMousePos;
-    bool m_FirstMouse = true;
+    glm::vec2 lastMousePos;
+    bool firstMouse = true;
 
     // Matrix storage for ImGuizmo
-    float m_IdentityMatrix[16];
+    float identityMatrix[16];
     
     void InitializeMatrices();
     void HandleKeyboardInput();
@@ -46,6 +47,7 @@ private:
     void RenderGizmoControls();
     void RenderSceneWithEditorCamera(int width, int height);
     void HandleImGuizmoInChildWindow(float sceneWidth, float sceneHeight);
+    void RenderViewGizmo(float sceneWidth, float sceneHeight);
 
     // Helper functions
     void Mat4ToFloatArray(const glm::mat4& mat, float* arr);
