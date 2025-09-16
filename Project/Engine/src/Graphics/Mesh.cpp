@@ -1,9 +1,8 @@
 #include "pch.h"
 
 #include "Graphics/Mesh.h"
+#include "WindowManager.hpp"
 
-const unsigned int SCR_WIDTH = 800;
-const unsigned int SCR_HEIGHT = 600;
 
 Mesh::Mesh(std::vector<Vertex>& vertices, std::vector<GLuint>& indices, std::vector<std::shared_ptr<Texture>>& textures) : vertices(vertices), indices(indices), textures(textures)
 {
@@ -53,7 +52,7 @@ void Mesh::Draw(Shader& shader, const Camera& camera)
 	glm::mat4 view = camera.GetViewMatrix();
 	shader.setMat4("view", view);
 
-	glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
+	glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)WindowManager::GetViewportWidth() / (float)WindowManager::GetViewportHeight(), 0.1f, 100.0f);
 	shader.setMat4("projection", projection);
 	shader.setVec3("cameraPos", camera.Position);
 
