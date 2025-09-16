@@ -52,5 +52,5 @@ public:
     static bool IsPaused();
 
 private:
-    static GameState s_CurrentGameState;
+    static GameState currentGameState;
 };
