@@ -1,5 +1,8 @@
 #pragma once
 #include "Graphics/GraphicsManager.hpp"
+#include "Graphics/TextRendering/TextRenderComponent.hpp"
+#include "Graphics/TextRendering/TextRenderingSystem.hpp"
+#include "Graphics/TextRendering/Font.hpp"
 
 class TestScene {
 public:
@@ -80,4 +83,8 @@ public:
 	//----------------LIGHT-------------------
 	std::shared_ptr<Shader> lightShader;
 	std::shared_ptr<Mesh> lightCubeMesh;
+
+	// Text rendering members
+	std::shared_ptr<Font> testFont;
+	std::shared_ptr<Shader> textShader;
 };

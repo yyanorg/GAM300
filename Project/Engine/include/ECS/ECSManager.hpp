@@ -6,6 +6,7 @@
 #include "ComponentManager.hpp"
 #include "SystemManager.hpp"
 #include <Graphics/Model/ModelSystem.hpp>
+#include <Graphics/TextRendering/TextRenderingSystem.hpp>
 
 class ECSManager {
 public:
@@ -81,6 +82,7 @@ public:
 	// STORE SHARED POINTERS TO SYSTEMS HERE
 	// e.g., std::shared_ptr<TransformSystem> transformSystem;
 	std::shared_ptr<ModelSystem> modelSystem;
+	std::shared_ptr<TextRenderingSystem> textSystem;
 
 private:
 	template <typename T>
