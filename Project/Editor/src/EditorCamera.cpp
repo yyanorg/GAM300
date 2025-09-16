@@ -31,10 +31,9 @@ void EditorCamera::ProcessInput(float deltaTime, bool isWindowHovered,
 
     if (!isWindowHovered) return;
 
-    // Unity-style orbit: Alt + LMB to rotate around target
     if (isAltPressed && isLeftMousePressed) {
-        Yaw += mouseDeltaX * OrbitSensitivity;
-        Pitch += mouseDeltaY * OrbitSensitivity;
+        Yaw -= mouseDeltaX * OrbitSensitivity;
+        Pitch -= mouseDeltaY * OrbitSensitivity;
 
         // Constrain pitch to prevent flipping
         Pitch = std::clamp(Pitch, -89.0f, 89.0f);
