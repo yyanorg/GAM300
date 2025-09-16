@@ -8,6 +8,7 @@
 #include "Graphics/ShaderClass.h"
 #include "Graphics/Model/Model.h"
 #include "Model/ModelRenderComponent.hpp"
+#include <Math/Matrix4x4.h>
 
 class GraphicsManager {
 public:
@@ -28,7 +29,7 @@ public:
 
     // Render queue management
     void Submit(std::unique_ptr<IRenderComponent> renderItem);
-    void SubmitModel(std::shared_ptr<Model> model, std::shared_ptr<Shader> shader, const glm::mat4& transform);
+    void SubmitModel(std::shared_ptr<Model> model, std::shared_ptr<Shader> shader, const Matrix4x4& transform);
 
     // Main rendering
     void Render();
@@ -44,6 +45,7 @@ private:
     void RenderModel(const ModelRenderComponent& item);
     void ApplyLighting(Shader& shader);
     void SetupMatrices(Shader& shader, const glm::mat4& modelMatrix);
+    glm::mat4 ConvertMatrix4x4ToGLM(const Matrix4x4& m);
 
     std::vector<std::unique_ptr<IRenderComponent>> renderQueue;
     Camera* currentCamera = nullptr;

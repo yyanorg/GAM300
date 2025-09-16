@@ -1,5 +1,6 @@
 #include "pch.h"
 #include "ECS/ECSManager.hpp"
+#include <Transform/TransformComponent.hpp>
 #include <Graphics/Model/ModelSystem.hpp>
 #include <Graphics/Model/ModelRenderComponent.hpp>
 
