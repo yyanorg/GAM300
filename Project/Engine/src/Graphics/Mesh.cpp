@@ -44,52 +44,52 @@ void Mesh::setupMesh()
 	ebo.Unbind();
 }
 
-void Mesh::Draw(Shader& shader, Camera& camera)
+void Mesh::Draw(Shader& shader, const Camera& camera)
 {
-    shader.Activate();
-    vao.Bind();
+	shader.Activate();
+	vao.Bind();
 
-    // Set camera matrices
-    glm::mat4 view = camera.GetViewMatrix();
-    shader.setMat4("view", view);
+	// Set camera matrices
+	glm::mat4 view = camera.GetViewMatrix();
+	shader.setMat4("view", view);
 
-    glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
-    shader.setMat4("projection", projection);
-    shader.setVec3("cameraPos", camera.Position);
+	glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
+	shader.setMat4("projection", projection);
+	shader.setVec3("cameraPos", camera.Position);
 
-    // Apply material if available
-    if (material) 
-    {
-        //material->debugPrintProperties();
-        material->applyToShader(shader);
-    }
-    else 
-    {
-        // Fallback to old texture system for backward compatibility
-        unsigned int textureUnit = 0;
-        unsigned int numDiffuse = 0, numSpecular = 0;
+	// Apply material if available
+	if (material)
+	{
+		//material->debugPrintProperties();
+		material->applyToShader(shader);
+	}
+	else
+	{
+		// Fallback to old texture system for backward compatibility
+		unsigned int textureUnit = 0;
+		unsigned int numDiffuse = 0, numSpecular = 0;
 
-        for (unsigned int i = 0; i < textures.size() && textureUnit < 16; i++)
-        {
-            if (!textures[i]) continue;
+		for (unsigned int i = 0; i < textures.size() && textureUnit < 16; i++)
+		{
+			if (!textures[i]) continue;
 
-            std::string num;
-            std::string type = textures[i]->type;
+			std::string num;
+			std::string type = textures[i]->type;
 
-            if (type == "diffuse") {
-                num = std::to_string(numDiffuse++);
-            }
-            else if (type == "specular") {
-                num = std::to_string(numSpecular++);
-            }
+			if (type == "diffuse") {
+				num = std::to_string(numDiffuse++);
+			}
+			else if (type == "specular") {
+				num = std::to_string(numSpecular++);
+			}
 
-            glActiveTexture(GL_TEXTURE0 + textureUnit);
-            textures[i]->Bind();
-            shader.setInt(("material." + type + num).c_str(), textureUnit);
-            textureUnit++;
-        }
-    }
+			glActiveTexture(GL_TEXTURE0 + textureUnit);
+			textures[i]->Bind();
+			shader.setInt(("material." + type + num).c_str(), textureUnit);
+			textureUnit++;
+		}
+	}
 
-    glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, 0);
+	glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, 0);
 }
 

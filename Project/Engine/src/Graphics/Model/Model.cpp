@@ -209,7 +209,7 @@ std::vector<std::shared_ptr<Texture>> Model::loadMaterialTexture(aiMaterial* mat
 	return textures;
 }
 
-void Model::Draw(Shader& shader, Camera& camera)
+void Model::Draw(Shader& shader, const Camera& camera)
 {
 	for (auto& mesh : meshes)
 	{

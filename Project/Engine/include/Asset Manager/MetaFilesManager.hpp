@@ -16,6 +16,12 @@ public:
 
     static GUID_128 GetGUID128FromAssetFile(const std::string& assetPath);
 
+	static bool MetaFileUpdated(const std::string& assetPath);
+
+	static GUID_128 UpdateMetaFile(const std::string& assetPath);
+
+    static constexpr int CURRENT_METADATA_VERSION = 1;
+
 private:
     /**
     * \brief Deleted default constructor to prevent instantiation.

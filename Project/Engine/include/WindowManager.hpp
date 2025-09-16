@@ -3,6 +3,7 @@
 #include <GLFW/glfw3.h>
 #include <GLFW/glfw3native.h>
 #include <string>
+#include <glm/glm.hpp>
 
 #ifdef _WIN32
 #ifdef ENGINE_EXPORTS
@@ -55,6 +56,10 @@ public:
     static bool IsWindowFocused();
     static void window_focus_callback(GLFWwindow* window, int focused);
 
+    static void updateDeltaTime();
+    static double getDeltaTime();
+    static double getFps();
+
     // Scene framebuffer functions
     static unsigned int CreateSceneFramebuffer(int width, int height);
     static void DeleteSceneFramebuffer();
@@ -62,6 +67,8 @@ public:
     static void BeginSceneRender(int width, int height);
     static void EndSceneRender();
     static void RenderScene();
+    static void RenderSceneForEditor();
+    static void RenderSceneForEditor(const glm::vec3& cameraPos, const glm::vec3& cameraFront, const glm::vec3& cameraUp, float cameraZoom);
 
 private:
 
@@ -81,4 +88,7 @@ private:
     static GLint viewportHeight;
 
     static const char* title;
+
+    static double deltaTime;
+    static double lastFrameTime;
 };

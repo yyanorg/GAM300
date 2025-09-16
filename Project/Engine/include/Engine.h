@@ -1,5 +1,4 @@
 #pragma once
-#include "TestScene.hpp" // temp
 
 // #ifdef ENGINE_EXPORTS
 // #define ENGINE_API __declspec(dllexport)
@@ -25,6 +24,12 @@
 
 struct GLFWwindow;
 
+enum class GameState {
+    EDIT_MODE,
+    PLAY_MODE,
+    PAUSED_MODE
+};
+
 class ENGINE_API Engine {
 public:
     static bool Initialize();
@@ -35,12 +40,17 @@ public:
     static void Draw();
     static void EndDraw();
 
-
     static bool IsRunning();
     static void Shutdown();
 
-    // TEMP
-    static TestScene testScene;
+    // Game state management
+    static void SetGameState(GameState state);
+    static GameState GetGameState();
+    static bool ShouldRunGameLogic();
+    static bool IsEditMode();
+    static bool IsPlayMode();
+    static bool IsPaused();
 
 private:
+    static GameState s_CurrentGameState;
 };

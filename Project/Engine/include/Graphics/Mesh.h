@@ -18,7 +18,7 @@ public:
 	Mesh(std::vector<Vertex>& vertices, std::vector<GLuint>& indices, std::shared_ptr<Material> mat);
 
 	~Mesh();
-	void Draw(Shader& shader, Camera& camera);
+	void Draw(Shader& shader, const Camera& camera);
 
 	Mesh(const Mesh& other) = delete;  // Prevent copying
 	Mesh& operator=(const Mesh& other) = delete;  // Prevent assignment

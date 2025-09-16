@@ -3,3 +3,4 @@
 
 # Ignore build folder
 Project/Build
+/Project/.claude

@@ -27,12 +27,15 @@ int main() {
     GameManager::Initialize();
 	GUIManager::Initialize();
     while (Engine::IsRunning()) {
+        //Update deltaTime at start of Frame
+        WindowManager::updateDeltaTime();
+
         Engine::Update();
         GameManager::Update();
 
         // Render 3D content to FBO
         Engine::StartDraw();
-        Engine::Draw();
+        //Engine::Draw();
         GUIManager::Render();
         Engine::EndDraw();
 		
