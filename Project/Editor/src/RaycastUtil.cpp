@@ -11,10 +11,6 @@
 #include "Transform/TransformComponent.hpp"
 #include "Math/Vector3D.h"
 
-#ifndef M_PI
-#define M_PI 3.14159265358979323846
-#endif
-
 RaycastUtil::Ray RaycastUtil::ScreenToWorldRay(float mouseX, float mouseY,
                                               float screenWidth, float screenHeight,
                                               const Matrix4x4& viewMatrix, const Matrix4x4& projMatrix) {
