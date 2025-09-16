@@ -1,10 +1,11 @@
 #include "pch.h"
 #include "GUIManager.hpp"
 #include "imgui.h"
-#include "imgui_internal.h"  // Required for DockBuilder functions
+#include "imgui_internal.h" 
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_opengl3.h"
 #include "ImGuizmo.h"
+#include "Graphics/SceneRenderer.hpp"
 #include "WindowManager.hpp"
 #include "EditorState.hpp"
 
@@ -100,8 +101,8 @@ void GUIManager::Render() {
 }
 
 void GUIManager::Exit() {
-	// WindowManager handles framebuffer cleanup
-	WindowManager::DeleteSceneFramebuffer();
+	// SceneRenderer handles framebuffer cleanup
+	SceneRenderer::DeleteSceneFramebuffer();
 	
 	// Clean up panel manager
 	s_PanelManager.reset();

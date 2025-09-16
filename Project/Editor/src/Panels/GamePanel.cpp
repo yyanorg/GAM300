@@ -1,6 +1,6 @@
 #include "Panels/GamePanel.hpp"
 #include "imgui.h"
-#include "WindowManager.hpp"
+#include "Graphics/SceneRenderer.hpp"
 #include "EditorState.hpp"
 #include "Engine.h"
 
@@ -25,12 +25,12 @@ void GamePanel::OnImGuiRender() {
         // Render the game when in play mode or paused (show frozen game scene)
         if (Engine::ShouldRunGameLogic() || Engine::IsPaused()) {
             // Render 3D scene with game logic running
-            WindowManager::BeginSceneRender(gameViewWidth, gameViewHeight);
-            WindowManager::RenderScene(); // This will run with game logic
-            WindowManager::EndSceneRender();
+            SceneRenderer::BeginSceneRender(gameViewWidth, gameViewHeight);
+            SceneRenderer::RenderScene(); // This will run with game logic
+            SceneRenderer::EndSceneRender();
 
-            // Get the texture from WindowManager and display it
-            unsigned int sceneTexture = WindowManager::GetSceneTexture();
+            // Get the texture from SceneRenderer and display it
+            unsigned int sceneTexture = SceneRenderer::GetSceneTexture();
             if (sceneTexture != 0) {
                 ImGui::Image(
                     (void*)(intptr_t)sceneTexture,
