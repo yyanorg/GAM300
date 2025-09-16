@@ -4,6 +4,7 @@
 #include <Graphics/Model/ModelSystem.hpp>
 #include <Graphics/Model/ModelRenderComponent.hpp>
 #include <Graphics/TextRendering/TextRenderComponent.hpp>
+#include "ECS/NameComponent.hpp"
 
 void ECSManager::Initialize() {
 	entityManager = std::make_unique<EntityManager>();
@@ -15,6 +16,7 @@ void ECSManager::Initialize() {
 	RegisterComponent<Transform>();
 	RegisterComponent<ModelRenderComponent>();
 	RegisterComponent<TextRenderComponent>();
+	RegisterComponent<NameComponent>();
 
 	// REGISTER ALL SYSTEMS AND ITS SIGNATURES HERE
 	// e.g.,
@@ -38,6 +40,7 @@ void ECSManager::Initialize() {
 		signature.set(GetComponentID<TextRenderComponent>());
 		SetSystemSignature<TextRenderingSystem>(signature);
 	}
+	
 }
 
 Entity ECSManager::CreateEntity() {

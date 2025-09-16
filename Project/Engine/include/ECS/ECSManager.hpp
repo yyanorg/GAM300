@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <vector>
 
 #include "EntityManager.hpp"
 #include "ComponentManager.hpp"
@@ -79,6 +80,10 @@ public:
 	template <typename T>
 	void SetSystemSignature(Signature signature) {
 		systemManager->SetSignature<T>(signature);
+	}
+
+	std::vector<Entity> GetActiveEntities() const {
+		return entityManager->GetActiveEntities();
 	}
 
 	// STORE SHARED POINTERS TO SYSTEMS HERE

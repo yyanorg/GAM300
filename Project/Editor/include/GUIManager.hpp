@@ -5,6 +5,7 @@ class WindowManager;
 
 #include <memory>
 #include "Panels/PanelManager.hpp"
+#include <ECS/Entity.hpp>
 
 /**
  * @brief Main GUI management class for the editor.
@@ -39,7 +40,19 @@ public:
 	 * @brief Get the panel manager instance.
 	 * @return Reference to the panel manager for external panel operations.
 	 */
-	static PanelManager& GetPanelManager() { return *s_PanelManager; }
+	static PanelManager& GetPanelManager() { return *panelManager; }
+
+	/**
+	 * @brief Get the currently selected entity.
+	 * @return The selected entity ID, or static_cast<Entity>(-1) if none selected.
+	 */
+	static Entity GetSelectedEntity() { return selectedEntity; }
+
+	/**
+	 * @brief Set the currently selected entity.
+	 * @param entity The entity to select, or static_cast<Entity>(-1) to deselect.
+	 */
+	static void SetSelectedEntity(Entity entity) { selectedEntity = entity; }
 
 private:
 	/**
@@ -62,6 +75,7 @@ private:
 
 	static void CreateEditorTheme();
 
-	static std::unique_ptr<PanelManager> s_PanelManager;
-	static bool s_DockspaceInitialized;
+	static std::unique_ptr<PanelManager> panelManager;
+	static bool dockspaceInitialized;
+	static Entity selectedEntity;
 };

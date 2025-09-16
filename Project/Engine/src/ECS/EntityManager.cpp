@@ -71,3 +71,13 @@ bool EntityManager::IsActive(Entity entity) const {
 	assert(entity < MAX_ENTITIES && "Entity out of range.");
 	return activeEntities[entity];
 }
+
+std::vector<Entity> EntityManager::GetActiveEntities() const {
+	std::vector<Entity> entities;
+	for (Entity entity = 0; entity < activeEntityCount; ++entity) {
+		if (activeEntities[entity]) {
+			entities.push_back(entity);
+		}
+	}
+	return entities;
+}

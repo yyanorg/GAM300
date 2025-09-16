@@ -2,11 +2,13 @@
 
 #include <array>
 #include <queue>
+#include <vector>
 
 #include "Entity.hpp"
 #include "Signature.hpp"
+#include "../Engine.h"  // For ENGINE_API macro
 
-class EntityManager {
+class ENGINE_API EntityManager {
 public:
 	EntityManager();
 
@@ -25,6 +27,8 @@ public:
 	void SetActive(Entity entity, bool isActive);
 
 	bool IsActive(Entity entity) const;
+
+	std::vector<Entity> GetActiveEntities() const;
 
 private:
 	std::queue<Entity> availableEntities{}; // Queue of available entity IDs.

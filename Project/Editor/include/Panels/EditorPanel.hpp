@@ -22,27 +22,26 @@ public:
      * @brief Get the display name of this panel.
      * @return The panel's name as a string.
      */
-    const std::string& GetName() const { return m_Name; }
+    const std::string& GetName() const { return name; }
 
     /**
      * @brief Check if this panel is currently open/visible.
      * @return True if the panel should be rendered, false otherwise.
      */
-    bool IsOpen() const { return m_IsOpen; }
+    bool IsOpen() const { return isOpen; }
 
     /**
      * @brief Set the visibility state of this panel.
      * @param isOpen True to show the panel, false to hide it.
      */
-    void SetOpen(bool isOpen) { m_IsOpen = isOpen; }
+    void SetOpen(bool isOpen) { this->isOpen = isOpen; }
 
     /**
      * @brief Toggle the visibility state of this panel.
      */
-    void ToggleOpen() { m_IsOpen = !m_IsOpen; }
+    void ToggleOpen() { isOpen = !isOpen; }
 
 protected:
-    //test again
-    std::string m_Name;
-    bool m_IsOpen;
+    std::string name;
+    bool isOpen;
 };
