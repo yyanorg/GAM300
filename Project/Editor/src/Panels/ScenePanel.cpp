@@ -1,9 +1,10 @@
 #include "Panels/ScenePanel.hpp"
 #include "EditorInputManager.hpp"
+#include "Graphics/GraphicsManager.hpp"
+#include "Graphics/SceneRenderer.hpp"
 #include "RaycastUtil.hpp"
 #include "imgui.h"
 #include "ImGuizmo.h"
-#include "WindowManager.hpp"
 #include "EditorState.hpp"
 #include <cstring>
 #include <cmath>
@@ -225,8 +226,8 @@ void ScenePanel::OnImGuiRender() {
         // Get window position for ImGuizmo (where the scene image starts)
         ImVec2 imagePos = ImGui::GetCursorScreenPos();
 
-        // Get the texture from WindowManager and display it
-        unsigned int sceneTexture = WindowManager::GetSceneTexture();
+        // Get the texture from SceneRenderer and display it
+        unsigned int sceneTexture = SceneRenderer::GetSceneTexture();
         if (sceneTexture != 0) {
             // Use a child window to contain both the image and ImGuizmo
             ImGui::BeginChild("SceneView", ImVec2((float)sceneViewWidth, (float)sceneViewHeight), false,
@@ -270,14 +271,14 @@ void ScenePanel::OnImGuiRender() {
 void ScenePanel::RenderSceneWithEditorCamera(int width, int height) {
     try {
         // Pass our editor camera data to the rendering system
-        WindowManager::BeginSceneRender(width, height);
-        WindowManager::RenderSceneForEditor(
+        SceneRenderer::BeginSceneRender(width, height);
+        SceneRenderer::RenderSceneForEditor(
             m_EditorCamera.Position,
             m_EditorCamera.Front,
             m_EditorCamera.Up,
             m_EditorCamera.Zoom
         );
-        WindowManager::EndSceneRender();
+        SceneRenderer::EndSceneRender();
 
         // Now both the visual representation AND ImGuizmo overlay use our editor camera
         // This gives us proper Unity-style editor controls
