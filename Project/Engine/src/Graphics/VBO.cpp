@@ -2,6 +2,7 @@
 
 #include "Graphics/VBO.h"
 
+// Constructor for static mesh data
 VBO::VBO(std::vector<Vertex>& vertices)
 {
 	glGenBuffers(1, &ID);
@@ -25,4 +26,30 @@ void VBO::Unbind()
 void VBO::Delete()
 {
 	glDeleteBuffers(1, &ID);
+}
+
+// Constructor for dynamic data
+VBO::VBO(size_t size, GLenum usage)
+{
+	glGenBuffers(1, &ID);
+	glBindBuffer(GL_ARRAY_BUFFER, ID);
+	glBufferData(GL_ARRAY_BUFFER, size, nullptr, usage);
+	initialized = true;
+}
+
+void VBO::UpdateData(const void* data, size_t size, size_t offset)
+{
+	Bind();
+	glBufferSubData(GL_ARRAY_BUFFER, offset, size, data);
+}
+
+void VBO::InitializeBuffer(size_t size, GLenum usage)
+{
+	if (!initialized) 
+	{
+		glGenBuffers(1, &ID);
+		initialized = true;
+	}
+	Bind();
+	glBufferData(GL_ARRAY_BUFFER, size, nullptr, usage);
 }

@@ -47,6 +47,9 @@
     <ClInclude Include="include\Graphics\IRenderComponent.hpp" />
     <ClInclude Include="include\Graphics\Model\ModelRenderComponent.hpp" />
     <ClInclude Include="include\Graphics\GraphicsManager.hpp" />
+    <ClInclude Include="include\Graphics\TextRendering\Font.hpp" />
+    <ClInclude Include="include\Graphics\TextRendering\TextRenderingSystem.hpp" />
+    <ClInclude Include="include\Graphics\TextRendering\TextRenderComponent.hpp" />
     <ClInclude Include="include\Logging.hpp" />
     <ClInclude Include="include\Scene\Scene.hpp" />
     <ClInclude Include="include\Scene\SceneManager.hpp" />
@@ -81,6 +84,8 @@
     <ClCompile Include="src\Scene\SceneInstance.cpp" />
     <ClCompile Include="src\Graphics\Material.cpp" />
     <ClCompile Include="src\Graphics\GraphicsManager.cpp" />
+    <ClCompile Include="src\Graphics\TextRendering\Font.cpp" />
+    <ClCompile Include="src\Graphics\TextRendering\TextRenderingSystem.cpp" />
     <ClCompile Include="src\Logging.cpp" />
     <ClCompile Include="src\Scene\SceneManager.cpp" />
     <ClCompile Include="src\TransformSystem.cpp" />

@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
@@ -35,11 +35,14 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="include\Graphics\TextRendering\Font.hpp" />
     <ClInclude Include="include\Graphics\GraphicsManager.hpp" />
     <ClInclude Include="include\Graphics\IRenderComponent.hpp" />
     <ClInclude Include="include\Graphics\Material.hpp" />
     <ClInclude Include="include\Graphics\Model\ModelRenderComponent.hpp" />
     <ClInclude Include="include\Graphics\SceneRenderer.hpp" />
+    <ClInclude Include="include\Graphics\TextRendering\TextRenderComponent.hpp" />
+    <ClInclude Include="include\Graphics\TextRendering\TextRenderingSystem.hpp" />
     <ClInclude Include="include\Logging.hpp" />
     <ClInclude Include="include\Scene\Scene.hpp" />
     <ClInclude Include="include\Scene\SceneManager.hpp" />
@@ -83,9 +86,11 @@
     <ClInclude Include="include\Input\InputManager.hpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="src\Graphics\TextRendering\Font.cpp" />
     <ClCompile Include="src\Graphics\GraphicsManager.cpp" />
     <ClCompile Include="src\Graphics\Material.cpp" />
     <ClCompile Include="src\Graphics\SceneRenderer.cpp" />
+    <ClCompile Include="src\Graphics\TextRendering\TextRenderingSystem.cpp" />
     <ClCompile Include="src\Logging.cpp" />
     <ClCompile Include="src\Scene\SceneManager.cpp" />
     <ClCompile Include="src\Serialization\Deserialization.cpp" />

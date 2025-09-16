@@ -11,7 +11,7 @@ public:
     ModelSystem() = default;
     ~ModelSystem() = default;
 
-    bool Initialise();  // Remove window parameters - GraphicsManager handles this
-    void Update();      // Changed from Render() to Update()
+    bool Initialise();
+    void Update();
     void Shutdown();
 };

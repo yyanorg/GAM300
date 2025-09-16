@@ -7,6 +7,7 @@
 #include "SystemManager.hpp"
 #include <Transform/TransformSystem.hpp>
 #include <Graphics/Model/ModelSystem.hpp>
+#include <Graphics/TextRendering/TextRenderingSystem.hpp>
 #include "../Engine.h"  // For ENGINE_API macro
 
 class ENGINE_API ECSManager {
@@ -84,6 +85,7 @@ public:
 	// e.g., 
 	std::shared_ptr<TransformSystem> transformSystem;
 	std::shared_ptr<ModelSystem> modelSystem;
+	std::shared_ptr<TextRenderingSystem> textSystem;
 
 private:
 	template <typename T>
