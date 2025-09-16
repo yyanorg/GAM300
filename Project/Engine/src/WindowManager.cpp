@@ -17,20 +17,20 @@
 GLFWwindow* WindowManager::ptrWindow = nullptr;
 //GLint WindowManager::width;
 //GLint WindowManager::height;
-GLint WindowManager::viewportWidth;
-GLint WindowManager::viewportHeight;
-const char* WindowManager::title;
+//GLint WindowManager::viewportWidth;
+//GLint WindowManager::viewportHeight;
+//const char* WindowManager::title;
 
-bool WindowManager::isFocused = true;
-bool WindowManager::isFullscreen = false;
-GLint WindowManager::windowedWidth = 1600;   // Default windowed size
-GLint WindowManager::windowedHeight = 900;  // Default windowed size
-GLint WindowManager::windowedPosX = 0;      // Default window position
-GLint WindowManager::windowedPosY = 0;      // Default window position
-
+//bool WindowManager::isFocused = true;
+//bool WindowManager::isFullscreen = false;
+//GLint WindowManager::windowedWidth = 1600;   // Default windowed size
+//GLint WindowManager::windowedHeight = 900;  // Default windowed size
+//GLint WindowManager::windowedPosX = 0;      // Default window position
+//GLint WindowManager::windowedPosY = 0;      // Default window position
+//
 //double WindowManager::deltaTime = 0.0;
 
-double WindowManager::lastFrameTime = 0.0;
+//double WindowManager::lastFrameTime = 0.0;
 
 // Scene framebuffer static members
 static unsigned int sceneFrameBuffer = 0;
@@ -49,12 +49,12 @@ bool WindowManager::Initialize(GLint _width, GLint _height, const char* _title) 
     RunTimeVar::window.width = _width; 
     RunTimeVar::window.height = _height;
 
-    WindowManager::viewportWidth = _width;
-    WindowManager::viewportHeight = _height;
-    title = _title;
+    RunTimeVar::window.viewportWidth = _width;
+    RunTimeVar::window.viewportHeight = _height;
+    RunTimeVar::window.title = _title;
 
-    windowedWidth = _width;
-    windowedHeight = _height;
+    RunTimeVar::window.windowedWidth = _width;
+    RunTimeVar::window.windowedHeight = _height;
 
     // Check if glfw init success
     if (!glfwInit()) {
@@ -77,7 +77,7 @@ bool WindowManager::Initialize(GLint _width, GLint _height, const char* _title) 
     glfwWindowHint(GLFW_BLUE_BITS, 8); glfwWindowHint(GLFW_ALPHA_BITS, 8);
 
     // Create window and check if success
-    ptrWindow = glfwCreateWindow(RunTimeVar::window.width, RunTimeVar::window.height, title, NULL, NULL);
+    ptrWindow = glfwCreateWindow(RunTimeVar::window.width, RunTimeVar::window.height, RunTimeVar::window.title, NULL, NULL);
     if (!ptrWindow) {
         std::cerr << "GLFW unable to create OpenGL context - abort program\n";
         glfwTerminate();
@@ -103,14 +103,14 @@ bool WindowManager::Initialize(GLint _width, GLint _height, const char* _title) 
 }
 
 void WindowManager::ToggleFullscreen() {
-    if (isFullscreen) {
+    if (RunTimeVar::window.isFullscreen) {
         // Restore to windowed mode
-        glfwSetWindowMonitor(ptrWindow, nullptr, windowedPosX, windowedPosY, windowedWidth, windowedHeight, 0);
+        glfwSetWindowMonitor(ptrWindow, nullptr, RunTimeVar::window.windowedPosX, RunTimeVar::window.windowedPosY, RunTimeVar::window.windowedWidth, RunTimeVar::window.windowedHeight, 0);
     }
     else {
         // Save current window position and size
-        glfwGetWindowPos(ptrWindow, &windowedPosX, &windowedPosY);
-        glfwGetWindowSize(ptrWindow, &windowedWidth, &windowedHeight);
+        glfwGetWindowPos(ptrWindow, &RunTimeVar::window.windowedPosX, &RunTimeVar::window.windowedPosY);
+        glfwGetWindowSize(ptrWindow, &RunTimeVar::window.windowedWidth, &RunTimeVar::window.windowedHeight);
 
         // Get the primary monitor and its video mode
         GLFWmonitor* primaryMonitor = glfwGetPrimaryMonitor();
@@ -119,7 +119,7 @@ void WindowManager::ToggleFullscreen() {
         // Switch to fullscreen
         glfwSetWindowMonitor(ptrWindow, primaryMonitor, 0, 0, mode->width, mode->height, mode->refreshRate);
     }
-    isFullscreen = !isFullscreen; // Toggle fullscreen state
+    RunTimeVar::window.isFullscreen = !RunTimeVar::window.isFullscreen; // Toggle fullscreen state
 }
 
 void WindowManager::MinimizeWindow() {
@@ -198,12 +198,12 @@ GLint WindowManager::GetWindowHeight()
 GLint WindowManager::GetViewportWidth()
 {
     //std::cout << "viewportW: " << viewportWidth << ", normalW: " << width << "\n";
-    return viewportWidth;
+    return RunTimeVar::window.viewportWidth;
 }
 
 GLint WindowManager::GetViewportHeight()
 {
-    return viewportHeight;
+    return RunTimeVar::window.viewportHeight;
 }
 
 void WindowManager::SetWindowTitle(const char* _title) {
@@ -223,14 +223,14 @@ bool WindowManager::IsWindowMinimized() {
 }
 
 bool WindowManager::IsWindowFocused() {
-    return isFocused;
+    return RunTimeVar::window.isFocused;
 }
 
 void WindowManager::updateDeltaTime() {
     const double targetDeltaTime = 1.0 / 60.0; // cap at 60fps
 
     double currentTime = glfwGetTime();
-    double frameTime = currentTime - lastFrameTime;
+    double frameTime = currentTime - RunTimeVar::lastFrameTime;
 
     double remainingTime = targetDeltaTime - frameTime;
 
@@ -244,8 +244,8 @@ void WindowManager::updateDeltaTime() {
 
     // Update deltaTime
     currentTime = glfwGetTime();
-    RunTimeVar::deltaTime = currentTime - lastFrameTime;
-    lastFrameTime = currentTime;
+    RunTimeVar::deltaTime = currentTime - RunTimeVar::lastFrameTime;
+    RunTimeVar::lastFrameTime = currentTime;
     glfwSwapInterval(1);
 }
 

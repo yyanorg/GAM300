@@ -9,8 +9,8 @@ void SceneInstance::Initialize() {
 	
 	// Initialize GraphicsManager first
 	GraphicsManager& gfxManager = GraphicsManager::GetInstance();
-	gfxManager.Initialize(WindowManager::GetWindowWidth(), WindowManager::GetWindowHeight());
-
+	//gfxManager.Initialize(WindowManager::GetWindowWidth(), WindowManager::GetWindowHeight());
+	gfxManager.Initialize(RunTimeVar::window.width, RunTimeVar::window.height);
 	// WOON LI TEST CODE
 	ECSManager& ecsManager = ECSRegistry::GetInstance().GetECSManager(scenePath);
 
@@ -186,7 +186,8 @@ void SceneInstance::DrawLightCubes(const Camera& cameraOverride)
 		glm::mat4 view = cameraOverride.GetViewMatrix();
 		glm::mat4 projection = glm::perspective(
 			glm::radians(cameraOverride.Zoom),
-			(float)WindowManager::GetWindowWidth() / (float)WindowManager::GetWindowHeight(),
+			//(float)WindowManager::GetWindowWidth() / (float)WindowManager::GetWindowHeight(),
+			(float)RunTimeVar::window.width / (float)RunTimeVar::window.height,
 			0.1f, 100.0f
 		);
 

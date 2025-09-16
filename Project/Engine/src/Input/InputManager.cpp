@@ -5,14 +5,14 @@
 
 #include <Input/InputManager.hpp>
 
-std::unordered_map<int, bool> InputManager::keyStates;
-std::unordered_map<int, bool> InputManager::mouseButtonStates;
-std::unordered_map<int, bool> InputManager::prevKeyStates;
-std::unordered_map<int, bool> InputManager::prevMouseButtonStates;
-double InputManager::mouseX = 0.0;
-double InputManager::mouseY = 0.0;
-double InputManager::scrollOffsetX = 0.0;
-double InputManager::scrollOffsetY = 0.0;
+//std::unordered_map<int, bool> InputManager::keyStates;
+//std::unordered_map<int, bool> InputManager::mouseButtonStates;
+//std::unordered_map<int, bool> InputManager::prevKeyStates;
+//std::unordered_map<int, bool> InputManager::prevMouseButtonStates;
+//double InputManager::mouseX = 0.0;
+//double InputManager::mouseY = 0.0;
+//double InputManager::scrollOffsetX = 0.0;
+//double InputManager::scrollOffsetY = 0.0;
 
 void InputManager::Initialize(GLFWwindow* window)
 {
@@ -24,47 +24,47 @@ void InputManager::Initialize(GLFWwindow* window)
 
 void InputManager::Update()
 {
-	prevKeyStates = keyStates;
-	prevMouseButtonStates = mouseButtonStates;
+	RunTimeVar::input.prevKeyStates = RunTimeVar::input.keyStates;
+	RunTimeVar::input.prevMouseButtonStates = RunTimeVar::input.mouseButtonStates;
 
 	//WindowManager::PollEvents();
 }
 
 bool InputManager::GetKeyDown(int key)
 {
-	return keyStates[key] && !prevKeyStates[key];
+	return RunTimeVar::input.keyStates[key] && !RunTimeVar::input.prevKeyStates[key];
 }
 
 bool InputManager::GetKey(int key)
 {
-	auto it = keyStates.find(key);
-	return it != keyStates.end() && it->second;
+	auto it = RunTimeVar::input.keyStates.find(key);
+	return it != RunTimeVar::input.keyStates.end() && it->second;
 }
 
 bool InputManager::GetMouseButtonDown(int button)
 {
-	return mouseButtonStates[button] && !prevMouseButtonStates[button];
+	return RunTimeVar::input.mouseButtonStates[button] && !RunTimeVar::input.prevMouseButtonStates[button];
 }
 
 bool InputManager::GetMouseButton(int button)
 {
-	auto it = mouseButtonStates.find(button);
-	return it != mouseButtonStates.end() && it->second;
+	auto it = RunTimeVar::input.mouseButtonStates.find(button);
+	return it != RunTimeVar::input.mouseButtonStates.end() && it->second;
 }
 
 double InputManager::GetMouseX()
 {
-	return mouseX;
+	return RunTimeVar::input.mouseX;
 }
 
 double InputManager::GetMouseY()
 {
-	return mouseY;
+	return RunTimeVar::input.mouseY;
 }
 
 bool InputManager::GetAnyKeyDown()
 {
-	for (const auto& keyState : keyStates) {
+	for (const auto& keyState : RunTimeVar::input.keyStates) {
 		if (GetKeyDown(keyState.first)) {
 			return true;
 		}
@@ -75,7 +75,7 @@ bool InputManager::GetAnyKeyDown()
 
 bool InputManager::GetAnyMouseButtonDown()
 {
-	for (const auto& mouseState : mouseButtonStates) {
+	for (const auto& mouseState : RunTimeVar::input.mouseButtonStates) {
 		if (GetMouseButtonDown(mouseState.first)) {
 			return true;
 		}

@@ -2,6 +2,8 @@
 #include "RunTimeVar.hpp"
 
 namespace RunTimeVar {
-	Windows window;		//Define Variables here
+	Window window;		//Define Variables here
+	Input input;
 	double deltaTime = 0.0;
+	double lastFrameTime = 0.0;
 }

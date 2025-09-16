@@ -74,23 +74,23 @@ public:
 
 private:
 
-    static bool isFocused;
-    static bool isFullscreen;      // Tracks whether the window is fullscreen
-    static GLint windowedWidth;    // Saved width for windowed mode
-    static GLint windowedHeight;   // Saved height for windowed mode
-    static GLint windowedPosX;     // Saved X position for windowed mode
-    static GLint windowedPosY;     // Saved Y position for windowed mode
+    //static bool isFocused;
+    //static bool isFullscreen;      // Tracks whether the window is fullscreen
+    //static GLint windowedWidth;    // Saved width for windowed mode
+    //static GLint windowedHeight;   // Saved height for windowed mode
+    //static GLint windowedPosX;     // Saved X position for windowed mode
+    //static GLint windowedPosY;     // Saved Y position for windowed mode
 
     static GLFWwindow* ptrWindow;
 
     //static GLint width;
     //static GLint height;
 
-    static GLint viewportWidth;
-    static GLint viewportHeight;
+    //static GLint viewportWidth;
+    //static GLint viewportHeight;
 
-    static const char* title;
+    //static const char* title;
 
     //static double deltaTime;
-    static double lastFrameTime;
+    //static double lastFrameTime;
 };
