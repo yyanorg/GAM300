@@ -6,6 +6,7 @@
 #include "Graphics/GraphicsManager.hpp"
 #include "Scene/SceneManager.hpp"
 #include "Scene/SceneInstance.hpp"
+#include "WindowManager.hpp"
 #include <iostream>
 
 // Static member definitions
@@ -94,6 +95,9 @@ void SceneRenderer::BeginSceneRender(int width, int height)
     if (sceneFrameBuffer == 0 || width != sceneWidth || height != sceneHeight) {
         CreateSceneFramebuffer(width, height);
     }
+
+    // Update WindowManager viewport dimensions to match scene rendering area
+    WindowManager::SetViewportDimensions(width, height);
 
     // Bind framebuffer and set viewport
     glBindFramebuffer(GL_FRAMEBUFFER, sceneFrameBuffer);
