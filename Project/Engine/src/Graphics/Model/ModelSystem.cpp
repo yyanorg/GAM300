@@ -5,6 +5,7 @@
 #include <Graphics/Model/ModelRenderComponent.hpp>
 #include "WindowManager.hpp"
 #include "Graphics/GraphicsManager.hpp"
+#include <Transform/TransformComponent.hpp>
 
 bool ModelSystem::Initialise() 
 {
@@ -27,7 +28,7 @@ void ModelSystem::Update()
             gfxManager.SubmitModel(
                 modelComponent.model,
                 modelComponent.shader,
-                modelComponent.transform
+                ecsManager.GetComponent<Transform>(entity).model
             );
         }
     }

@@ -5,6 +5,7 @@
 #include <WindowManager.hpp>
 #include <ECS/ECSRegistry.hpp>
 #include <Asset Manager/AssetManager.hpp>
+#include <Transform/TransformComponent.hpp>
 
 void SceneInstance::Initialize() {
 	// Initialization code for the scene
@@ -18,22 +19,25 @@ void SceneInstance::Initialize() {
 
 	// Create a backpack entity with a Renderer component in the main ECS manager
 	Entity backpackEntt = ecsManager.CreateEntity();
-	glm::mat4 transform = glm::mat4(1.0f);
-	transform = glm::translate(transform, glm::vec3(0.0f, 0.0f, 0.0f));
-	transform = glm::scale(transform, glm::vec3(0.1f, 0.1f, 0.1f));
+	ecsManager.AddComponent<Transform>(backpackEntt, Transform{});
+	Transform& backpacktransform = ecsManager.GetComponent<Transform>(backpackEntt);
+	backpacktransform.position = { 0, 0, 0 };
+	backpacktransform.scale = { .1f, .1f, .1f };
+	backpacktransform.rotation = { 0, 0, 0 };
 	ecsManager.AddComponent<ModelRenderComponent>(backpackEntt, ModelRenderComponent{ AssetManager::GetInstance().GetAsset<Model>("Resources/Models/backpack/backpack.obj"),
-		AssetManager::GetInstance().GetAsset<Shader>("Resources/Shaders/default"),
-		transform});
+		AssetManager::GetInstance().GetAsset<Shader>("Resources/Shaders/default")});
 
 	Entity backpackEntt2 = ecsManager.CreateEntity();
-	glm::mat4 transform2 = glm::mat4(1.0f);
-	transform2 = glm::translate(transform2, glm::vec3(1.0f, -0.5f, 0.0f));
-	transform2 = glm::scale(transform2, glm::vec3(0.2f, 0.2f, 0.2f));
+	ecsManager.AddComponent<Transform>(backpackEntt2, Transform{});
+	Transform& backpacktransform2 = ecsManager.GetComponent<Transform>(backpackEntt2);
+	backpacktransform2.position = { 1, -0.5f, 0 };
+	backpacktransform2.scale = { .2f, .2f, .2f };
+	backpacktransform2.rotation = { 0, 0, 0 };
 	ecsManager.AddComponent<ModelRenderComponent>(backpackEntt2, ModelRenderComponent{ AssetManager::GetInstance().GetAsset<Model>("Resources/Models/backpack/backpack.obj"),
-		AssetManager::GetInstance().GetAsset<Shader>("Resources/Shaders/default"),
-		transform2 });
+		AssetManager::GetInstance().GetAsset<Shader>("Resources/Shaders/default")});
 
 	// GRAPHICS TEST CODE
+	ecsManager.transformSystem->Initialise();
 	ecsManager.modelSystem->Initialise();
 
 	// Loads model
@@ -58,11 +62,12 @@ void SceneInstance::Update(double dt) {
 	dt;
 
 	// Update logic for the test scene
-	//ECSManager& mainECS = ECSRegistry::GetInstance().GetECSManager(scenePath);
+	ECSManager& mainECS = ECSRegistry::GetInstance().GetECSManager(scenePath);
 
 	processInput((float)WindowManager::getDeltaTime());
 
 	// Update systems.
+	mainECS.transformSystem->update();
 }
 
 void SceneInstance::Draw() {

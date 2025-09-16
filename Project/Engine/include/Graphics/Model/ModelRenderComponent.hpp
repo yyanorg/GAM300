@@ -13,8 +13,8 @@ public:
 	std::shared_ptr<Shader> shader;
 	glm::mat4 transform;
 
-	ModelRenderComponent(std::shared_ptr<Model> m, std::shared_ptr<Shader> s, const glm::mat4& t) 
-		: model(std::move(m)), shader(std::move(s)), transform(std::move(t)){}
+	ModelRenderComponent(std::shared_ptr<Model> m, std::shared_ptr<Shader> s) 
+		: model(std::move(m)), shader(std::move(s)), transform(){}
 	ModelRenderComponent() = default;
 	~ModelRenderComponent() = default;
 
