@@ -26,7 +26,7 @@ GamePanel::GamePanel()
 }
 
 void GamePanel::OnImGuiRender() {
-    if (ImGui::Begin(m_Name.c_str(), &m_IsOpen)) {
+    if (ImGui::Begin(name.c_str(), &isOpen)) {
 
         // Render the resolution panel toolbar
         RenderResolutionPanel();
