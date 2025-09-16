@@ -18,7 +18,7 @@ int main() {
 
     GLFWwindow* window = WindowManager::getWindow();
     if (!window) {
-        std::cerr << "Failed to create GLFW window!" << std::endl;
+        std::cerr << "Faileasdd to create GLFW window!" << std::endl;
         glfwTerminate();
         return -1;
     }
