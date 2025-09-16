@@ -5,6 +5,7 @@
 #include "EntityManager.hpp"
 #include "ComponentManager.hpp"
 #include "SystemManager.hpp"
+#include <Transform/TransformSystem.hpp>
 #include <Graphics/Model/ModelSystem.hpp>
 #include "../Engine.h"  // For ENGINE_API macro
 
@@ -80,7 +81,8 @@ public:
 	}
 
 	// STORE SHARED POINTERS TO SYSTEMS HERE
-	// e.g., std::shared_ptr<TransformSystem> transformSystem;
+	// e.g., 
+	std::shared_ptr<TransformSystem> transformSystem;
 	std::shared_ptr<ModelSystem> modelSystem;
 
 private:

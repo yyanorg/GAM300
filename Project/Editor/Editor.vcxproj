@@ -52,9 +52,6 @@
     <ClCompile Include="src\Panels\PerformancePanel.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\Libraries\ImGui\ImGuizmo.cpp" />
-  </ItemGroup>
-  <ItemGroup>
     <ClInclude Include="include\GUIManager.hpp" />
     <ClInclude Include="include\EditorState.hpp" />
     <ClInclude Include="include\EditorCamera.hpp" />

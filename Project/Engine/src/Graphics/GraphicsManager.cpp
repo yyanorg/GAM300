@@ -49,11 +49,13 @@ void GraphicsManager::Submit(std::unique_ptr<IRenderComponent> renderItem)
 	}
 }
 
-void GraphicsManager::SubmitModel(std::shared_ptr<Model> model, std::shared_ptr<Shader> shader, const glm::mat4& transform)
+void GraphicsManager::SubmitModel(std::shared_ptr<Model> model, std::shared_ptr<Shader> shader, const Matrix4x4& transform)
 {
 	if (model && shader) 
 	{
-		auto renderItem = std::make_unique<ModelRenderComponent>(model, shader, transform);
+		glm::mat4 glmTransform = ConvertMatrix4x4ToGLM(transform);
+		auto renderItem = std::make_unique<ModelRenderComponent>(model, shader);
+		renderItem->transform = glmTransform;
 		Submit(std::move(renderItem));
 	}
 }
@@ -180,5 +182,16 @@ void GraphicsManager::SetupMatrices(Shader& shader, const glm::mat4& modelMatrix
 
 		shader.setVec3("cameraPos", currentCamera->Position);
 	}
+}
+
+glm::mat4 GraphicsManager::ConvertMatrix4x4ToGLM(const Matrix4x4& m)
+{
+	Matrix4x4 transposed = m.Transposed();
+	glm::mat4 converted(
+		transposed[0][0], transposed[0][1], transposed[0][2], transposed[0][3],
+		transposed[1][0], transposed[1][1], transposed[1][2], transposed[1][3],
+		transposed[2][0], transposed[2][1], transposed[2][2], transposed[2][3],
+		transposed[3][0], transposed[3][1], transposed[3][2], transposed[3][3]);
+	return converted;
 }
 

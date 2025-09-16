@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
@@ -75,6 +75,8 @@
     <ClInclude Include="include\Math\Matrix4x4.h" />
     <ClInclude Include="include\Math\Vector3D.h" />
     <ClInclude Include="include\pch.h" />
+    <ClInclude Include="include\Transform\TransformComponent.hpp" />
+    <ClInclude Include="include\Transform\TransformSystem.hpp" />
     <ClInclude Include="include\Scene\SceneInstance.hpp" />
     <ClInclude Include="include\WindowManager.hpp" />
     <ClInclude Include="include\Input\InputManager.hpp" />
@@ -116,6 +118,7 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='EditorDebug|x64'">Create</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="src\TransformSystem.cpp" />
     <ClCompile Include="src\Scene\SceneInstance.cpp" />
     <ClCompile Include="src\WindowManager.cpp" />
   </ItemGroup>

@@ -19,6 +19,16 @@ void TestScene::Initialize()
 
 	// Create an entity with a Renderer component in the main ECS manager
 	Entity testEntt = mainECS.CreateEntity();
+	mainECS.AddComponent<Renderer>(testEntt, Renderer{});
+	mainECS.AddComponent<Transform>(testEntt, Transform{});
+	Renderer& renderer = mainECS.GetComponent<Renderer>(testEntt);
+	renderer.model = AssetManager::GetInstance().GetAsset<Model>("Resources/Models/backpack/backpack.obj");
+	renderer.shader = AssetManager::GetInstance().GetAsset<Shader>("Resources/Shaders/default");
+	//Transform& transform = mainECS.GetComponent<Transform>(testEntt);
+	//transform.position = { 0, 0, 0 };
+	//transform.scale = { .1, .1, .1 };
+	//transform.rotation = { 0, 0, 0 };
+
 	std::cout << "[TestScene] Created backpack entity with ID: " << testEntt << std::endl;
 
 	glm::mat4 transform = glm::mat4(1.0f);
@@ -61,6 +71,7 @@ void TestScene::Initialize()
 	// secondaryECS.ClearAllEntities();
 
 	// GRAPHICS TEST CODE
+	mainECS.transformSystem->Initialise();
 	mainECS.renderSystem->Initialise(SCR_WIDTH, SCR_HEIGHT);
 
 	// Loads model
@@ -92,7 +103,9 @@ void TestScene::Update()
 
 	processInput();
 
-	// RenderSystem::getInstance().BeginFrame();
+	mainECS.transformSystem->update();
+
+	//RenderSystem::getInstance().BeginFrame();
 	mainECS.renderSystem->Clear();
 
 	// glm::mat4 transform = glm::mat4(1.0f);

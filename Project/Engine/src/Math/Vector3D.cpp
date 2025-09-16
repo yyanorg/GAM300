@@ -31,12 +31,14 @@ Vector3D::Vector3D(const Vector3D& rhs)
 {
 	x = rhs.x;
 	y = rhs.y;
+	z = rhs.z;
 }
 
 Vector3D& Vector3D::operator=(const Vector3D& rhs)
 {
 	x = rhs.x;
 	y = rhs.y;
+	z = rhs.z;
 	return *this;
 }
 
