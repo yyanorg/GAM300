@@ -42,6 +42,7 @@ public:
     void ToggleOpen() { m_IsOpen = !m_IsOpen; }
 
 protected:
+    //test
     std::string m_Name;
     bool m_IsOpen;
 };
