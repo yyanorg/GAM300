@@ -2,93 +2,27 @@
 
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
-#include "Graphics/Renderer.hpp"
 #include "Graphics/LightManager.hpp"
 
 #include "Engine.h"
+#include "Logging.hpp"
 
-#include "WindowManager.hpp"
-#include "Input/InputManager.hpp"
-#include "Asset Manager/MetaFilesManager.hpp"
-#include "ECS/ECSRegistry.hpp"
-#include "TestScene.hpp"
+#include <WindowManager.hpp>
+#include <Input/InputManager.hpp>
+#include <Asset Manager/MetaFilesManager.hpp>
+#include <ECS/ECSRegistry.hpp>
+#include <Scene/SceneManager.hpp>
 
 namespace TEMP {
 	std::string windowTitle = "GAM300";
 }
 
-TestScene Engine::testScene;
-
+// Static member definition
+GameState Engine::s_CurrentGameState = GameState::EDIT_MODE;
 
 const unsigned int SCR_WIDTH = 1600;
 const unsigned int SCR_HEIGHT = 900;
 
-//void framebuffer_size_callback(GLFWwindow* window, int width, int height);
-//void mouse_callback(GLFWwindow* window, double xpos, double ypos);
-//void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
-//void processInput(GLFWwindow* window);
-
-// camera
-//Camera camera(glm::vec3(0.0f, 0.0f, 3.0f));
-//float lastX = SCR_WIDTH / 2.0f;
-//float lastY = SCR_HEIGHT / 2.0f;
-//bool firstMouse = true;
-//
-//float deltaTime = 0.0f;
-//float lastFrame = 0.0f;
-//
-//std::vector<Vertex> lightVertices = {
-//	// Back face (4 vertices: 0-3)
-//	{{-0.1f, -0.1f, -0.1f}, {0.0f, 0.0f, 0.0f}, {1.0f, 1.0f, 1.0f}, {0.0f, 0.0f}}, // 0
-//	{{ 0.1f, -0.1f, -0.1f}, {0.0f, 0.0f, 0.0f}, {1.0f, 1.0f, 1.0f}, {0.0f, 0.0f}}, // 1
-//	{{ 0.1f,  0.1f, -0.1f}, {0.0f, 0.0f, 0.0f}, {1.0f, 1.0f, 1.0f}, {0.0f, 0.0f}}, // 2
-//	{{-0.1f,  0.1f, -0.1f}, {0.0f, 0.0f, 0.0f}, {1.0f, 1.0f, 1.0f}, {0.0f, 0.0f}}, // 3
-//
-//	// Front face (4 vertices: 4-7)
-//	{{-0.1f, -0.1f,  0.1f}, {0.0f, 0.0f, 0.0f}, {1.0f, 1.0f, 1.0f}, {0.0f, 0.0f}}, // 4
-//	{{ 0.1f, -0.1f,  0.1f}, {0.0f, 0.0f, 0.0f}, {1.0f, 1.0f, 1.0f}, {0.0f, 0.0f}}, // 5
-//	{{ 0.1f,  0.1f,  0.1f}, {0.0f, 0.0f, 0.0f}, {1.0f, 1.0f, 1.0f}, {0.0f, 0.0f}}, // 6
-//	{{-0.1f,  0.1f,  0.1f}, {0.0f, 0.0f, 0.0f}, {1.0f, 1.0f, 1.0f}, {0.0f, 0.0f}}, // 7
-//
-//	// Left face (4 vertices: 8-11)
-//	{{-0.1f,  0.1f,  0.1f}, {0.0f, 0.0f, 0.0f}, {1.0f, 1.0f, 1.0f}, {0.0f, 0.0f}}, // 8
-//	{{-0.1f,  0.1f, -0.1f}, {0.0f, 0.0f, 0.0f}, {1.0f, 1.0f, 1.0f}, {0.0f, 0.0f}}, // 9
-//	{{-0.1f, -0.1f, -0.1f}, {0.0f, 0.0f, 0.0f}, {1.0f, 1.0f, 1.0f}, {0.0f, 0.0f}}, // 10
-//	{{-0.1f, -0.1f,  0.1f}, {0.0f, 0.0f, 0.0f}, {1.0f, 1.0f, 1.0f}, {0.0f, 0.0f}}, // 11
-//
-//	// Right face (4 vertices: 12-15)
-//	{{ 0.1f,  0.1f,  0.1f}, {0.0f, 0.0f, 0.0f}, {1.0f, 1.0f, 1.0f}, {0.0f, 0.0f}}, // 12
-//	{{ 0.1f,  0.1f, -0.1f}, {0.0f, 0.0f, 0.0f}, {1.0f, 1.0f, 1.0f}, {0.0f, 0.0f}}, // 13
-//	{{ 0.1f, -0.1f, -0.1f}, {0.0f, 0.0f, 0.0f}, {1.0f, 1.0f, 1.0f}, {0.0f, 0.0f}}, // 14
-//	{{ 0.1f, -0.1f,  0.1f}, {0.0f, 0.0f, 0.0f}, {1.0f, 1.0f, 1.0f}, {0.0f, 0.0f}}, // 15
-//
-//	// Bottom face (4 vertices: 16-19)
-//	{{-0.1f, -0.1f, -0.1f}, {0.0f, 0.0f, 0.0f}, {1.0f, 1.0f, 1.0f}, {0.0f, 0.0f}}, // 16
-//	{{ 0.1f, -0.1f, -0.1f}, {0.0f, 0.0f, 0.0f}, {1.0f, 1.0f, 1.0f}, {0.0f, 0.0f}}, // 17
-//	{{ 0.1f, -0.1f,  0.1f}, {0.0f, 0.0f, 0.0f}, {1.0f, 1.0f, 1.0f}, {0.0f, 0.0f}}, // 18
-//	{{-0.1f, -0.1f,  0.1f}, {0.0f, 0.0f, 0.0f}, {1.0f, 1.0f, 1.0f}, {0.0f, 0.0f}}, // 19
-//
-//	// Top face (4 vertices: 20-23)
-//	{{-0.1f,  0.1f, -0.1f}, {0.0f, 0.0f, 0.0f}, {1.0f, 1.0f, 1.0f}, {0.0f, 0.0f}}, // 20
-//	{{ 0.1f,  0.1f, -0.1f}, {0.0f, 0.0f, 0.0f}, {1.0f, 1.0f, 1.0f}, {0.0f, 0.0f}}, // 21
-//	{{ 0.1f,  0.1f,  0.1f}, {0.0f, 0.0f, 0.0f}, {1.0f, 1.0f, 1.0f}, {0.0f, 0.0f}}, // 22
-//	{{-0.1f,  0.1f,  0.1f}, {0.0f, 0.0f, 0.0f}, {1.0f, 1.0f, 1.0f}, {0.0f, 0.0f}}  // 23
-//};
-//
-//std::vector<GLuint> lightIndices = {
-//	// Back face
-//	0, 1, 2,   2, 3, 0,
-//	// Front face
-//	4, 5, 6,   6, 7, 4,
-//	// Left face
-//	8, 9, 10,  10, 11, 8,
-//	// Right face
-//	12, 13, 14, 14, 15, 12,
-//	// Bottom face
-//	16, 17, 18, 18, 19, 16,
-//	// Top face
-//	20, 21, 22, 22, 23, 20
-//};
 //RenderSystem& renderer = RenderSystem::getInstance();
 //std::shared_ptr<Model> backpackModel;
 //std::shared_ptr<Shader> shader;
@@ -97,36 +31,22 @@ const unsigned int SCR_HEIGHT = 900;
 //std::shared_ptr<Mesh> lightCubeMesh;
 
 bool Engine::Initialize() {
+	// Initialize logging system first
+	if (!EngineLogging::Initialize()) {
+		std::cerr << "[Engine] Failed to initialize logging system!" << std::endl;
+		return false;
+	}
 
 	WindowManager::Initialize(SCR_WIDTH, SCR_HEIGHT, TEMP::windowTitle.c_str());
 
-    std::cout << "[Engine] Initializing..." << std::endl;
-
-	//glm::vec3 cubePositions[]{
-	//	glm::vec3(0.0f,  0.0f,  0.0f),
-	//	glm::vec3(2.0f,  5.0f, -15.0f),
-	//	glm::vec3(-1.5f, -2.2f, -2.5f),
-	//	glm::vec3(-3.8f, -2.0f, -12.3f),
-	//	glm::vec3(2.4f, -0.4f, -3.5f),
-	//	glm::vec3(-1.7f,  3.0f, -7.5f),
-	//	glm::vec3(1.3f, -2.0f, -2.5f),
-	//	glm::vec3(1.5f,  2.0f, -2.5f),
-	//	glm::vec3(1.5f,  0.2f, -1.5f),
-	//	glm::vec3(-1.3f,  1.0f, -1.5f)
-	//};
-
-	//glfwSetCursorPosCallback(WindowManager::getWindow(), mouse_callback);
-	//glfwSetScrollCallback(WindowManager::getWindow(), scroll_callback);
-	//glfwSetInputMode(WindowManager::getWindow(), GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-
-	//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+    ENGINE_LOG_INFO("Engine initializing...");
 
 	// WOON LI TEST CODE
 	InputManager::Initialize(WindowManager::getWindow());
 	MetaFilesManager::InitializeAssetMetaFiles("Resources");
 
-	// Test scene
-	Engine::testScene.Initialize();
+	// Load test scene
+	SceneManager::GetInstance().LoadTestScene();
 
 	// ---Set Up Lighting---
 	LightManager& lightManager = LightManager::getInstance();
@@ -159,57 +79,44 @@ bool Engine::Initialize() {
 
 	//lightManager.printLightStats();
 
-	// TRIED TO PUT THIS IN ENGINE::UPDATE(), DONT BOTHER ITS TOO MANY BUGS NOW
-
+	ENGINE_LOG_INFO("Engine initialization completed successfully");
+	
+	// Add some test logging messages
+	ENGINE_LOG_WARN("This is a test warning message");
+	ENGINE_LOG_ERROR("This is a test error message");
+	
 	return true;
 }
 
 void Engine::Update() {
-	Engine::testScene.Update();
+	// Only update the scene if the game should be running (not paused)
+	if (ShouldRunGameLogic()) {
+		SceneManager::GetInstance().UpdateScene(WindowManager::getDeltaTime()); // REPLACE WITH DT LATER
+	}
 }
 
 void Engine::StartDraw() {
 }
 
 void Engine::Draw() {
-	//float currentFrame = (float)glfwGetTime();
-	//deltaTime = currentFrame - lastFrame;
-	//lastFrame = currentFrame;
-
-	//processInput(WindowManager::getWindow());
-
-	//renderer.BeginFrame();
-	//renderer.Clear();
-
-	//glm::mat4 transform = glm::mat4(1.0f);
-	//transform = glm::translate(transform, glm::vec3(0.0f, 0.0f, 0.0f));
-	//transform = glm::scale(transform, glm::vec3(0.1f, 0.1f, 0.1f));
-	//renderer.Submit(backpackModel, transform, shader);
-
-	//renderer.Render();
-	//renderer.EndFrame();
-
-	//// Draw light cube
-	//LightManager& lightManager = LightManager::getInstance();
-	//const auto& pointLights = lightManager.getPointLights();
-	//for (unsigned int i = 0; i < pointLights.size(); i++) 
-	//{
-	//	glm::mat4 lightModel = glm::mat4(1.0f);
-	//	lightModel = glm::translate(lightModel, pointLights[i].position);
-	//	lightShader->setMat4("model", lightModel);
-	//	lightCubeMesh->Draw(*lightShader, camera);
-	//}
-
-	//glfwPollEvents();
+	SceneManager::GetInstance().DrawScene();
+	
 }
 
 void Engine::EndDraw() {
 	glfwSwapBuffers(WindowManager::getWindow());
-	InputManager::Update();
-	glfwPollEvents();
+
+	// Only process input if the game should be running (not paused)
+	if (ShouldRunGameLogic()) {
+		InputManager::Update();
+	}
+
+	glfwPollEvents(); // Always poll events for UI and window management
 }
 
 void Engine::Shutdown() {
+	ENGINE_LOG_INFO("Engine shutdown started");
+    EngineLogging::Shutdown();
     std::cout << "[Engine] Shutdown complete" << std::endl;
 }
 
@@ -217,91 +124,27 @@ bool Engine::IsRunning() {
 	return !WindowManager::ShouldClose();
 }
 
+// Game state management functions
+void Engine::SetGameState(GameState state) {
+	s_CurrentGameState = state;
+}
 
+GameState Engine::GetGameState() {
+	return s_CurrentGameState;
+}
 
+bool Engine::ShouldRunGameLogic() {
+	return s_CurrentGameState == GameState::PLAY_MODE;
+}
 
-//// process all input: query GLFW whether relevant keys are pressed/released this frame and react accordingly
-//// ---------------------------------------------------------------------------------------------------------
-//void processInput(GLFWwindow* window)
-//{
-//	if (InputManager::GetKeyDown(GLFW_KEY_ESCAPE))
-//		glfwSetWindowShouldClose(window, true);
-//
-//	float cameraSpeed = 2.5f * deltaTime;
-//	if (InputManager::GetKey(GLFW_KEY_W))
-//		camera.Position += cameraSpeed * camera.Front;
-//	if (InputManager::GetKey(GLFW_KEY_S))
-//		camera.Position -= cameraSpeed * camera.Front;
-//	if (InputManager::GetKey(GLFW_KEY_A))
-//		camera.Position -= glm::normalize(glm::cross(camera.Front, camera.Up)) * cameraSpeed;
-//	if (InputManager::GetKey(GLFW_KEY_D))
-//		camera.Position += glm::normalize(glm::cross(camera.Front, camera.Up)) * cameraSpeed;
-//
-//	float xpos = InputManager::GetMouseX();
-//	float ypos = InputManager::GetMouseY();
-//
-//	if (firstMouse)
-//	{
-//		lastX = xpos;
-//		lastY = ypos;
-//		firstMouse = false;
-//	}
-//
-//	float xoffset = xpos - lastX;
-//	float yoffset = lastY - ypos; // reversed since y-coordinates go from bottom to top
-//
-//	lastX = xpos;
-//	lastY = ypos;
-//
-//	camera.ProcessMouseMovement(xoffset, yoffset);
-//
-//    //if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
-//    //    glfwSetWindowShouldClose(window, true);
-//
-//    //float cameraSpeed = 2.5f * deltaTime;
-//    //if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
-//    //    camera.Position += cameraSpeed * camera.Front;
-//    //if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)d
-//    //    camera.Position -= cameraSpeed * camera.Front;
-//    //if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
-//    //    camera.Position -= glm::normalize(glm::cross(camera.Front, camera.Up)) * cameraSpeed;
-//    //if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
-//    //    camera.Position += glm::normalize(glm::cross(camera.Front, camera.Up)) * cameraSpeed;
-//}
-//
-//// glfw: whenever the window size changed (by OS or user resize) this callback function executes
-//// ---------------------------------------------------------------------------------------------
-//void framebuffer_size_callback(GLFWwindow* window, int width, int height)
-//{
-//    // make sure the viewport matches the new window dimensions; note that width and 
-//    // height will be significantly larger than specified on retina displays.
-//    glViewport(0, 0, width, height);
-//}
-//
-//void mouse_callback(GLFWwindow* window, double xposIn, double yposIn)
-//{
-//    float xpos = static_cast<float>(xposIn);
-//    float ypos = static_cast<float>(yposIn);
-//
-//    if (firstMouse)
-//    {
-//        lastX = xpos;
-//        lastY = ypos;
-//        firstMouse = false;
-//    }
-//
-//    float xoffset = xpos - lastX;
-//    float yoffset = lastY - ypos; // reversed since y-coordinates go from bottom to top
-//
-//    lastX = xpos;
-//    lastY = ypos;
-//
-//    camera.ProcessMouseMovement(xoffset, yoffset);
-//}
-//
-//// glfw: whenever the mouse scroll wheel scrolls, this callback is called
-//// ----------------------------------------------------------------------
-//void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
-//{
-//    camera.ProcessMouseScroll(static_cast<float>(yoffset));
-//}
+bool Engine::IsEditMode() {
+	return s_CurrentGameState == GameState::EDIT_MODE;
+}
+
+bool Engine::IsPlayMode() {
+	return s_CurrentGameState == GameState::PLAY_MODE;
+}
+
+bool Engine::IsPaused() {
+	return s_CurrentGameState == GameState::PAUSED_MODE;
+}

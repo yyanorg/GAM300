@@ -7,6 +7,21 @@ const unsigned int SCR_HEIGHT = 600;
 
 Mesh::Mesh(std::vector<Vertex>& vertices, std::vector<GLuint>& indices, std::vector<std::shared_ptr<Texture>>& textures) : vertices(vertices), indices(indices), textures(textures)
 {
+	setupMesh();
+}
+
+Mesh::Mesh(std::vector<Vertex>& vertices, std::vector<GLuint>& indices, std::shared_ptr<Material> mat) : vertices(vertices), indices(indices), material(mat)
+{
+	setupMesh();
+}
+
+Mesh::~Mesh()
+{
+	vao.Delete();
+}
+
+void Mesh::setupMesh()
+{
 	// Generates Vertex Array Object and binds it
 	vao.Bind();
 
@@ -29,54 +44,52 @@ Mesh::Mesh(std::vector<Vertex>& vertices, std::vector<GLuint>& indices, std::vec
 	ebo.Unbind();
 }
 
-Mesh::~Mesh()
-{
-	vao.Delete();
-}
-
-void Mesh::Draw(Shader& shader, Camera& camera)
+void Mesh::Draw(Shader& shader, const Camera& camera)
 {
 	shader.Activate();
 	vao.Bind();
 
-	// Dynamic texture binding
-	unsigned int textureUnit = 0;
-	unsigned int numDiffuse = 0, numSpecular = 0;
-
-	for (unsigned int i = 0; i < textures.size() && textureUnit < 16; i++)
-	{
-		if (!textures[i]) continue;
-
-		std::string num;
-		std::string type = textures[i]->type;
-
-		if (type == "diffuse") {
-			num = std::to_string(numDiffuse++);
-		}
-		else if (type == "specular") {
-			num = std::to_string(numSpecular++);
-		}
-
-		// Bind texture to current unit
-		glActiveTexture(GL_TEXTURE0 + textureUnit);
-		textures[i]->Bind();
-
-		// Set shader uniform
-		shader.setInt(("material." + type + num).c_str(), textureUnit);
-
-		textureUnit++;
-	}
-	// HOW ARE THE DIFFUSE AND SPECULAR MAP TEXTURE BEING ASSIGNED IN THE FRAGMENT SHADER
-
+	// Set camera matrices
 	glm::mat4 view = camera.GetViewMatrix();
 	shader.setMat4("view", view);
 
-	// Projection, for perspective projection
 	glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
 	shader.setMat4("projection", projection);
-
-	//shaderProgram.setVec3("light.position", lightPos);
 	shader.setVec3("cameraPos", camera.Position);
+
+	// Apply material if available
+	if (material)
+	{
+		//material->debugPrintProperties();
+		material->applyToShader(shader);
+	}
+	else
+	{
+		// Fallback to old texture system for backward compatibility
+		unsigned int textureUnit = 0;
+		unsigned int numDiffuse = 0, numSpecular = 0;
+
+		for (unsigned int i = 0; i < textures.size() && textureUnit < 16; i++)
+		{
+			if (!textures[i]) continue;
+
+			std::string num;
+			std::string type = textures[i]->type;
+
+			if (type == "diffuse") {
+				num = std::to_string(numDiffuse++);
+			}
+			else if (type == "specular") {
+				num = std::to_string(numSpecular++);
+			}
+
+			glActiveTexture(GL_TEXTURE0 + textureUnit);
+			textures[i]->Bind();
+			shader.setInt(("material." + type + num).c_str(), textureUnit);
+			textureUnit++;
+		}
+	}
 
 	glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, 0);
 }
+

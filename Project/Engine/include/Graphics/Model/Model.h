@@ -1,5 +1,5 @@
 #pragma once
-#include "Mesh.h"
+#include "Graphics/Mesh.h"
 #include <assimp/Importer.hpp>
 #include <assimp/scene.h>
 #include <assimp/postprocess.h>
@@ -17,7 +17,7 @@ public:
 
 	//Model(const std::string& filePath);
 	bool LoadAsset(const std::string& path) override;
-	void Draw(Shader& shader, Camera& camera);
+	void Draw(Shader& shader, const Camera& camera);
 
 private:
 	//void loadModel(const std::string& path);
