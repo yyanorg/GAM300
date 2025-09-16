@@ -18,7 +18,7 @@ namespace TEMP {
 }
 
 // Static member definition
-GameState Engine::s_CurrentGameState = GameState::EDIT_MODE;
+GameState Engine::currentGameState = GameState::EDIT_MODE;
 
 const unsigned int SCR_WIDTH = 1600;
 const unsigned int SCR_HEIGHT = 900;
@@ -36,7 +36,7 @@ bool Engine::Initialize() {
 		std::cerr << "[Engine] Failed to initialize logging system!" << std::endl;
 		return false;
 	}
-
+	SetGameState(GameState::PLAY_MODE);
 	WindowManager::Initialize(SCR_WIDTH, SCR_HEIGHT, TEMP::windowTitle.c_str());
 
     ENGINE_LOG_INFO("Engine initializing...");
@@ -126,25 +126,25 @@ bool Engine::IsRunning() {
 
 // Game state management functions
 void Engine::SetGameState(GameState state) {
-	s_CurrentGameState = state;
+	currentGameState = state;
 }
 
 GameState Engine::GetGameState() {
-	return s_CurrentGameState;
+	return currentGameState;
 }
 
 bool Engine::ShouldRunGameLogic() {
-	return s_CurrentGameState == GameState::PLAY_MODE;
+	return currentGameState == GameState::PLAY_MODE;
 }
 
 bool Engine::IsEditMode() {
-	return s_CurrentGameState == GameState::EDIT_MODE;
+	return currentGameState == GameState::EDIT_MODE;
 }
 
 bool Engine::IsPlayMode() {
-	return s_CurrentGameState == GameState::PLAY_MODE;
+	return currentGameState == GameState::PLAY_MODE;
 }
 
 bool Engine::IsPaused() {
-	return s_CurrentGameState == GameState::PAUSED_MODE;
+	return currentGameState == GameState::PAUSED_MODE;
 }

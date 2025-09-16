@@ -51,8 +51,12 @@ void GUIManager::Initialize() {
 	// Initialize panel manager and default panels
 	s_PanelManager = std::make_unique<PanelManager>();
 	assert(s_PanelManager != nullptr && "Failed to create PanelManager");
-	
+
 	SetupDefaultPanels();
+
+	// Set editor to edit mode on startup (engine defaults to play mode for game builds)
+	EditorState& editorState = EditorState::GetInstance();
+	editorState.SetState(EditorState::State::EDIT_MODE);
 
 	std::cout << "[GUIManager] Initialized with panel-based architecture" << std::endl;
 }
