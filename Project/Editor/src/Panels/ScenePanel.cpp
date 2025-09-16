@@ -274,7 +274,17 @@ void ScenePanel::OnImGuiRender() {
         }
 
         // Handle input based on ImGuizmo state (now calculated)
-        if (isSceneHovered && !ImGuizmo::IsOver() && !ImGuizmo::IsUsing()) {
+        bool canHandleInput = isSceneHovered && !ImGuizmo::IsOver() && !ImGuizmo::IsUsing();
+
+        // Debug input handling
+        if (ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
+            std::cout << "[ScenePanel] Mouse clicked - canHandleInput: " << (canHandleInput ? "true" : "false")
+                      << ", isSceneHovered: " << (isSceneHovered ? "true" : "false")
+                      << ", ImGuizmo::IsOver(): " << (ImGuizmo::IsOver() ? "true" : "false")
+                      << ", ImGuizmo::IsUsing(): " << (ImGuizmo::IsUsing() ? "true" : "false") << std::endl;
+        }
+
+        if (canHandleInput) {
             HandleCameraInput();
             HandleEntitySelection();
         }

@@ -46,6 +46,7 @@ public:
     /// <returns></returns>
     static GLint GetViewportWidth();
     static GLint GetViewportHeight();
+    static void SetViewportDimensions(GLint width, GLint height);
 
     static void SetWindowTitle(const char* title);
 

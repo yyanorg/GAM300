@@ -185,6 +185,12 @@ GLint WindowManager::GetViewportHeight()
     return viewportHeight;
 }
 
+void WindowManager::SetViewportDimensions(GLint width, GLint height)
+{
+    viewportWidth = width;
+    viewportHeight = height;
+}
+
 void WindowManager::SetWindowTitle(const char* _title) {
     glfwSetWindowTitle(ptrWindow, _title);
 }

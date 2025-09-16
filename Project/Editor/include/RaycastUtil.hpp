@@ -88,6 +88,15 @@ public:
      */
     static bool SetEntityTransform(Entity entity, const float matrix[16]);
 
+    /**
+     * @brief Decompose a Matrix4x4 into position, rotation, and scale components
+     * @param matrix The matrix to decompose
+     * @param position Output position
+     * @param rotation Output rotation (in degrees)
+     * @param scale Output scale
+     */
+    static void DecomposeMatrix(const Matrix4x4& matrix, Vector3D& position, Vector3D& rotation, Vector3D& scale);
+
 
 private:
     static constexpr float EPSILON = 1e-6f;
