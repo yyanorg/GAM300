@@ -1,131 +1,180 @@
 #include "Panels/InspectorPanel.hpp"
 #include "imgui.h"
+#include "GUIManager.hpp"
+#include <Graphics/Model/ModelRenderComponent.hpp>
+#include <cstring>
+#include <string>
+#include <cstddef>
+#include <unordered_map>
+#include <vector>
+#include <algorithm>
 
 InspectorPanel::InspectorPanel() 
     : EditorPanel("Inspector", true) {
 }
 
 void InspectorPanel::OnImGuiRender() {
-    if (ImGui::Begin(m_Name.c_str(), &m_IsOpen)) {
-        if (m_SelectedEntity == -1) {
+    if (ImGui::Begin(name.c_str(), &isOpen)) {
+        Entity selectedEntity = GUIManager::GetSelectedEntity();
+
+        if (selectedEntity == static_cast<Entity>(-1)) {
             ImGui::Text("No object selected");
             ImGui::Text("Select an object in the Scene Hierarchy to view its properties");
         } else {
-            ImGui::Text("Entity ID: %d", m_SelectedEntity);
-            ImGui::Separator();
+            try {
+                // Get the active ECS manager
+                ECSManager& ecsManager = ECSRegistry::GetInstance().GetActiveECSManager();
 
-            // Entity name field
-            static char entityName[128] = "Selected Entity";
-            ImGui::InputText("Name", entityName, sizeof(entityName));
-            
-            // Active checkbox
-            static bool isActive = true;
-            ImGui::Checkbox("Active", &isActive);
-            
-            ImGui::Separator();
+                ImGui::Text("Entity ID: %u", selectedEntity);
+                ImGui::Separator();
 
-            // Transform Component
-            if (ImGui::CollapsingHeader("Transform", ImGuiTreeNodeFlags_DefaultOpen)) {
-                DrawTransformComponent();
-            }
-
-            // Mesh Renderer Component (example)
-            if (m_SelectedEntity == 3 || m_SelectedEntity == 4) { // Player related entities
-                if (ImGui::CollapsingHeader("Mesh Renderer")) {
-                    DrawMeshRendererComponent();
+                // Draw NameComponent if it exists
+                if (ecsManager.HasComponent<NameComponent>(selectedEntity)) {
+                    DrawNameComponent(selectedEntity);
+                    ImGui::Separator();
                 }
-            }
 
-            // Camera Component (only for camera entity)
-            if (m_SelectedEntity == 1) { // Main Camera
-                if (ImGui::CollapsingHeader("Camera", ImGuiTreeNodeFlags_DefaultOpen)) {
-                    DrawCameraComponent();
+                // Draw Transform component if it exists
+                if (ecsManager.HasComponent<Transform>(selectedEntity)) {
+                    if (ImGui::CollapsingHeader("Transform", ImGuiTreeNodeFlags_DefaultOpen)) {
+                        DrawTransformComponent(selectedEntity);
+                    }
                 }
-            }
 
-            ImGui::Separator();
+                // Draw ModelRenderComponent if it exists
+                if (ecsManager.HasComponent<ModelRenderComponent>(selectedEntity)) {
+                    if (ImGui::CollapsingHeader("Model Renderer")) {
+                        DrawModelRenderComponent(selectedEntity);
+                    }
+                }
 
-            // Add Component button
-            if (ImGui::Button("Add Component")) {
-                ImGui::OpenPopup("AddComponentPopup");
-            }
+                //ImGui::Separator();
 
-            if (ImGui::BeginPopup("AddComponentPopup")) {
-                if (ImGui::MenuItem("Mesh Renderer")) {
-                    // TODO: Add mesh renderer component
-                }
-                if (ImGui::MenuItem("Box Collider")) {
-                    // TODO: Add box collider component
-                }
-                if (ImGui::MenuItem("Rigidbody")) {
-                    // TODO: Add rigidbody component
-                }
-                ImGui::EndPopup();
+                //// Add Component button
+                //if (ImGui::Button("Add Component")) {
+                //    ImGui::OpenPopup("AddComponentPopup");
+                //}
+
+                //if (ImGui::BeginPopup("AddComponentPopup")) {
+                //    if (ImGui::MenuItem("Transform")) {
+                //        if (!ecsManager.HasComponent<Transform>(selectedEntity)) {
+                //            ecsManager.AddComponent<Transform>(selectedEntity, Transform{});
+                //        }
+                //    }
+                //    if (ImGui::MenuItem("Name Component")) {
+                //        if (!ecsManager.HasComponent<NameComponent>(selectedEntity)) {
+                //            ecsManager.AddComponent<NameComponent>(selectedEntity, NameComponent{"Entity " + std::to_string(selectedEntity)});
+                //        }
+                //    }
+                //    ImGui::EndPopup();
+                //}
+
+            } catch (const std::exception& e) {
+                ImGui::Text("Error accessing entity: %s", e.what());
             }
         }
     }
     ImGui::End();
 }
 
-void InspectorPanel::DrawTransformComponent() {
-    ImGui::PushID("Transform");
-    
-    ImGui::Text("Position");
-    ImGui::DragFloat3("##Position", m_Position, 0.1f, -FLT_MAX, FLT_MAX, "%.3f");
-    
-    ImGui::Text("Rotation");
-    ImGui::DragFloat3("##Rotation", m_Rotation, 1.0f, -180.0f, 180.0f, "%.1f°");
-    
-    ImGui::Text("Scale");
-    ImGui::DragFloat3("##Scale", m_Scale, 0.1f, 0.001f, FLT_MAX, "%.3f");
-    
-    if (ImGui::Button("Reset")) {
-        m_Position[0] = m_Position[1] = m_Position[2] = 0.0f;
-        m_Rotation[0] = m_Rotation[1] = m_Rotation[2] = 0.0f;
-        m_Scale[0] = m_Scale[1] = m_Scale[2] = 1.0f;
+void InspectorPanel::DrawNameComponent(Entity entity) {
+    try {
+        ECSManager& ecsManager = ECSRegistry::GetInstance().GetActiveECSManager();
+        NameComponent& nameComponent = ecsManager.GetComponent<NameComponent>(entity);
+
+        ImGui::PushID("NameComponent");
+
+        // Use a static map to maintain state per entity
+        static std::unordered_map<Entity, std::vector<char>> nameBuffers;
+
+        // Get or create buffer for this entity
+        auto& nameBuffer = nameBuffers[entity];
+
+        // Initialize buffer if empty or different from component
+        std::string currentName = nameComponent.name;
+        if (nameBuffer.empty() || std::string(nameBuffer.data()) != currentName) {
+            nameBuffer.clear();
+            nameBuffer.resize(256, '\0'); // Create 256-char buffer filled with null terminators
+            if (!currentName.empty() && currentName.length() < 255) {
+                std::copy(currentName.begin(), currentName.end(), nameBuffer.begin());
+            }
+        }
+
+        // Use InputText with char buffer
+        ImGui::Text("Name");
+        ImGui::SameLine();
+        if (ImGui::InputText("##Name", nameBuffer.data(), nameBuffer.size())) {
+            // Update the actual component
+            nameComponent.name = std::string(nameBuffer.data());
+        }
+
+        ImGui::PopID();
+    } catch (const std::exception& e) {
+        ImGui::Text("Error accessing NameComponent: %s", e.what());
     }
-    
-    ImGui::PopID();
 }
 
-void InspectorPanel::DrawMeshRendererComponent() {
-    ImGui::PushID("MeshRenderer");
-    
-    static bool castShadows = true;
-    static bool receiveShadows = true;
-    static int materialSlot = 0;
-    
-    ImGui::Checkbox("Cast Shadows", &castShadows);
-    ImGui::Checkbox("Receive Shadows", &receiveShadows);
-    
-    ImGui::Text("Materials");
-    ImGui::Combo("Material", &materialSlot, "Default\0Stone\0Metal\0Wood\0");
-    
-    if (ImGui::Button("Change Mesh")) {
-        // TODO: Open mesh selector
+void InspectorPanel::DrawTransformComponent(Entity entity) {
+    try {
+        ECSManager& ecsManager = ECSRegistry::GetInstance().GetActiveECSManager();
+        Transform& transform = ecsManager.GetComponent<Transform>(entity);
+
+        ImGui::PushID("Transform");
+
+        // Position
+        float position[3] = { transform.position.x, transform.position.y, transform.position.z };
+        ImGui::Text("Position");
+        ImGui::SameLine();
+        if (ImGui::DragFloat3("##Position", position, 0.1f, -FLT_MAX, FLT_MAX, "%.3f")) {
+            TransformSystem::SetPosition(transform, { position[0], position[1], position[2] });
+        }
+
+        // Rotation
+        float rotation[3] = { transform.rotation.x, transform.rotation.y, transform.rotation.z };
+        ImGui::Text("Rotation");
+        ImGui::SameLine();
+        if (ImGui::DragFloat3("##Rotation", rotation, 1.0f, -180.0f, 180.0f, "%.1f")) {
+            TransformSystem::SetRotation(transform, { rotation[0], rotation[1], rotation[2] });
+        }
+
+        // Scale
+        float scale[3] = { transform.scale.x, transform.scale.y, transform.scale.z };
+        ImGui::Text("Scale");
+        ImGui::SameLine();
+        if (ImGui::DragFloat3("##Scale", scale, 0.1f, 0.001f, FLT_MAX, "%.3f")) {
+            TransformSystem::SetScale(transform, { scale[0], scale[1], scale[2] });
+        }
+
+
+        ImGui::PopID();
+    } catch (const std::exception& e) {
+        ImGui::Text("Error accessing Transform: %s", e.what());
     }
-    
-    ImGui::PopID();
 }
 
-void InspectorPanel::DrawCameraComponent() {
-    ImGui::PushID("Camera");
-    
-    static bool isMainCamera = true;
-    static int projectionType = 0; // 0 = Perspective, 1 = Orthographic
-    
-    ImGui::Checkbox("Main Camera", &isMainCamera);
-    ImGui::Combo("Projection", &projectionType, "Perspective\0Orthographic\0");
-    
-    if (projectionType == 0) { // Perspective
-        ImGui::SliderFloat("Field of View", &m_CameraFOV, 1.0f, 179.0f, "%.1f°");
+void InspectorPanel::DrawModelRenderComponent(Entity entity) {
+    try {
+        ECSManager& ecsManager = ECSRegistry::GetInstance().GetActiveECSManager();
+        ModelRenderComponent& modelRenderer = ecsManager.GetComponent<ModelRenderComponent>(entity);
+
+        ImGui::PushID("ModelRenderComponent");
+
+        // Display model info (read-only for now)
+        ImGui::Text("Model Renderer Component");
+        if (modelRenderer.model) {
+            ImGui::Text("Model: Loaded");
+        } else {
+            ImGui::Text("Model: None");
+        }
+
+        if (modelRenderer.shader) {
+            ImGui::Text("Shader: Loaded");
+        } else {
+            ImGui::Text("Shader: None");
+        }
+
+        ImGui::PopID();
+    } catch (const std::exception& e) {
+        ImGui::Text("Error accessing ModelRenderComponent: %s", e.what());
     }
-    
-    ImGui::DragFloat("Near Plane", &m_CameraNear, 0.01f, 0.001f, m_CameraFar - 0.001f, "%.3f");
-    ImGui::DragFloat("Far Plane", &m_CameraFar, 1.0f, m_CameraNear + 0.001f, 10000.0f, "%.1f");
-    
-    static float backgroundColor[4] = {0.2f, 0.3f, 0.3f, 1.0f};
-    ImGui::ColorEdit4("Background", backgroundColor);
-    
-    ImGui::PopID();
 }

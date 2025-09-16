@@ -1,6 +1,10 @@
 #pragma once
 
 #include "EditorPanel.hpp"
+#include <ECS/ECSRegistry.hpp>
+#include <ECS/NameComponent.hpp>
+#include <ECS/Entity.hpp>
+#include "../GUIManager.hpp"
 
 /**
  * @brief Scene Hierarchy panel showing the structure of objects in the current scene.
@@ -19,7 +23,10 @@ public:
     void OnImGuiRender() override;
 
 private:
-    void DrawEntityNode(const std::string& entityName, int entityId, bool hasChildren = false);
-    
-    int m_SelectedEntity = -1;
+    void DrawEntityNode(const std::string& entityName, Entity entityId, bool hasChildren = false);
+
+    // Rename functionality
+    Entity renamingEntity = static_cast<Entity>(-1);
+    std::vector<char> renameBuffer;
+    bool startRenaming = false;
 };

@@ -19,8 +19,9 @@
 #include "Panels/PerformancePanel.hpp"
 
 // Static member definitions
-std::unique_ptr<PanelManager> GUIManager::s_PanelManager = nullptr;
-bool GUIManager::s_DockspaceInitialized = false;
+std::unique_ptr<PanelManager> GUIManager::panelManager = nullptr;
+bool GUIManager::dockspaceInitialized = false;
+Entity GUIManager::selectedEntity = static_cast<Entity>(-1);
 
 void GUIManager::Initialize() {
 	GLFWwindow* window = WindowManager::getWindow();
@@ -49,8 +50,8 @@ void GUIManager::Initialize() {
 	// This ensures GLAD is properly initialized first
 
 	// Initialize panel manager and default panels
-	s_PanelManager = std::make_unique<PanelManager>();
-	assert(s_PanelManager != nullptr && "Failed to create PanelManager");
+	panelManager = std::make_unique<PanelManager>();
+	assert(panelManager != nullptr && "Failed to create PanelManager");
 
 	SetupDefaultPanels();
 
@@ -63,7 +64,7 @@ void GUIManager::Initialize() {
 
 
 void GUIManager::Render() {
-	assert(s_PanelManager != nullptr && "PanelManager must be initialized before rendering");
+	assert(panelManager != nullptr && "PanelManager must be initialized before rendering");
 	
 	// Start ImGui frame
 	ImGui_ImplOpenGL3_NewFrame();
@@ -80,8 +81,8 @@ void GUIManager::Render() {
 	RenderMenuBar();
 
 	// Render all open panels
-	if (s_PanelManager) {
-		s_PanelManager->RenderOpenPanels();
+	if (panelManager) {
+		panelManager->RenderOpenPanels();
 	}
 
 	// Handle multi-viewport rendering
@@ -109,7 +110,7 @@ void GUIManager::Exit() {
 	SceneRenderer::DeleteSceneFramebuffer();
 	
 	// Clean up panel manager
-	s_PanelManager.reset();
+	panelManager.reset();
 
 	// Clean up ImGui resources
 	ImGui_ImplOpenGL3_Shutdown();
@@ -120,36 +121,36 @@ void GUIManager::Exit() {
 }
 
 void GUIManager::SetupDefaultPanels() {
-	assert(s_PanelManager != nullptr && "PanelManager must be initialized before setting up panels");
+	assert(panelManager != nullptr && "PanelManager must be initialized before setting up panels");
 
 	// Register core editor panels
 	auto sceneHierarchyPanel = std::make_shared<SceneHierarchyPanel>();
 	assert(sceneHierarchyPanel != nullptr && "Failed to create SceneHierarchyPanel");
-	s_PanelManager->RegisterPanel(sceneHierarchyPanel);
-	
+	panelManager->RegisterPanel(sceneHierarchyPanel);
+
 	auto inspectorPanel = std::make_shared<InspectorPanel>();
 	assert(inspectorPanel != nullptr && "Failed to create InspectorPanel");
-	s_PanelManager->RegisterPanel(inspectorPanel);
-	
+	panelManager->RegisterPanel(inspectorPanel);
+
 	auto consolePanel = std::make_shared<ConsolePanel>();
 	assert(consolePanel != nullptr && "Failed to create ConsolePanel");
-	s_PanelManager->RegisterPanel(consolePanel);
-	
+	panelManager->RegisterPanel(consolePanel);
+
 	auto scenePanel = std::make_shared<ScenePanel>();
 	assert(scenePanel != nullptr && "Failed to create ScenePanel");
-	s_PanelManager->RegisterPanel(scenePanel);
+	panelManager->RegisterPanel(scenePanel);
 
 	auto gamePanel = std::make_shared<GamePanel>();
 	assert(gamePanel != nullptr && "Failed to create GamePanel");
-	s_PanelManager->RegisterPanel(gamePanel);
+	panelManager->RegisterPanel(gamePanel);
 
 	auto playControlPanel = std::make_shared<PlayControlPanel>();
 	assert(playControlPanel != nullptr && "Failed to create PlayControlPanel");
-	s_PanelManager->RegisterPanel(playControlPanel);
+	panelManager->RegisterPanel(playControlPanel);
 
 	auto performancePanel = std::make_shared<PerformancePanel>();
 	assert(performancePanel != nullptr && "Failed to create PerformancePanel");
-	s_PanelManager->RegisterPanel(performancePanel);
+	panelManager->RegisterPanel(performancePanel);
 
 	std::cout << "[GUIManager] Default panels registered" << std::endl;
 }
@@ -187,8 +188,8 @@ void GUIManager::CreateDockspace() {
 
 		// Check if we need to initialize the default layout
 		// Only do this if no docking data exists for this dockspace
-		if (!s_DockspaceInitialized) {
-			s_DockspaceInitialized = true;
+		if (!dockspaceInitialized) {
+			dockspaceInitialized = true;
 
 			// Check if the dockspace already has nodes (from saved layout)
 			ImGuiDockNode* node = ImGui::DockBuilderGetNode(dockspace_id);
@@ -212,13 +213,13 @@ void GUIManager::CreateDockspace() {
 				ImGui::DockBuilderDockWindow("Performance", dock_down);
 
 				// Ensure all panels are open by default so they get saved to the layout
-				if (s_PanelManager) {
-					auto gamePanel = s_PanelManager->GetPanel("Game");
-					auto scenePanel = s_PanelManager->GetPanel("Scene Panel");
-					auto hierarchyPanel = s_PanelManager->GetPanel("Scene Hierarchy");
-					auto inspectorPanel = s_PanelManager->GetPanel("Inspector");
-					auto consolePanel = s_PanelManager->GetPanel("Console");
-					auto performancePanel = s_PanelManager->GetPanel("Performance");
+				if (panelManager) {
+					auto gamePanel = panelManager->GetPanel("Game");
+					auto scenePanel = panelManager->GetPanel("Scene Panel");
+					auto hierarchyPanel = panelManager->GetPanel("Scene Hierarchy");
+					auto inspectorPanel = panelManager->GetPanel("Inspector");
+					auto consolePanel = panelManager->GetPanel("Console");
+					auto performancePanel = panelManager->GetPanel("Performance");
 
 					if (gamePanel) gamePanel->SetOpen(true);
 					if (scenePanel) scenePanel->SetOpen(true);
@@ -266,15 +267,22 @@ void GUIManager::RenderMenuBar() {
 		}
 
 		if (ImGui::BeginMenu("View")) {
-			if (s_PanelManager) {
+			if (ImGui::MenuItem("Reset Layout")) {
+				// Reset to default docking layout
+				dockspaceInitialized = false;
+			}
+			ImGui::EndMenu();
+		}
+
+		if (ImGui::BeginMenu("Window")) {
+			if (panelManager) {
 				// Panel toggles
-				for (const auto& panel : s_PanelManager->GetAllPanels()) {
+				for (const auto& panel : panelManager->GetAllPanels()) {
 					bool isOpen = panel->IsOpen();
 					if (ImGui::MenuItem(panel->GetName().c_str(), nullptr, &isOpen)) {
 						panel->SetOpen(isOpen);
 					}
 				}
-				ImGui::Separator();
 			}
 			ImGui::EndMenu();
 		}

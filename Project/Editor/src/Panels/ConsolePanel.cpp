@@ -15,7 +15,7 @@ void ConsolePanel::OnImGuiRender() {
     // Drain Engine log queue FIRST, before any ImGui rendering, to ensure new messages appear immediately
     DrainEngineLogQueue();
     
-    if (ImGui::Begin(m_Name.c_str(), &m_IsOpen)) {
+    if (ImGui::Begin(name.c_str(), &isOpen)) {
         // Filter checkboxes
         ImGui::Checkbox("Info", &m_ShowInfo); ImGui::SameLine();
         ImGui::Checkbox("Warnings", &m_ShowWarnings); ImGui::SameLine();
