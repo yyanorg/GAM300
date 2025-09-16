@@ -14,7 +14,22 @@
 #include "pch.h"
 #include "Math/Vector3D.h"
 
-struct Matrix4x4 {
+#ifdef _WIN32
+#ifdef ENGINE_EXPORTS
+#define ENGINE_API __declspec(dllexport)
+#else
+#define ENGINE_API __declspec(dllimport)
+#endif
+#else
+// Linux/GCC
+#ifdef ENGINE_EXPORTS
+#define ENGINE_API __attribute__((visibility("default")))
+#else
+#define ENGINE_API
+#endif
+#endif
+
+struct ENGINE_API Matrix4x4 {
     // Row-major storage: m[row][col]
     float m[4][4];
 

@@ -7,34 +7,33 @@
 
 // Include ECS system from Engine (using configured include paths)
 #include "ECS/ECSRegistry.hpp"
-#include "Graphics/Model/ModelRenderComponent.hpp"
+#include "Transform/TransformComponent.hpp"
+#include "Math/Vector3D.h"
 
 RaycastUtil::Ray RaycastUtil::ScreenToWorldRay(float mouseX, float mouseY,
                                               float screenWidth, float screenHeight,
-                                              const glm::mat4& viewMatrix, const glm::mat4& projMatrix) {
+                                              const Matrix4x4& viewMatrix, const Matrix4x4& projMatrix) {
     // Normalize screen coordinates to NDC [-1, 1]
     float x = (2.0f * mouseX) / screenWidth - 1.0f;
     float y = 1.0f - (2.0f * mouseY) / screenHeight;  // Flip Y axis
 
     // Create points in NDC space (near and far plane)
-    glm::vec4 rayStartNDC(x, y, -1.0f, 1.0f);  // Near plane
-    glm::vec4 rayEndNDC(x, y, 1.0f, 1.0f);     // Far plane
+    Vector3D rayStartNDC(x, y, -1.0f);  // Near plane
+    Vector3D rayEndNDC(x, y, 1.0f);     // Far plane
 
     // Transform to world space
-    glm::mat4 invView = glm::inverse(viewMatrix);
-    glm::mat4 invProj = glm::inverse(projMatrix);
-    glm::mat4 invViewProj = invView * invProj;
+    Matrix4x4 invView = viewMatrix.Inversed();
+    Matrix4x4 invProj = projMatrix.Inversed();
+    Matrix4x4 invViewProj = invView * invProj;
 
-    glm::vec4 rayStartWorld = invViewProj * rayStartNDC;
-    glm::vec4 rayEndWorld = invViewProj * rayEndNDC;
-
-    // Perform perspective division
-    rayStartWorld /= rayStartWorld.w;
-    rayEndWorld /= rayEndWorld.w;
+    // Transform points (assuming homogeneous coordinate w=1 for both points)
+    Vector3D rayStartWorld = invViewProj.TransformPoint(rayStartNDC);
+    Vector3D rayEndWorld = invViewProj.TransformPoint(rayEndNDC);
 
     // Create ray
-    glm::vec3 rayOrigin(rayStartWorld);
-    glm::vec3 rayDirection = glm::normalize(glm::vec3(rayEndWorld - rayStartWorld));
+    glm::vec3 rayOrigin(rayStartWorld.x, rayStartWorld.y, rayStartWorld.z);
+    Vector3D direction = rayEndWorld - rayStartWorld;
+    glm::vec3 rayDirection = glm::normalize(glm::vec3(direction.x, direction.y, direction.z));
 
     return Ray(rayOrigin, rayDirection);
 }
@@ -60,16 +59,16 @@ bool RaycastUtil::RayAABBIntersection(const Ray& ray, const AABB& aabb, float& d
     return true;
 }
 
-RaycastUtil::AABB RaycastUtil::CreateAABBFromTransform(const glm::mat4& transform,
+RaycastUtil::AABB RaycastUtil::CreateAABBFromTransform(const Matrix4x4& transform,
                                                      const glm::vec3& modelSize) {
-    // Extract transform components
-    glm::vec3 translation(transform[3]);
+    // Extract translation from transform matrix (last column)
+    glm::vec3 translation(transform.m[0][3], transform.m[1][3], transform.m[2][3]);
 
-    // Extract scale from transform matrix
+    // Extract scale from transform matrix (length of basis vectors)
     glm::vec3 scale;
-    scale.x = glm::length(glm::vec3(transform[0]));
-    scale.y = glm::length(glm::vec3(transform[1]));
-    scale.z = glm::length(glm::vec3(transform[2]));
+    scale.x = sqrt(transform.m[0][0]*transform.m[0][0] + transform.m[1][0]*transform.m[1][0] + transform.m[2][0]*transform.m[2][0]);
+    scale.y = sqrt(transform.m[0][1]*transform.m[0][1] + transform.m[1][1]*transform.m[1][1] + transform.m[2][1]*transform.m[2][1]);
+    scale.z = sqrt(transform.m[0][2]*transform.m[0][2] + transform.m[1][2]*transform.m[1][2] + transform.m[2][2]*transform.m[2][2]);
 
     // Create AABB around the transformed model
     glm::vec3 halfSize = (modelSize * scale) * 0.5f;
@@ -98,22 +97,21 @@ RaycastUtil::RaycastHit RaycastUtil::RaycastScene(const Ray& ray) {
         // Debug: Count total entities with ModelRenderComponent
         int entitiesWithComponent = 0;
 
-        // Test against entities 0-10, but only if they have the component
-        for (Entity entity = 0; entity <= 10; ++entity) {
-            // Check if entity has ModelRenderComponent before trying to get it
-            if (!ecsManager.HasComponent<ModelRenderComponent>(entity)) {
-                continue;  // Skip silently - most entities won't have this component
+        // Test against entities 0-50, looking for Transform components
+        for (Entity entity = 0; entity <= 50; ++entity) {
+            // Check if entity has Transform component
+            if (!ecsManager.HasComponent<Transform>(entity)) {
+                continue;  // Skip if entity has no transform
             }
 
-            entitiesWithComponent++;
-            std::cout << "[RaycastUtil] Found entity " << entity << " with ModelRenderComponent" << std::endl;
-
             try {
-                // Get the ModelRenderComponent for this entity
-                auto& renderComponent = ecsManager.GetComponent<ModelRenderComponent>(entity);
+                auto& transform = ecsManager.GetComponent<Transform>(entity);
+
+                entitiesWithComponent++;
+                std::cout << "[RaycastUtil] Found entity " << entity << " with Transform component" << std::endl;
 
                 // Create AABB from the entity's transform
-                AABB entityAABB = CreateAABBFromTransform(renderComponent.transform);
+                AABB entityAABB = CreateAABBFromTransform(transform.model);
 
                 std::cout << "[RaycastUtil] Entity " << entity << " AABB: min("
                           << entityAABB.min.x << ", " << entityAABB.min.y << ", " << entityAABB.min.z
@@ -131,13 +129,12 @@ RaycastUtil::RaycastHit RaycastUtil::RaycastScene(const Ray& ray) {
                     }
                 }
             } catch (const std::exception& e) {
-                // Still catch any other exceptions just in case
-                std::cerr << "[RaycastUtil] Error getting component for entity " << entity << ": " << e.what() << std::endl;
+                std::cerr << "[RaycastUtil] Error processing entity " << entity << ": " << e.what() << std::endl;
                 continue;
             }
         }
 
-        std::cout << "[RaycastUtil] Tested " << entitiesWithComponent << " entities with ModelRenderComponent" << std::endl;
+        std::cout << "[RaycastUtil] Tested " << entitiesWithComponent << " entities with Transform components" << std::endl;
 
     } catch (const std::exception& e) {
         std::cerr << "[RaycastUtil] Error during raycast: " << e.what() << std::endl;
@@ -152,14 +149,16 @@ bool RaycastUtil::GetEntityTransform(Entity entity, float outMatrix[16]) {
         ECSRegistry& registry = ECSRegistry::GetInstance();
         ECSManager& ecsManager = registry.GetActiveECSManager();
 
-        if (ecsManager.HasComponent<ModelRenderComponent>(entity)) {
-            auto& renderComponent = ecsManager.GetComponent<ModelRenderComponent>(entity);
+        // Check if entity has Transform component
+        if (ecsManager.HasComponent<Transform>(entity)) {
+            auto& transform = ecsManager.GetComponent<Transform>(entity);
 
-            // Convert glm::mat4 to float array
-            const float* matrixPtr = glm::value_ptr(renderComponent.transform);
-            for (int i = 0; i < 16; ++i) {
-                outMatrix[i] = matrixPtr[i];
-            }
+            // Convert Matrix4x4 to column-major float array for ImGuizmo (GLM format)
+            // Matrix4x4 is row-major, ImGuizmo expects column-major
+            outMatrix[0]  = transform.model.m[0][0]; outMatrix[4]  = transform.model.m[0][1]; outMatrix[8]  = transform.model.m[0][2]; outMatrix[12] = transform.model.m[0][3];
+            outMatrix[1]  = transform.model.m[1][0]; outMatrix[5]  = transform.model.m[1][1]; outMatrix[9]  = transform.model.m[1][2]; outMatrix[13] = transform.model.m[1][3];
+            outMatrix[2]  = transform.model.m[2][0]; outMatrix[6]  = transform.model.m[2][1]; outMatrix[10] = transform.model.m[2][2]; outMatrix[14] = transform.model.m[2][3];
+            outMatrix[3]  = transform.model.m[3][0]; outMatrix[7]  = transform.model.m[3][1]; outMatrix[11] = transform.model.m[3][2]; outMatrix[15] = transform.model.m[3][3];
 
             return true;
         }
@@ -176,19 +175,18 @@ bool RaycastUtil::SetEntityTransform(Entity entity, const float matrix[16]) {
         ECSRegistry& registry = ECSRegistry::GetInstance();
         ECSManager& ecsManager = registry.GetActiveECSManager();
 
-        if (ecsManager.HasComponent<ModelRenderComponent>(entity)) {
-            auto& renderComponent = ecsManager.GetComponent<ModelRenderComponent>(entity);
+        // Check if entity has Transform component
+        if (ecsManager.HasComponent<Transform>(entity)) {
+            auto& transform = ecsManager.GetComponent<Transform>(entity);
 
-            // Convert float array back to glm::mat4
-            glm::mat4 newTransform;
-            for (int i = 0; i < 16; ++i) {
-                glm::value_ptr(newTransform)[i] = matrix[i];
-            }
+            // Convert column-major float array (ImGuizmo/GLM format) to row-major Matrix4x4
+            // ImGuizmo provides column-major, Matrix4x4 is row-major
+            transform.model.m[0][0] = matrix[0];  transform.model.m[0][1] = matrix[4];  transform.model.m[0][2] = matrix[8];   transform.model.m[0][3] = matrix[12];
+            transform.model.m[1][0] = matrix[1];  transform.model.m[1][1] = matrix[5];  transform.model.m[1][2] = matrix[9];   transform.model.m[1][3] = matrix[13];
+            transform.model.m[2][0] = matrix[2];  transform.model.m[2][1] = matrix[6];  transform.model.m[2][2] = matrix[10];  transform.model.m[2][3] = matrix[14];
+            transform.model.m[3][0] = matrix[3];  transform.model.m[3][1] = matrix[7];  transform.model.m[3][2] = matrix[11];  transform.model.m[3][3] = matrix[15];
 
-            // Update the entity's transform
-            renderComponent.transform = newTransform;
-
-            std::cout << "[RaycastUtil] Updated transform for entity " << entity << std::endl;
+            std::cout << "[RaycastUtil] Updated Transform component for entity " << entity << std::endl;
             return true;
         }
     } catch (const std::exception& e) {
