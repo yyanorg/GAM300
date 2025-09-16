@@ -10,11 +10,13 @@
 #include "Scene/SceneManager.hpp"
 #include "Scene/SceneInstance.hpp"
 
+#include "RunTimeVar.hpp"
+
 #define UNREFERENCED_PARAMETER(P) (P)
 
 GLFWwindow* WindowManager::ptrWindow = nullptr;
-GLint WindowManager::width;
-GLint WindowManager::height;
+//GLint WindowManager::width;
+//GLint WindowManager::height;
 GLint WindowManager::viewportWidth;
 GLint WindowManager::viewportHeight;
 const char* WindowManager::title;
@@ -26,7 +28,8 @@ GLint WindowManager::windowedHeight = 900;  // Default windowed size
 GLint WindowManager::windowedPosX = 0;      // Default window position
 GLint WindowManager::windowedPosY = 0;      // Default window position
 
-double WindowManager::deltaTime = 0.0;
+//double WindowManager::deltaTime = 0.0;
+
 double WindowManager::lastFrameTime = 0.0;
 
 // Scene framebuffer static members
@@ -40,8 +43,12 @@ static int sceneHeight = 720;
 static Camera* editorCamera = nullptr;
 
 bool WindowManager::Initialize(GLint _width, GLint _height, const char* _title) {
-    WindowManager::width = _width;
-    WindowManager::height = _height;
+
+    //WindowManager::width = _width;
+    //WindowManager::height = _height;
+    RunTimeVar::window.width = _width; 
+    RunTimeVar::window.height = _height;
+
     WindowManager::viewportWidth = _width;
     WindowManager::viewportHeight = _height;
     title = _title;
@@ -54,7 +61,7 @@ bool WindowManager::Initialize(GLint _width, GLint _height, const char* _title) 
         std::cout << "GLFW init has failed - abort program!!!" << std::endl;
         return false;
     }
-
+    
     // If GLFW function fails, callback error
     glfwSetErrorCallback(error_cb);
 
@@ -70,7 +77,7 @@ bool WindowManager::Initialize(GLint _width, GLint _height, const char* _title) 
     glfwWindowHint(GLFW_BLUE_BITS, 8); glfwWindowHint(GLFW_ALPHA_BITS, 8);
 
     // Create window and check if success
-    ptrWindow = glfwCreateWindow(width, height, title, NULL, NULL);
+    ptrWindow = glfwCreateWindow(RunTimeVar::window.width, RunTimeVar::window.height, title, NULL, NULL);
     if (!ptrWindow) {
         std::cerr << "GLFW unable to create OpenGL context - abort program\n";
         glfwTerminate();
@@ -167,8 +174,10 @@ void WindowManager::fbsize_cb(GLFWwindow* ptr_win, int _width, int _height) {
 #ifdef _DEBUG
     std::cout << "fbsize_cb getting called!!!" << std::endl;
 #endif
-    WindowManager::width = _width;
-    WindowManager::height = _height;
+    //WindowManager::width = _width;
+    //WindowManager::height = _height;
+    RunTimeVar::window.width = _width;
+    RunTimeVar::window.height = _height;
 
     glViewport(0, 0, _width, _height);
 
@@ -178,12 +187,12 @@ void WindowManager::fbsize_cb(GLFWwindow* ptr_win, int _width, int _height) {
 
 GLint WindowManager::GetWindowWidth()
 {
-    return width;
+    return RunTimeVar::window.width;
 }
 
 GLint WindowManager::GetWindowHeight()
 {
-    return height;
+    return RunTimeVar::window.height;
 }
 
 GLint WindowManager::GetViewportWidth()
@@ -235,16 +244,16 @@ void WindowManager::updateDeltaTime() {
 
     // Update deltaTime
     currentTime = glfwGetTime();
-    deltaTime = currentTime - lastFrameTime;
+    RunTimeVar::deltaTime = currentTime - lastFrameTime;
     lastFrameTime = currentTime;
     glfwSwapInterval(1);
 }
 
 double WindowManager::getDeltaTime() {
-    return deltaTime;
+    return RunTimeVar::deltaTime;
 }
 double WindowManager::getFps() {
-    return deltaTime > 0.0 ? 1.0 / deltaTime : 0.0;
+    return RunTimeVar::deltaTime > 0.0 ? 1.0 / RunTimeVar::deltaTime: 0.0;
 }
 
 // Scene framebuffer functions

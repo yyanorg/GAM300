@@ -5,6 +5,8 @@
 #include <string>
 #include <glm/glm.hpp>
 
+#include "RunTimeVar.hpp"
+
 #ifdef _WIN32
 #ifdef ENGINE_EXPORTS
 #define ENGINE_API __declspec(dllexport)
@@ -81,14 +83,14 @@ private:
 
     static GLFWwindow* ptrWindow;
 
-    static GLint width;
-    static GLint height;
+    //static GLint width;
+    //static GLint height;
 
     static GLint viewportWidth;
     static GLint viewportHeight;
 
     static const char* title;
 
-    static double deltaTime;
+    //static double deltaTime;
     static double lastFrameTime;
 };

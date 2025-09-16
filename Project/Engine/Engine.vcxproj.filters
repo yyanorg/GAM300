@@ -50,6 +50,7 @@
     <ClInclude Include="include\Logging.hpp" />
     <ClInclude Include="include\Scene\Scene.hpp" />
     <ClInclude Include="include\Scene\SceneManager.hpp" />
+    <ClInclude Include="include\RunTimeVar.hpp" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Engine.cpp" />
@@ -80,6 +81,7 @@
     <ClCompile Include="src\Graphics\GraphicsManager.cpp" />
     <ClCompile Include="src\Logging.cpp" />
     <ClCompile Include="src\Scene\SceneManager.cpp" />
+    <ClCompile Include="src\RunTimeVar.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="cpp.hint" />

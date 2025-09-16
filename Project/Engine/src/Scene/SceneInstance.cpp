@@ -153,7 +153,8 @@ void SceneInstance::DrawLightCubes()
 		glm::mat4 view = camera.GetViewMatrix();
 		glm::mat4 projection = glm::perspective(
 			glm::radians(camera.Zoom),
-			(float)WindowManager::GetWindowWidth() / (float)WindowManager::GetWindowHeight(),
+			//(float)WindowManager::GetWindowWidth() / (float)WindowManager::GetWindowHeight(),
+			(float)RunTimeVar::window.width / (float)RunTimeVar::window.height,
 			0.1f, 100.0f
 		);
 

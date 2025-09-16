@@ -40,6 +40,7 @@
     <ClInclude Include="include\Graphics\Material.hpp" />
     <ClInclude Include="include\Graphics\Model\ModelRenderComponent.hpp" />
     <ClInclude Include="include\Logging.hpp" />
+    <ClInclude Include="include\RunTimeVar.hpp" />
     <ClInclude Include="include\Scene\Scene.hpp" />
     <ClInclude Include="include\Scene\SceneManager.hpp" />
     <ClInclude Include="include\Serialization\Deserialization.hpp" />
@@ -83,6 +84,7 @@
     <ClCompile Include="src\Graphics\GraphicsManager.cpp" />
     <ClCompile Include="src\Graphics\Material.cpp" />
     <ClCompile Include="src\Logging.cpp" />
+    <ClCompile Include="src\RunTimeVar.cpp" />
     <ClCompile Include="src\Scene\SceneManager.cpp" />
     <ClCompile Include="src\Serialization\Deserialization.cpp" />
     <ClCompile Include="src\Asset Manager\GUID.cpp" />
