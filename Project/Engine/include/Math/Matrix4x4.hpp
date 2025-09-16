@@ -12,7 +12,7 @@
 #pragma once
 
 #include "pch.h"
-#include "Math/Vector3D.h"
+#include "Math/Vector3D.hpp"
 
 struct Matrix4x4 {
     // Row-major storage: m[row][col]
@@ -43,37 +43,38 @@ struct Matrix4x4 {
 
     // ---- vector transforms (column-vector convention) ----
     // Treats v as (x,y,z,1). Returns perspective-divided Vector3D.
-    Vector3D TransformPoint(const Vector3D& v) const;
+    Vector3D transformPoint(const Vector3D& v) const;
     // Treats v as (x,y,z,0). Ignores translation.
-    Vector3D TransformVector(const Vector3D& v) const;
+    Vector3D transformVector(const Vector3D& v) const;
 
     // ---- linear algebra ----
-    Matrix4x4 Transposed() const;
-    float     Determinant() const;
-    bool      TryInverse(Matrix4x4& out) const;  // false if singular
-    Matrix4x4 Inversed() const;                  // asserts if singular
+    Matrix4x4 transposed() const;
+    float     determinant() const;
+    bool      tryInverse(Matrix4x4& out) const;  // false if singular
+    Matrix4x4 inversed() const;                  // asserts if singular
 
     // ---- factories ----
-    static Matrix4x4 Identity();
-    static Matrix4x4 Zero();
+    static Matrix4x4 identity();
+    static Matrix4x4 zero();
 
-    static Matrix4x4 Translate(float tx, float ty, float tz);
-    static Matrix4x4 Scale(float sx, float sy, float sz);
-    static Matrix4x4 Scale(float s) { return Scale(s, s, s); }
+    static Matrix4x4 translate(float tx, float ty, float tz);
+    static Matrix4x4 scale(float sx, float sy, float sz);
+    static Matrix4x4 scale(float s) { return scale(s, s, s); }
 
-    static Matrix4x4 RotationX(float radians);
-    static Matrix4x4 RotationY(float radians);
-    static Matrix4x4 RotationZ(float radians);
-    static Matrix4x4 RotationAxisAngle(const Vector3D& axis_unit, float radians);
+    static Matrix4x4 rotateX(float radians);
+    static Matrix4x4 rotateY(float radians);
+    static Matrix4x4 rotateZ(float radians);
+    static Matrix4x4 rotationAxisAngle(const Vector3D& axis_unit, float radians);
 
     // Compose: T * R * S (column-vector math; applied S then R then T)
-    static Matrix4x4 TRS(const Vector3D& t, const Matrix4x4& R, const Vector3D& s);
+    static Matrix4x4 trs(const Vector3D& t, const Matrix4x4& R, const Vector3D& s);
 
     // ---- camera / projection (Right-Handed) ----
-    static Matrix4x4 LookAtRH(const Vector3D& eye, const Vector3D& target, const Vector3D& up);
+    static Matrix4x4 lookAtRH(const Vector3D& eye, const Vector3D& target, const Vector3D& up);
+
     // fovY in radians, aspect = width/height, zNear>0, zFar>zNear
-    static Matrix4x4 PerspectiveFovRH(float fovY, float aspect, float zNear, float zFar);
-    static Matrix4x4 OrthoRH(float left, float right, float bottom, float top, float zNear, float zFar);
+    static Matrix4x4 perspectiveFovRH(float fovY, float aspect, float zNear, float zFar);
+    static Matrix4x4 orthoRH(float left, float right, float bottom, float top, float zNear, float zFar);
 };
 
 // left scalar
