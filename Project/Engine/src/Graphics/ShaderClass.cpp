@@ -18,7 +18,7 @@ std::string get_file_contents(const char* filename)
 	throw(errno);
 }
 
-bool Shader::LoadAsset(const std::string& path) {
+bool Shader::CompileToResource(const std::string& path) {
 	std::string vertexFile = path + ".vert";
 	std::string fragmentFile = path + ".frag";
 

@@ -31,31 +31,42 @@ public:
 	void SetShininess(float shininess);
 	void SetOpacity(float opacity);
 
+	const glm::vec3& GetAmbient() const { return m_ambient; }
+	const glm::vec3& GetDiffuse() const { return m_diffuse; }
+	const glm::vec3& GetSpecular() const { return m_specular; }
+	const glm::vec3& GetEmissive() const { return m_emissive; }
+	const float& GetShininess() const { return m_shininess; }
+	const float& GetOpacity() const { return m_opacity; }
+
 	// PBR properties - Future
 	void SetMetallic(float metallic);
 	void SetRoughness(float roughness);
 	void SetAO(float ao);
 
+	const float& GetMetallic() const { return m_metallic; }
+	const float& GetRoughness() const { return m_roughness; }
+	const float& GetAO() const { return m_ao; }
+
 	// Texture Managment
 	void SetTexture(TextureType type, std::shared_ptr<Texture> texture);
-	std::shared_ptr<Texture> getTexture(TextureType type) const;
-	bool hasTexture(TextureType type) const;
-	void removeTexture(TextureType type);
+	std::shared_ptr<Texture> GetTexture(TextureType type) const;
+	bool HasTexture(TextureType type) const;
+	void RemoveTexture(TextureType type);
 
 	// Utility methods
-	void setName(const std::string& name);
-	const std::string& getName() const;
+	void SetName(const std::string& name);
+	const std::string& GetName() const;
 
 	// Apply material to shader
-	void applyToShader(Shader& shader) const;
+	void ApplyToShader(Shader& shader) const;
 
 	// Static factory methods for common materials
-	static std::shared_ptr<Material> createDefault();
-	static std::shared_ptr<Material> createMetal(const glm::vec3& color);
-	static std::shared_ptr<Material> createPlastic(const glm::vec3& color);
-	static std::shared_ptr<Material> createWood();
+	static std::shared_ptr<Material> CreateDefault();
+	static std::shared_ptr<Material> CreateMetal(const glm::vec3& color);
+	static std::shared_ptr<Material> CreatePlastic(const glm::vec3& color);
+	static std::shared_ptr<Material> CreateWood();
 
-	void debugPrintProperties() const;
+	void DebugPrintProperties() const;
 private:
 	std::string m_name;
 
@@ -76,7 +87,6 @@ private:
 	std::unordered_map<TextureType, std::shared_ptr<Texture>> m_textures;
 
 	// Helper methods
-	std::string textureTypeToString(TextureType type) const;
-	void bindTextures(Shader& shader) const;
-
+	std::string TextureTypeToString(TextureType type) const;
+	void BindTextures(Shader& shader) const;
 };

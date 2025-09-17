@@ -22,7 +22,7 @@ public:
 	Font(unsigned int defaultFontSize = 48);
 	~Font();
 
-	bool LoadAsset(const std::string& path) override;
+	bool CompileToResource(const std::string& path) override;
 	void Cleanup();
 	bool LoadFont(const std::string& path, unsigned int fontSize);
 

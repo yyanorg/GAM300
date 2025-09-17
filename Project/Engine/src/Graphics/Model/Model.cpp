@@ -4,7 +4,7 @@
 #include <iostream>
 #include "Asset Manager/AssetManager.hpp"
 
-bool Model::LoadAsset(const std::string& path) 
+bool Model::CompileToResource(const std::string& path) 
 {
 	Assimp::Importer importer;
 	// The function expects a file path and several post-processing options as its second argument
@@ -20,29 +20,29 @@ bool Model::LoadAsset(const std::string& path)
 	directory = path.substr(0, path.find_last_of('/'));
 
 	// Recursive function
-	processNode(scene->mRootNode, scene);
+	ProcessNode(scene->mRootNode, scene);
 
 	return true;
 }
 
-void Model::processNode(aiNode* node, const aiScene* scene)
+void Model::ProcessNode(aiNode* node, const aiScene* scene)
 {
 	// Process each mesh in this node
 	for (unsigned int i = 0; i < node->mNumMeshes; i++)
 	{
 		aiMesh* mesh = scene->mMeshes[node->mMeshes[i]];
-		meshes.emplace_back(processMesh(mesh, scene));
+		meshes.emplace_back(ProcessMesh(mesh, scene));
 	}
 
 	// Process children nodes
 	for (unsigned int i = 0; i < node->mNumChildren; i++)
 	{
-		processNode(node->mChildren[i], scene);
+		ProcessNode(node->mChildren[i], scene);
 	}
 
 }
 
-Mesh Model::processMesh(aiMesh* mesh, const aiScene* scene)
+Mesh Model::ProcessMesh(aiMesh* mesh, const aiScene* scene)
 {
     std::vector<Vertex> vertices;
     std::vector<GLuint> indices;
@@ -146,27 +146,27 @@ Mesh Model::processMesh(aiMesh* mesh, const aiScene* scene)
         // Load textures and assign to material
 
         // Diffuse textures
-        std::vector<std::shared_ptr<Texture>> diffuseMaps = loadMaterialTexture(assimpMaterial, aiTextureType_DIFFUSE, "diffuse");
+        std::vector<std::shared_ptr<Texture>> diffuseMaps = LoadMaterialTexture(assimpMaterial, aiTextureType_DIFFUSE, "diffuse");
         if (!diffuseMaps.empty()) {
             material->SetTexture(TextureType::DIFFUSE, diffuseMaps[0]);
         }
 
         // Specular textures
-        std::vector<std::shared_ptr<Texture>> specularMaps = loadMaterialTexture(assimpMaterial, aiTextureType_SPECULAR, "specular");
+        std::vector<std::shared_ptr<Texture>> specularMaps = LoadMaterialTexture(assimpMaterial, aiTextureType_SPECULAR, "specular");
         if (!specularMaps.empty()) 
         {
             material->SetTexture(TextureType::SPECULAR, specularMaps[0]);
         }
 
         // Normal maps
-        std::vector<std::shared_ptr<Texture>> normalMaps = loadMaterialTexture(assimpMaterial, aiTextureType_NORMALS, "normal");
+        std::vector<std::shared_ptr<Texture>> normalMaps = LoadMaterialTexture(assimpMaterial, aiTextureType_NORMALS, "normal");
         if (!normalMaps.empty()) 
         {
             material->SetTexture(TextureType::NORMAL, normalMaps[0]);
         }
 
         // Height maps
-        std::vector<std::shared_ptr<Texture>> heightMaps = loadMaterialTexture(assimpMaterial, aiTextureType_HEIGHT, "height");
+        std::vector<std::shared_ptr<Texture>> heightMaps = LoadMaterialTexture(assimpMaterial, aiTextureType_HEIGHT, "height");
         if (!heightMaps.empty()) {
             material->SetTexture(TextureType::HEIGHT, heightMaps[0]);
         }
@@ -179,13 +179,13 @@ Mesh Model::processMesh(aiMesh* mesh, const aiScene* scene)
     // If no material was created, use a default one
     if (!material) 
     {
-        material = Material::createDefault();
+        material = Material::CreateDefault();
     }
 
     return Mesh(vertices, indices, material);
 }
 
-std::vector<std::shared_ptr<Texture>> Model::loadMaterialTexture(aiMaterial* mat, aiTextureType type, std::string typeName)
+std::vector<std::shared_ptr<Texture>> Model::LoadMaterialTexture(aiMaterial* mat, aiTextureType type, std::string typeName)
 {
 	typeName;
 	std::vector<std::shared_ptr<Texture>> textures;
@@ -207,6 +207,52 @@ std::vector<std::shared_ptr<Texture>> Model::loadMaterialTexture(aiMaterial* mat
 	}
 
 	return textures;
+}
+
+bool Model::CompileMesh(aiMesh* mesh, const std::vector<Vertex>& vertices, const std::vector<GLuint>& indices, std::shared_ptr<Material> mat) {
+    std::string outPath = directory + '/' + mesh->mName.C_Str() + ".mesh";
+    std::ofstream outFile(outPath, std::ios::binary);
+    if (outFile.is_open()) {
+		GLuint vertexCount = vertices.size();
+        GLuint indexCount = indices.size();
+
+        // Write vertex and index count to the file as binary data.
+        outFile.write(reinterpret_cast<char*>(&vertexCount), sizeof(vertexCount));
+		outFile.write(reinterpret_cast<char*>(&indexCount), sizeof(indexCount));
+
+        // Write vertex data to the file as binary data.
+        for (const Vertex& v : vertices) {
+            outFile.write(reinterpret_cast<const char*>(&v.position), sizeof(v.position));
+            outFile.write(reinterpret_cast<const char*>(&v.normal), sizeof(v.normal));
+            outFile.write(reinterpret_cast<const char*>(&v.color), sizeof(v.color));
+            outFile.write(reinterpret_cast<const char*>(&v.texUV), sizeof(v.texUV));
+        }
+
+		// Write index data to the file as binary data.
+        outFile.write(reinterpret_cast<const char*>(indices.data()), indexCount * sizeof(GLuint));
+
+        // Write material properties to the file as binary data.
+		outFile.write(reinterpret_cast<const char*>(&mat->GetName()), sizeof(mat->GetName()));
+		outFile.write(reinterpret_cast<const char*>(&mat->GetAmbient()), sizeof(mat->GetAmbient()));
+		outFile.write(reinterpret_cast<const char*>(&mat->GetDiffuse()), sizeof(mat->GetDiffuse()));
+		outFile.write(reinterpret_cast<const char*>(&mat->GetSpecular()), sizeof(mat->GetSpecular()));
+		outFile.write(reinterpret_cast<const char*>(&mat->GetEmissive()), sizeof(mat->GetEmissive()));
+		outFile.write(reinterpret_cast<const char*>(&mat->GetShininess()), sizeof(mat->GetShininess()));
+		outFile.write(reinterpret_cast<const char*>(&mat->GetOpacity()), sizeof(mat->GetOpacity()));
+
+        // Write PBR properties to the file as binary data.
+		outFile.write(reinterpret_cast<const char*>(&mat->GetMetallic()), sizeof(mat->GetMetallic()));
+		outFile.write(reinterpret_cast<const char*>(&mat->GetRoughness()), sizeof(mat->GetRoughness()));
+		outFile.write(reinterpret_cast<const char*>(&mat->GetAO()), sizeof(mat->GetAO()));
+
+        // Write texture 
+
+		outFile.close();
+
+        return true;
+    }
+
+    return false;
 }
 
 void Model::Draw(Shader& shader, const Camera& camera)

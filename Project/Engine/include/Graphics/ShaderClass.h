@@ -16,7 +16,7 @@ public:
     //Shader() {};
 	//Shader(const char* vertexFile, const char* fragmentFile);
 
-	bool LoadAsset(const std::string& path) override;
+	bool CompileToResource(const std::string& path) override;
 
 	void Activate();
 	void Delete();

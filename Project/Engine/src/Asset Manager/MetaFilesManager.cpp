@@ -86,6 +86,14 @@ void MetaFilesManager::InitializeAssetMetaFiles(const std::string& rootAssetFold
 
 				AddGUID128Mapping(assetPath, guid128);
 			}
+			// fallback for shaders
+			else if (extension == ".meta") {
+				std::string assetPath = file.path().generic_string();
+				assetPath = assetPath.substr(0, assetPath.size() - 5); // Remove the .meta extension
+				GUID_string guidStr = GetGUIDFromMetaFile(file.path().generic_string());
+				GUID_128 guid128 = GUIDUtilities::ConvertStringToGUID128(guidStr);
+				AddGUID128Mapping(assetPath, guid128);
+			}
 		}
 	}
 }

@@ -61,33 +61,33 @@ void Material::SetTexture(TextureType type, std::shared_ptr<Texture> texture)
 }
 
 
-std::shared_ptr<Texture> Material::getTexture(TextureType type) const
+std::shared_ptr<Texture> Material::GetTexture(TextureType type) const
 {
 	auto it = m_textures.find(type);
 	return (it != m_textures.end() ? it->second : nullptr);
 }
 
-bool Material::hasTexture(TextureType type) const
+bool Material::HasTexture(TextureType type) const
 {
 	return m_textures.find(type) != m_textures.end();
 }
 
-void Material::removeTexture(TextureType type)
+void Material::RemoveTexture(TextureType type)
 {
 	m_textures.erase(type);
 }
 
-void Material::setName(const std::string& name)
+void Material::SetName(const std::string& name)
 {
 	m_name = name;
 }
 
-const std::string& Material::getName() const
+const std::string& Material::GetName() const
 {
 	return m_name;
 }
 
-void Material::applyToShader(Shader& shader) const
+void Material::ApplyToShader(Shader& shader) const
 {
 	// Apply basic material properties
 	shader.setVec3("material.ambient", m_ambient);
@@ -103,20 +103,20 @@ void Material::applyToShader(Shader& shader) const
 	//shader.setFloat("material.ao", m_ao);
 
 	// Bind textures
-	bindTextures(shader);
+	BindTextures(shader);
 }
 
-void Material::bindTextures(Shader& shader) const
+void Material::BindTextures(Shader& shader) const
 {
 	// Reset texture units to be safe
 	glActiveTexture(GL_TEXTURE0);
 	unsigned int textureUnit = 0;
 
 	// Set texture availability flags
-	shader.setBool("material.hasDiffuseMap", hasTexture(TextureType::DIFFUSE));
-	shader.setBool("material.hasSpecularMap", hasTexture(TextureType::SPECULAR));
-	shader.setBool("material.hasNormalMap", hasTexture(TextureType::NORMAL));
-	shader.setBool("material.hasEmissiveMap", hasTexture(TextureType::EMISSIVE));
+	shader.setBool("material.hasDiffuseMap", HasTexture(TextureType::DIFFUSE));
+	shader.setBool("material.hasSpecularMap", HasTexture(TextureType::SPECULAR));
+	shader.setBool("material.hasNormalMap", HasTexture(TextureType::NORMAL));
+	shader.setBool("material.hasEmissiveMap", HasTexture(TextureType::EMISSIVE));
 	// For Future Use
 	/*shader.setBool("material.hasHeightMap", hasTexture(TextureType::HEIGHT));
 	shader.setBool("material.hasAOMap", hasTexture(TextureType::AMBIENT_OCCLUSION));
@@ -131,7 +131,7 @@ void Material::bindTextures(Shader& shader) const
 			glActiveTexture(GL_TEXTURE0 + textureUnit);
 			texture->Bind();
 
-			std::string uniformName = "material." + textureTypeToString(type);
+			std::string uniformName = "material." + TextureTypeToString(type);
 			shader.setInt(uniformName.c_str(), textureUnit);
 
 			textureUnit++;
@@ -139,7 +139,7 @@ void Material::bindTextures(Shader& shader) const
 	}
 }
 
-std::shared_ptr<Material> Material::createDefault()
+std::shared_ptr<Material> Material::CreateDefault()
 {
 	auto material = std::make_shared<Material>("DefaultMaterial");
 	material->SetAmbient(glm::vec3(0.2f, 0.2f, 0.2f));
@@ -149,7 +149,7 @@ std::shared_ptr<Material> Material::createDefault()
 	return material;
 }
 
-std::shared_ptr<Material> Material::createMetal(const glm::vec3& color)
+std::shared_ptr<Material> Material::CreateMetal(const glm::vec3& color)
 {
 	auto material = std::make_shared<Material>("MetalMaterial");
 	material->SetAmbient(color * 0.1f);
@@ -161,7 +161,7 @@ std::shared_ptr<Material> Material::createMetal(const glm::vec3& color)
 	return material;
 }
 
-std::shared_ptr<Material> Material::createPlastic(const glm::vec3& color)
+std::shared_ptr<Material> Material::CreatePlastic(const glm::vec3& color)
 {
 	auto material = std::make_shared<Material>("PlasticMaterial");
 	material->SetAmbient(color * 0.2f);
@@ -173,7 +173,7 @@ std::shared_ptr<Material> Material::createPlastic(const glm::vec3& color)
 	return material;
 }
 
-std::shared_ptr<Material> Material::createWood()
+std::shared_ptr<Material> Material::CreateWood()
 {
 	auto material = std::make_shared<Material>("WoodMaterial");
 	glm::vec3 woodColor(0.6f, 0.4f, 0.2f);
@@ -186,7 +186,7 @@ std::shared_ptr<Material> Material::createWood()
 	return material;
 }
 
-std::string Material::textureTypeToString(TextureType type) const
+std::string Material::TextureTypeToString(TextureType type) const
 {
 	switch (type) 
 	{
@@ -202,12 +202,12 @@ std::string Material::textureTypeToString(TextureType type) const
 	}
 }
 
-void Material::debugPrintProperties() const
+void Material::DebugPrintProperties() const
 {
 	std::cout << "Material: " << m_name << std::endl;
 	std::cout << "  Ambient: (" << m_ambient.x << ", " << m_ambient.y << ", " << m_ambient.z << ")" << std::endl;
 	std::cout << "  Diffuse: (" << m_diffuse.x << ", " << m_diffuse.y << ", " << m_diffuse.z << ")" << std::endl;
 	std::cout << "  Specular: (" << m_specular.x << ", " << m_specular.y << ", " << m_specular.z << ")" << std::endl;
-	std::cout << "  Has Diffuse Map: " << hasTexture(TextureType::DIFFUSE) << std::endl;
-	std::cout << "  Has Specular Map: " << hasTexture(TextureType::SPECULAR) << std::endl;
+	std::cout << "  Has Diffuse Map: " << HasTexture(TextureType::DIFFUSE) << std::endl;
+	std::cout << "  Has Specular Map: " << HasTexture(TextureType::SPECULAR) << std::endl;
 }

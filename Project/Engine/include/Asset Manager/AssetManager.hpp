@@ -36,7 +36,7 @@ public:
 			return it->second;
 		}
 		else {
-			return LoadAsset<T>(guid, filePath);
+			return CompileAssetToResource<T>(guid, filePath);
 		}
 	}
 
@@ -56,7 +56,7 @@ public:
 			return it->second;
 		}
 		else {
-			return LoadTexture(guid, filePath.c_str(), texType.c_str(), slot, pixelType);
+			return CompileTextureToResource(guid, filePath.c_str(), texType.c_str(), slot);
 		}
 	}
 
@@ -93,13 +93,13 @@ private:
 	}
 
 	template <typename T>
-	std::shared_ptr<T> LoadAsset(GUID_128 guid, const std::string& filePath) {
+	std::shared_ptr<T> CompileAssetToResource(GUID_128 guid, const std::string& filePath) {
 		auto& assetMap = GetAssetMap<T>();
 
 		// If the asset is not already loaded, load and store it using the GUID.
 		if (assetMap.find(guid) == assetMap.end()) {
 			std::shared_ptr<T> asset = std::make_shared<T>();
-			if (!asset->LoadAsset(filePath)) {
+			if (!asset->CompileToResource(filePath)) {
 				std::cerr << "[AssetManager] ERROR: Failed to load asset: " << filePath << std::endl;
 				return nullptr;
 			}
@@ -111,14 +111,14 @@ private:
 		return assetMap[guid];
 	}
 
-	std::shared_ptr<Texture> LoadTexture(GUID_128 guid, const char* filePath, const char* texType, GLuint slot, GLenum pixelType) {
+	std::shared_ptr<Texture> CompileTextureToResource(GUID_128 guid, const char* filePath, const char* texType, GLuint slot) {
 		auto& assetMap = GetAssetMap<Texture>();
 
 		// If the asset is not already loaded, load and store it using the GUID.
 		if (assetMap.find(guid) == assetMap.end()) {
-			std::shared_ptr<Texture> asset = std::make_shared<Texture>(filePath, texType, slot, pixelType);
-			if (!asset->LoadAsset(filePath)) {
-				std::cerr << "[AssetManager] ERROR: Failed to load asset: " << filePath << std::endl;
+			std::shared_ptr<Texture> asset = std::make_shared<Texture>( texType, slot);
+			if (!asset->CompileToResource(filePath)) {
+				std::cerr << "[AssetManager] ERROR: Failed to compile asset: " << filePath << std::endl;
 				return nullptr;
 			}
 
@@ -128,27 +128,4 @@ private:
 
 		return assetMap[guid];
 	}
-
-
-	//GLenum GetFormatFromExtension(const std::string& filepath) {
-	//	std::string extension = filepath.substr(filepath.find_last_of('.'));
-
-	//	if (extension == ".png" || extension == ".PNG")
-	//	{
-	//		return GL_RGBA;
-	//	}
-	//	else if (extension == ".jpg" || extension == ".jpeg" || extension == ".JPG" || extension == ".JPEG")
-	//	{
-	//		return GL_RGB;
-	//	}
-	//	else if (extension == ".bmp" || extension == ".BMP")
-	//	{
-	//		return GL_RGB;
-	//	}
-	//	else
-	//	{
-	//		// Default to RGB for unknown formats
-	//		return GL_RGB;
-	//	}
-	//}
 };

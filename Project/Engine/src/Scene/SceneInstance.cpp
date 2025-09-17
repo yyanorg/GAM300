@@ -44,7 +44,7 @@ void SceneInstance::Initialize() {
 
 	// Text
 	auto textShader = std::make_shared<Shader>();
-	if (textShader->LoadAsset("Resources/Shaders/text")) {
+	if (textShader->CompileToResource("Resources/Shaders/text")) {
 		std::cout << "Text shader loaded successfully!" << std::endl;
 	}
 	else {
@@ -58,7 +58,8 @@ void SceneInstance::Initialize() {
 
 	// Creates light
 	lightShader = std::make_shared<Shader>();
-	lightShader->LoadAsset("Resources/Shaders/light");
+	lightShader = AssetManager::GetInstance().GetAsset<Shader>("Resources/Shaders/light");
+	//lightShader->LoadAsset("Resources/Shaders/light");
 	std::vector<std::shared_ptr<Texture>> emptyTextures = {};
 	lightCubeMesh = std::make_shared<Mesh>(lightVertices, lightIndices, emptyTextures);
 

@@ -4,5 +4,6 @@
 class IAsset {
 public:
 	virtual ~IAsset() = default;
-	virtual bool LoadAsset(const std::string& path) = 0;
+	virtual bool CompileToResource(const std::string& path) = 0;
+	virtual bool LoadResource(const std::string& path) = 0;
 };

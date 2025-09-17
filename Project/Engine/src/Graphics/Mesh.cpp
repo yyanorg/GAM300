@@ -60,7 +60,7 @@ void Mesh::Draw(Shader& shader, const Camera& camera)
 	if (material)
 	{
 		//material->debugPrintProperties();
-		material->applyToShader(shader);
+		material->ApplyToShader(shader);
 	}
 	else
 	{

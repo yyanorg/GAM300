@@ -10,7 +10,7 @@ Font::~Font()
 	Cleanup();
 }
 
-bool Font::LoadAsset(const std::string& path)
+bool Font::CompileToResource(const std::string& path)
 {
     return LoadFont(path, fontSize);
 }
