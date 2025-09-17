@@ -1,3 +1,14 @@
+/*********************************************************************************
+* @File			AudioManager.hpp
+* @Author		Ernest Ho, h.yonghengernest@digipen.edu
+* @Co-Author	-
+* @Date			17/9/2025
+* @Brief		This is the Declaration of Audio Manager Class
+*
+* Copyright (C) 20xx DigiPen Institute of Technology. Reproduction or disclosure
+* of this file or its contents without the prior written consent of DigiPen
+* Institute of Technology is prohibited.
+*********************************************************************************/
 #pragma once
 
 #include "pch.h"
@@ -12,63 +23,62 @@ class AudioManager
 public:
 	
 	// Static access to the singleton instance
-	static bool staticInitalize();     // calls instance().initialize()
-    static void staticShutdown();       // calls instance().shutdown()
-    static void staticUpdate();         // calls instance().update()
+	static bool StaticInitalize();     // calls instance().initialize()
+    static void StaticShutdown();       // calls instance().shutdown()
+    static void StaticUpdate();         // calls instance().update()
 
     // (Optional static helpers if you want to use the same style elsewhere)
-    static bool staticLoadSound(const std::string& name, const std::string& file, bool loop=false);
-    static bool staticPlaySound(const std::string& name, float vol=1.f, float pitch=1.f);
-    static void staticStopAllSounds();
-    static void staticSetMasterVolume(float v);
+    static bool StaticLoadSound(const std::string& name, const std::string& file, bool loop=false);
+    static bool StaticPlaySound(const std::string& name, float vol=1.f, float pitch=1.f);
+    static void StaticStopAllSounds();
+    static void StaticSetMasterVolume(float v);
 
 	AudioManager();
 	~AudioManager();
 
 	// Initialize and cleanup
-	bool initialize();
-	void shutdown();
-	void update(); // Call this every frame
+	bool Initialize();
+	void Shutdown();
+	void Update(); // Call this every frame
 
 	// Sound loading and management
-	bool loadSound(const std::string& name, const std::string& filePath, bool loop = false);
-	void unloadSound(const std::string& name);
-	void unloadAllSounds();
+	bool LoadSound(const std::string& name, const std::string& filePath, bool loop = false);
+	void UnloadSound(const std::string& name);
+	void UnloadAllSounds();
 
 	// Sound playback
-	bool playSound(const std::string& name, float volume = 1.0f, float pitch = 1.0f);
-	//bool playSound3D(const std::string& name, float x, float y, float z, float volume = 1.0f);
-	void stopSound(const std::string& name);
-	void stopAllSounds();
-	void pauseSound(const std::string& name, bool pause = true);
-	void pauseAllSounds(bool pause = true);
+	bool PlaySound(const std::string& name, float volume = 1.0f, float pitch = 1.0f);
+	//bool PlaySound3D(const std::string& name, float x, float y, float z, float volume = 1.0f);
+	void StopSound(const std::string& name);
+	void StopAllSounds();
+	void PauseSound(const std::string& name, bool pause = true);
+	void PauseAllSounds(bool pause = true);
 
 	// Volume and pitch control
-	void setMasterVolume(float volume);
-	void setSoundVolume(const std::string& name, float volume);
-	void setSoundPitch(const std::string& name, float pitch);
+	void SetMasterVolume(float volume);
+	void SetSoundVolume(const std::string& name, float volume);
+	void SetSoundPitch(const std::string& name, float pitch);
 
 	// 3D audio settings
-	//void setListenerPosition(float x, float y, float z);
-	//void setListenerOrientation(float forwardX, float forwardY, float forwardZ,
-	//	float upX, float upY, float upZ);
+	//void SetListenerPosition(float x, float y, float z);
+	//void SetListenerOrientation(float forwardX, float forwardY, float forwardZ, float upX, float upY, float upZ);
 
 	// Utility functions
-	bool isSoundLoaded(const std::string& name) const;
-	bool isSoundPlaying(const std::string& name) const;
-	std::vector<std::string> getLoadedSounds() const;
+	bool IsSoundLoaded(const std::string& name) const;
+	bool IsSoundPlaying(const std::string& name) const;
+	std::vector<std::string> GetLoadedSounds() const;
 
 private:
-	static AudioManager& instance() {
+	static AudioManager& Instance() {
 		static AudioManager instance;
 		return instance;
 	}
 
 	FMOD_SYSTEM* m_system;
-	std::unordered_map<std::string, FMOD_SOUND*> m_sounds;
-	std::unordered_map<std::string, FMOD_CHANNEL*> m_channels;
+	std::unordered_map<std::string, FMOD_SOUND*> mSounds;
+	std::unordered_map<std::string, FMOD_CHANNEL*> mChannels;
 	
 	// Helper functions
-	std::string getFullPath(const std::string& fileName) const;
-	void checkFMODError(int result, const std::string& operation) const;
+	std::string GetFullPath(const std::string& fileName) const;
+	void CheckFMODError(int result, const std::string& operation) const;
 };

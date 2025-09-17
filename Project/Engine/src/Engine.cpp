@@ -80,13 +80,18 @@ bool Engine::Initialize() {
 
 	//lightManager.printLightStats();
 
-	if(!AudioManager::staticInitalize()) 
+	// Test Audio
 	{
-		ENGINE_LOG_ERROR("Failed to initialize AudioManager");
+		if (!AudioManager::StaticInitalize())
+		{
+			ENGINE_LOG_ERROR("Failed to initialize AudioManager");
+		}
+		else
+		{
+			AudioManager::StaticLoadSound("test_sound", "Test_duck.wav", false);
+			AudioManager::StaticPlaySound("test_sound", 0.5f, 1.0f);
+		}
 	}
-	
-	AudioManager::staticLoadSound("test_sound", "Test_duck.wav", false);
-	AudioManager::staticPlaySound("test_sound", 0.5f, 1.0f);
 
 	ENGINE_LOG_INFO("Engine initialization completed successfully");
 	
@@ -102,7 +107,9 @@ void Engine::Update() {
 	if (ShouldRunGameLogic()) {
 		SceneManager::GetInstance().UpdateScene(WindowManager::getDeltaTime()); // REPLACE WITH DT LATER
 
-		AudioManager::staticUpdate();
+
+		// Test Audio
+		AudioManager::StaticUpdate();
 	}
 }
 
@@ -127,7 +134,7 @@ void Engine::EndDraw() {
 
 void Engine::Shutdown() {
 	ENGINE_LOG_INFO("Engine shutdown started");
-	AudioManager::staticShutdown();
+	AudioManager::StaticShutdown();
     EngineLogging::Shutdown();
     std::cout << "[Engine] Shutdown complete" << std::endl;
 }

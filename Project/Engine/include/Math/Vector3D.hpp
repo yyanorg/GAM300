@@ -1,5 +1,5 @@
 /*********************************************************************************
-* @File			Vector3.h 
+* @File			Vector3.hpp
 * @Author		Ernest Ho, h.yonghengernest@digipen.edu
 * @Co-Author	-
 * @Date			3/9/2025
@@ -23,11 +23,11 @@ struct Vector3D
 	constexpr Vector3D(float x_ = 0.f, float y_ = 0.f, float z_ = 0.f) : x(x_), y(y_), z(z_) {}
 
 	//  Special helpers
-	static constexpr Vector3D zero() { return { 0.f,0.f,0.f }; }
-	static constexpr Vector3D xAxis() { return { 1.f,0.f,0.f }; }
-	static constexpr Vector3D yAxis() { return { 0.f,1.f,0.f }; }
-	static constexpr Vector3D zAxis() { return { 0.f,0.f,1.f }; }
-	static constexpr Vector3D ones() { return { 1.f,1.f,1.f }; }
+	static constexpr Vector3D Zero() { return { 0.f,0.f,0.f }; }
+	static constexpr Vector3D XAxis() { return { 1.f,0.f,0.f }; }
+	static constexpr Vector3D YAxis() { return { 0.f,1.f,0.f }; }
+	static constexpr Vector3D ZAxis() { return { 0.f,0.f,1.f }; }
+	static constexpr Vector3D Ones() { return { 1.f,1.f,1.f }; }
 
 	// Copy Constructor
 	Vector3D(const Vector3D&);
@@ -63,19 +63,19 @@ struct Vector3D
 	bool operator!=(const Vector3D&) const;
 
 	// Math functions
-	float dot(const Vector3D&) const;
-	Vector3D cross(const Vector3D&) const;
+	float Dot(const Vector3D&) const;
+	Vector3D Cross(const Vector3D&) const;
 
-	float length_sq() const;
-	float length() const;
+	float LengthSq() const;
+	float Length() const;
 
-	Vector3D normalized() const;
-	Vector3D& normalize();
+	Vector3D Normalized() const;
+	Vector3D& Normalize();
 
-	Vector3D projectOnto(const Vector3D&) const;
-	Vector3D reflect(const Vector3D& normalized) const;
+	Vector3D ProjectOnto(const Vector3D&) const;
+	Vector3D Reflect(const Vector3D& Normalized) const;
 
-	static Vector3D lerp(const Vector3D& a, const Vector3D& b, float t);
+	static Vector3D Lerp(const Vector3D& a, const Vector3D& b, float t);
 
 };
 

@@ -1,5 +1,5 @@
 /*********************************************************************************
-* @File			Matrix3x3.h
+* @File			Matrix3x3.hpp
 * @Author		Ernest Ho, h.yonghengernest@digipen.edu
 * @Co-Author	-
 * @Date			3/9/2025
@@ -43,20 +43,20 @@ struct Matrix3x3 {
     bool operator==(const Matrix3x3& rhs) const;
 
     // ---- linear algebra ----
-    float     determinant() const;
-    Matrix3x3 cofactor() const;
-    Matrix3x3 transposed() const;
-    bool      tryInverse(Matrix3x3& out) const;           // false if singular
-    Matrix3x3 inversed() const;                            // may assert/throw if singular
+    float     Determinant() const;
+    Matrix3x3 Cofactor() const;
+    Matrix3x3 Transposed() const;
+    bool      TryInverse(Matrix3x3& out) const;           // false if singular
+    Matrix3x3 Inversed() const;                            // may assert/throw if singular
 
     // ---- factories (preferred over mutating setters) ----
-    static Matrix3x3 identity();
-    static Matrix3x3 zero();
-    static Matrix3x3 scale(float sx, float sy, float sz);
-    static Matrix3x3 rotateX(float radians);
-    static Matrix3x3 rotateY(float radians);
-    static Matrix3x3 rotateZ(float radians);
-    static Matrix3x3 rotationAxisAngle(const Vector3D& axis_unit, float radians); // optional
+    static Matrix3x3 Identity();
+    static Matrix3x3 Zero();
+    static Matrix3x3 Scale(float sx, float sy, float sz);
+    static Matrix3x3 RotationX(float radians);
+    static Matrix3x3 RotationY(float radians);
+    static Matrix3x3 RotationZ(float radians);
+    static Matrix3x3 RotationAxisAngle(const Vector3D& axis_unit, float radians); // optional
 };
 
 typedef Matrix3x3 Mat3;
