@@ -74,7 +74,7 @@ private:
 		return instance;
 	}
 
-	FMOD_SYSTEM* m_system;
+	FMOD_SYSTEM* mSystem;
 	std::unordered_map<std::string, FMOD_SOUND*> mSounds;
 	std::unordered_map<std::string, FMOD_CHANNEL*> mChannels;
 	

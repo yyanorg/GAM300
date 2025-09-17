@@ -15,7 +15,7 @@
 #include "../../Libraries/FMOD/inc/fmod.h"
 #include "../../Libraries/FMOD/inc/fmod_errors.h"
 
-AudioManager::AudioManager(): m_system(nullptr)
+AudioManager::AudioManager(): mSystem(nullptr)
 {
 }
 
@@ -27,7 +27,7 @@ AudioManager::~AudioManager()
 bool AudioManager::Initialize() 
 {
 	// Create FMOD system with correct version
-	FMOD_RESULT result = FMOD_System_Create(&m_system, FMOD_VERSION);
+	FMOD_RESULT result = FMOD_System_Create(&mSystem, FMOD_VERSION);
 	if (result != FMOD_OK) 
 	{
 		std::cerr << "Failed to create FMOD system: " << FMOD_ErrorString(result) <<
@@ -35,7 +35,7 @@ bool AudioManager::Initialize()
 		return false;
 	}
 	// Initialize FMOD system
-	result = FMOD_System_Init(m_system, 32, FMOD_INIT_NORMAL, nullptr);
+	result = FMOD_System_Init(mSystem, 32, FMOD_INIT_NORMAL, nullptr);
 	if (result != FMOD_OK) 
 	{
 		std::cerr << "Failed to initialize FMOD system: " << FMOD_ErrorString(result) <<
@@ -48,31 +48,31 @@ bool AudioManager::Initialize()
 
 void AudioManager::Shutdown() 
 {
-	if (m_system) 
+	if (mSystem) 
 	{
 		// Stop all sounds
 		StopAllSounds();
 		// Unload all sounds
 		UnloadAllSounds();
 		// Close and release FMOD system
-		FMOD_System_Close(m_system);
-		FMOD_System_Release(m_system);
-		m_system = nullptr;
+		FMOD_System_Close(mSystem);
+		FMOD_System_Release(mSystem);
+		mSystem = nullptr;
 		std::cout << "AudioManager shutdown complete" << std::endl;
 	}
 }
 
 void AudioManager::Update() 
 {
-	if (m_system) 
+	if (mSystem) 
 	{
-		FMOD_System_Update(m_system);
+		FMOD_System_Update(mSystem);
 	}
 }
 
 bool AudioManager::LoadSound(const std::string& name, const std::string& filePath, bool	loop) 
 {
-	if (!m_system) 
+	if (!mSystem) 
 	{
 		std::cerr << "AudioManager not initialized" << std::endl;
 		return false;
@@ -102,7 +102,7 @@ bool AudioManager::LoadSound(const std::string& name, const std::string& filePat
 		mode |= FMOD_LOOP_NORMAL;
 	}
 	
-	FMOD_RESULT result = FMOD_System_CreateSound(m_system, fullPath.c_str(), mode, nullptr,	&sound);
+	FMOD_RESULT result = FMOD_System_CreateSound(mSystem, fullPath.c_str(), mode, nullptr,	&sound);
 	
 	if (result != FMOD_OK) 
 	{
@@ -145,7 +145,7 @@ void AudioManager::UnloadAllSounds()
 
 bool AudioManager::PlaySound(const std::string& name, float volume, float pitch) 
 {
-	if (!m_system) 
+	if (!mSystem) 
 	{
 		std::cerr << "AudioManager not initialized" << std::endl;
 		return false;
@@ -158,7 +158,7 @@ bool AudioManager::PlaySound(const std::string& name, float volume, float pitch)
 		return false;
 	}
 	FMOD_CHANNEL* channel = nullptr;
-	FMOD_RESULT result = FMOD_System_PlaySound(m_system, it->second, nullptr, false, &channel);
+	FMOD_RESULT result = FMOD_System_PlaySound(mSystem, it->second, nullptr, false, &channel);
 	
 	if (result != FMOD_OK) 
 	{
@@ -227,10 +227,10 @@ void AudioManager::PauseAllSounds(bool pause)
 
 
 void AudioManager::SetMasterVolume(float volume) {
-	if (m_system) 
+	if (mSystem) 
 	{
 		FMOD_CHANNELGROUP* masterGroup = nullptr;
-		FMOD_RESULT result = FMOD_System_GetMasterChannelGroup(m_system, &masterGroup);
+		FMOD_RESULT result = FMOD_System_GetMasterChannelGroup(mSystem, &masterGroup);
 		
 		if (result == FMOD_OK && masterGroup) 
 		{
