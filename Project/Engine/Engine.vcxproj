@@ -87,6 +87,11 @@
     <ClInclude Include="include\Sound\AudioManager.hpp" />
     <ClInclude Include="include\WindowManager.hpp" />
     <ClInclude Include="include\Input\InputManager.hpp" />
+    <ClInclude Include="include\Input\Keys.h" />
+    <ClInclude Include="include\Platform\IPlatform.h" />
+    <ClInclude Include="include\Platform\Platform.h" />
+    <ClInclude Include="include\Platform\DesktopPlatform.h" />
+    <ClInclude Include="include\Platform\AndroidPlatform.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Graphics\TextRendering\Font.cpp" />
@@ -133,6 +138,9 @@
     <ClCompile Include="src\Scene\SceneInstance.cpp" />
     <ClCompile Include="src\Sound\AudioManager.cpp" />
     <ClCompile Include="src\WindowManager.cpp" />
+    <ClCompile Include="src\Platform\Platform.cpp" />
+    <ClCompile Include="src\Platform\DesktopPlatform.cpp" />
+    <ClCompile Include="src\Platform\AndroidPlatform.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="cpp.hint" />
