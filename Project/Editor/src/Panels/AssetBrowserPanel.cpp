@@ -84,11 +84,9 @@ void AssetBrowserPanel::OnImGuiRender() {
         ImGui::BeginChild("##AssetGrid", ImVec2(0, 0), true);
         RenderAssetGrid();
         ImGui::EndChild();
-        
-        ImGui::EndChild();
-        
-        // Status bar
-        RenderStatusBar();
+
+	ImGui::EndChild();
+      
     }
     ImGui::End();
 }
@@ -98,7 +96,7 @@ void AssetBrowserPanel::RenderToolbar() {
     ImGui::Text("Path:");
     ImGui::SameLine();
     
-    if (ImGui::SmallButton("Assets")) {
+    if (ImGui::SmallButton("Resources")) {
         NavigateToDirectory(rootAssetDirectory);
     }
     
@@ -164,7 +162,7 @@ void AssetBrowserPanel::RenderFolderTree() {
     
     // Render root directory
     if (std::filesystem::exists(rootAssetDirectory)) {
-        RenderDirectoryNode(std::filesystem::path(rootAssetDirectory), "Assets");
+        RenderDirectoryNode(std::filesystem::path(rootAssetDirectory), "Resources");
     }
 }
 
@@ -189,39 +187,43 @@ void AssetBrowserPanel::RenderDirectoryNode(const std::filesystem::path& directo
     }
     
     // Highlight if this is the current directory
-    if (directory.string() == currentDirectory) {
+    if (std::filesystem::path(directory).generic_string() == currentDirectory) {
         flags |= ImGuiTreeNodeFlags_Selected;
     }
-    
+
+    // Use unique ID per node to avoid duplicate-label issues
+    std::string nodeId = directory.generic_string();
+    ImGui::PushID(nodeId.c_str());
     bool nodeOpen = ImGui::TreeNodeEx(displayName.c_str(), flags);
-    
     // Handle selection
     if (ImGui::IsItemClicked()) {
         NavigateToDirectory(directory.string());
     }
     
-    // Render subdirectories
-    if (nodeOpen && hasSubdirectories) {
-        try {
-            std::vector<std::filesystem::path> subdirectories;
-            for (const auto& entry : std::filesystem::directory_iterator(directory)) {
-                if (entry.is_directory()) {
-                    subdirectories.push_back(entry.path());
+    // Render subdirectories if opened
+    if (nodeOpen) {
+        if (hasSubdirectories) {
+            try {
+                std::vector<std::filesystem::path> subdirectories;
+                for (const auto& entry : std::filesystem::directory_iterator(directory)) {
+                    if (entry.is_directory()) {
+                        subdirectories.push_back(entry.path());
+                    }
                 }
+                
+                // Sort subdirectories
+                std::sort(subdirectories.begin(), subdirectories.end());
+                
+                for (const auto& subdir : subdirectories) {
+                    RenderDirectoryNode(subdir, subdir.filename().string());
+                }
+            } catch (const std::exception&) {
+                // Ignore errors for inaccessible directories
             }
-            
-            // Sort subdirectories
-            std::sort(subdirectories.begin(), subdirectories.end());
-            
-            for (const auto& subdir : subdirectories) {
-                RenderDirectoryNode(subdir, subdir.filename().string());
-            }
-        } catch (const std::exception&) {
-            // Ignore errors for inaccessible directories
         }
-        
         ImGui::TreePop();
     }
+    ImGui::PopID();
 }
 
 void AssetBrowserPanel::RenderAssetGrid() {
@@ -304,11 +306,6 @@ void AssetBrowserPanel::RenderAssetGrid() {
         }
         ImGui::EndPopup();
     }
-}
-
-void AssetBrowserPanel::RenderStatusBar() {
-    ImGui::Separator();
-    ImGui::Text("Assets: %zu | Selected: %zu", currentAssets.size(), selectedAssets.size());
 }
 
 void AssetBrowserPanel::RefreshAssets() {

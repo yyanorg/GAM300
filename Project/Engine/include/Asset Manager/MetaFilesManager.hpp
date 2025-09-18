@@ -31,9 +31,9 @@ public:
 
     ENGINE_API static GUID_128 GetGUID128FromAssetFile(const std::string& assetPath);
 
-	static bool MetaFileUpdated(const std::string& assetPath);
+    ENGINE_API static bool MetaFileUpdated(const std::string& assetPath);
 
-	static GUID_128 UpdateMetaFile(const std::string& assetPath);
+    ENGINE_API static GUID_128 UpdateMetaFile(const std::string& assetPath);
 
     static constexpr int CURRENT_METADATA_VERSION = 1;
 
