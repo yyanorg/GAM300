@@ -6,8 +6,8 @@ int TextureManager::nextTextureUnit = 0;
 
 TextureManager& TextureManager::getInstance()
 {
-	static TextureManager instance;
-	return instance;
+	static TextureManager Instance;
+	return Instance;
 }
 
 std::shared_ptr<Texture> TextureManager::loadTexture(const std::string& filepath, const std::string& type)

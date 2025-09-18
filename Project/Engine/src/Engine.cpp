@@ -12,6 +12,7 @@
 #include <Asset Manager/MetaFilesManager.hpp>
 #include <ECS/ECSRegistry.hpp>
 #include <Scene/SceneManager.hpp>
+#include <Sound/AudioManager.hpp>
 
 namespace TEMP {
 	std::string windowTitle = "GAM300";
@@ -79,6 +80,19 @@ bool Engine::Initialize() {
 
 	//lightManager.printLightStats();
 
+	// Test Audio
+	{
+		if (!AudioManager::StaticInitalize())
+		{
+			ENGINE_LOG_ERROR("Failed to initialize AudioManager");
+		}
+		else
+		{
+			AudioManager::StaticLoadSound("test_sound", "Test_duck.wav", false);
+			AudioManager::StaticPlaySound("test_sound", 0.5f, 1.0f);
+		}
+	}
+
 	ENGINE_LOG_INFO("Engine initialization completed successfully");
 	
 	// Add some test logging messages
@@ -92,6 +106,10 @@ void Engine::Update() {
 	// Only update the scene if the game should be running (not paused)
 	if (ShouldRunGameLogic()) {
 		SceneManager::GetInstance().UpdateScene(WindowManager::getDeltaTime()); // REPLACE WITH DT LATER
+
+
+		// Test Audio
+		AudioManager::StaticUpdate();
 	}
 }
 
@@ -116,6 +134,7 @@ void Engine::EndDraw() {
 
 void Engine::Shutdown() {
 	ENGINE_LOG_INFO("Engine shutdown started");
+	AudioManager::StaticShutdown();
     EngineLogging::Shutdown();
     std::cout << "[Engine] Shutdown complete" << std::endl;
 }

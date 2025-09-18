@@ -19,9 +19,9 @@
     <ClInclude Include="include\Graphics\VBO.h" />
     <ClInclude Include="include\Graphics\stb_image.h" />
     <ClInclude Include="include\Graphics\Model\Model.h" />
-    <ClInclude Include="include\Math\Vector3D.h" />
-    <ClInclude Include="include\Math\Matrix4x4.h" />
-    <ClInclude Include="include\Math\Matrix3x3.h" />
+    <ClInclude Include="include\Math\Vector3D.hpp" />
+    <ClInclude Include="include\Math\Matrix4x4.hpp" />
+    <ClInclude Include="include\Math\Matrix3x3.hpp" />
     <ClInclude Include="include\ECS\Component.hpp" />
     <ClInclude Include="include\ECS\ComponentArray.hpp" />
     <ClInclude Include="include\ECS\ComponentManager.hpp" />
@@ -58,6 +58,7 @@
     <ClInclude Include="include\Graphics\TextRendering\TextUtils.hpp" />
     <ClInclude Include="include\Graphics\SceneRenderer.hpp" />
     <ClInclude Include="include\ECS\NameComponent.hpp" />
+    <ClInclude Include="include\Sound\AudioManager.hpp" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Engine.cpp" />
@@ -93,6 +94,7 @@
     <ClCompile Include="src\TransformSystem.cpp" />
     <ClCompile Include="src\Graphics\TextRendering\TextUtils.cpp" />
     <ClCompile Include="src\Graphics\SceneRenderer.cpp" />
+    <ClCompile Include="src\Sound\AudioManager.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="cpp.hint" />
