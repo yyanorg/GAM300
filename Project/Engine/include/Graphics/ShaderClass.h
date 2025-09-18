@@ -11,7 +11,7 @@ std::string get_file_contents(const char* filename);
 
 class Shader : public IAsset {
 public:
-	GLuint ID;
+    GLuint ID{};
 
     //Shader() {};
 	//Shader(const char* vertexFile, const char* fragmentFile);
@@ -37,14 +37,17 @@ public:
     void setMat3(const std::string& name, const glm::mat3& mat);
     void setMat4(const std::string& name, const glm::mat4& mat);
 
-    void clearUniformCache();
+    //void clearUniformCache();
 
 private:
     std::unordered_map<std::string, GLint> m_uniformCache;
     GLint getUniformLocation(const std::string& name);
 
     // Store shader binary data (precompiled shader).
-    GLint binaryLength;
+    GLint binaryLength{};
 	std::vector<uint8_t> binaryData;
-	GLenum binaryFormat;
+    GLenum binaryFormat{};
+    bool binarySupported = true;
+
+    bool SetupShader(const std::string& path);
 };

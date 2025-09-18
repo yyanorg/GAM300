@@ -415,6 +415,7 @@ bool Model::LoadResource(const std::string& assetPath)
 
 std::shared_ptr<AssetMeta> Model::ExtendMetaFile(const std::string& assetPath, std::shared_ptr<AssetMeta> currentMetaData)
 {
+    assetPath, currentMetaData;
     return std::shared_ptr<AssetMeta>();
 }
 

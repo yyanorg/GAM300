@@ -19,7 +19,7 @@ std::string get_file_contents(const char* filename)
 	throw(errno);
 }
 
-std::string Shader::CompileToResource(const std::string& path) {
+bool Shader::SetupShader(const std::string& path) {
 	std::string vertexFile = path + ".vert";
 	std::string fragmentFile = path + ".frag";
 
@@ -45,7 +45,7 @@ std::string Shader::CompileToResource(const std::string& path) {
 	{
 		glGetShaderInfoLog(vertexShader, 512, NULL, infoLog);
 		std::cout << "ERROR::SHADER::VERTEX::COMPILATION_FAILED\n" << infoLog << std::endl;
-		return std::string{};
+		return false;
 	}
 
 	// Create Fragment Shader Object and get its reference
@@ -60,7 +60,7 @@ std::string Shader::CompileToResource(const std::string& path) {
 	{
 		glGetShaderInfoLog(fragmentShader, 512, NULL, infoLog);
 		std::cout << "ERROR::SHADER::FRAGMENT::COMPILATION_FAILED\n" << infoLog << std::endl;
-		return std::string{};
+		return false;
 	}
 
 	// Create Shader Program Object and get its reference
@@ -75,12 +75,35 @@ std::string Shader::CompileToResource(const std::string& path) {
 	if (!success) {
 		glGetProgramInfoLog(ID, 512, NULL, infoLog);
 		std::cout << "ERROR::SHADER::PROGRAM::LINKING_FAILED\n" << infoLog << std::endl;
-		return std::string{};
+		return false;
 	}
 
 	// Delete the now useless Vertex and Fragment Shader objects
 	glDeleteShader(vertexShader);
 	glDeleteShader(fragmentShader);
+
+	return true;
+}
+
+std::string Shader::CompileToResource(const std::string& path) {
+	// Check if glGetProgramBinary is supported first.
+	GLint supported = 0;
+	glGetIntegerv(GL_NUM_PROGRAM_BINARY_FORMATS, &supported);
+	if (supported == 0) {
+		std::cerr << "[SHADER]: Program binary not supported. Skipping binary cache.\n";
+		binarySupported = false;
+		return std::string{};
+	}
+
+	binarySupported = true;
+
+	if (!SetupShader(path)) {
+		std::cerr << "[SHADER]: Shader compilation failed. Aborting resource compilation.\n";
+		return std::string{};
+	}
+
+	// Enable the retrievable binary flag.
+	glProgramParameteri(ID, GL_PROGRAM_BINARY_RETRIEVABLE_HINT, GL_TRUE);
 
 	// Retrieve the binary code of the compiled shader.
 	glGetProgramiv(ID, GL_PROGRAM_BINARY_LENGTH, &binaryLength);
@@ -109,6 +132,16 @@ std::string Shader::CompileToResource(const std::string& path) {
 
 bool Shader::LoadResource(const std::string& assetPath)
 {
+	if (!binarySupported) {
+		// Fallback to regular shader compilation if binary is not supported.
+		if (!SetupShader(assetPath)) {
+			std::cerr << "[SHADER]: Shader compilation failed. Aborting load." << std::endl;
+			return false;
+		}
+
+		return true;
+	}
+
 	std::filesystem::path assetPathFS(assetPath);
 	std::string resourcePath = (assetPathFS.parent_path() / assetPathFS.stem()).generic_string() + ".shader";
 
@@ -130,8 +163,13 @@ bool Shader::LoadResource(const std::string& assetPath)
 		GLint status = 0;
 		glGetProgramiv(ID, GL_LINK_STATUS, &status);
 		if (status == GL_FALSE) {
-			std::cerr << "[SHADER]: Failed to load shader program from binary." << std::endl;
-			return false;
+			std::cerr << "[SHADER]: Failed to load shader program from binary. Recompiling shader..." << std::endl;
+			if (CompileToResource(assetPath).empty()) {
+				std::cerr << "[SHADER]: Recompilation failed. Aborting load." << std::endl;
+				return false;
+			}
+
+			return LoadResource(assetPath);
 		}
 
 		return true;
@@ -144,6 +182,7 @@ bool Shader::LoadResource(const std::string& assetPath)
 
 std::shared_ptr<AssetMeta> Shader::ExtendMetaFile(const std::string& assetPath, std::shared_ptr<AssetMeta> currentMetaData)
 {
+	assetPath, currentMetaData;
 	return std::shared_ptr<AssetMeta>();
 }
 
