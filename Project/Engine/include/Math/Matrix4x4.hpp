@@ -30,6 +30,7 @@
 #endif
 
 struct ENGINE_API Matrix4x4 {
+    //REFL_SERIALIZABLE
     // Row-major storage: m[row][col]
     float m[4][4];
 

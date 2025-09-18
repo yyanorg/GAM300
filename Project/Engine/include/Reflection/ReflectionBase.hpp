@@ -1,13 +1,15 @@
 #pragma once
 
+#include "pch.h"
+
 #include <rapidjson/document.h>
 #include <rapidjson/writer.h>
 #include <rapidjson/stringbuffer.h>
 // Note: intentionally *not* using `using namespace rapidjson;` in header to avoid polluting global namespace.
 
 #include "Base64.hpp"
-#include "pch.h"
 
+#include <type_traits>
 //Sticking with this for now unless stated need to move to a consolidated API.hpp file
 #ifdef _WIN32
     #ifdef ENGINE_EXPORTS
@@ -37,6 +39,7 @@
 #define ENGINE_ALIGNAS(X) alignas(X)
 
 #pragma region Reflection
+
 // Helper for endianness conversion for persisted integer sizes.
 // CHANGE: use fixed-width conversions so persistence is stable across ABIs (32/64-bit).
 static inline uint64_t ToLittleEndian_u64(uint64_t v)
@@ -626,11 +629,11 @@ struct TypeResolver<std::pair<FirstType, SecondType>>
 #define REFL_SERIALIZABLE \
   friend struct DefaultResolver; \
   static TypeDescriptor_Struct Reflection; \
-  static void InitReflection(Reflection::TypeDescriptor_Struct*);
+  static void InitReflection(TypeDescriptor_Struct*);
 
 #define REFL_REGISTER_START(TYPE) \
-  Reflection::TypeDescriptor_Struct TYPE::Reflection{TYPE::InitReflection}; \
-  void TYPE::InitReflection(Reflection::TypeDescriptor_Struct* type_desc) \
+  TypeDescriptor_Struct TYPE::Reflection{TYPE::InitReflection}; \
+  void TYPE::InitReflection(TypeDescriptor_Struct* type_desc) \
   { \
     using T = TYPE; \
     type_desc->name = #TYPE; \
@@ -640,16 +643,14 @@ struct TypeResolver<std::pair<FirstType, SecondType>>
 #define REFL_REGISTER_PROPERTY(VARIABLE) \
   { \
     #VARIABLE, \
-    Reflection::TypeResolver<decltype(T::VARIABLE)>::Get(), \
+    TypeResolver<decltype(T::VARIABLE)>::Get(), \
     /* captureless lambda -> converts to function pointer */ \
     +[](void* obj) -> void* { return & (static_cast<T*>(obj)->VARIABLE); } \
   },
 
-#define FLX_REFL_REGISTER_END \
+#define REFL_REGISTER_END \
     }; \
-    { std::lock_guard<std::mutex> lock(Reflection::TypeDescriptor::descriptor_registry_mutex()); \
-      Reflection::TypeDescriptor::type_descriptor_lookup()[type_desc->name] = type_desc; } \
+    { std::lock_guard<std::mutex> lock(TypeDescriptor::descriptor_registry_mutex()); \
+      TypeDescriptor::type_descriptor_lookup()[type_desc->name] = type_desc; } \
   }
 #pragma endregion
-
-

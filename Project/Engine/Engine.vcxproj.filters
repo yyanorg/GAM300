@@ -64,6 +64,8 @@
     <ClInclude Include="include\Platform\Platform.h" />
     <ClInclude Include="include\Platform\DesktopPlatform.h" />
     <ClInclude Include="include\Platform\AndroidPlatform.h" />
+    <ClInclude Include="include\Reflection\Base64.hpp" />
+    <ClInclude Include="include\Reflection\ReflectionBase.hpp" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Engine.cpp" />
