@@ -66,7 +66,7 @@ private:
     void RenderToolbar();
     void RenderFolderTree();
     void RenderAssetGrid();
-    void RenderStatusBar();
+
     
     // Asset management
     void RefreshAssets();
