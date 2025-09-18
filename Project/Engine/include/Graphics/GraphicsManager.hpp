@@ -40,9 +40,7 @@ public:
 
     // Text Rendering
     void SubmitText(const std::string& text, std::shared_ptr<Font> font, std::shared_ptr<Shader> shader, const glm::vec3& position, const glm::vec3& color = glm::vec3(1.0f), float scale = 1.0f, bool is3D = false, const glm::mat4& transform = glm::mat4(1.0f));
-    
-    // Debug Draw
-    void RenderDebugDraw(const DebugDrawComponent& item);
+
 private:
     GraphicsManager() = default;
     ~GraphicsManager() = default;
@@ -65,6 +63,9 @@ private:
     Camera* currentCamera = nullptr;
     int screenWidth = 0;
     int screenHeight = 0;
+
+    // Debug Draw
+    void RenderDebugDraw(const DebugDrawComponent& item);
 
     // Remove later
     glm::vec3 pointLightPositions[4] = {
