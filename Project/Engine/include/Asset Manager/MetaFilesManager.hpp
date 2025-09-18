@@ -4,7 +4,7 @@
 
 class MetaFilesManager {
 public:
-	static GUID_128 GenerateMetaFile(const std::string& assetPath);
+	//static GUID_128 GenerateMetaFile(const std::string& assetPath, const std::string& resourcePath);
 
 	static bool MetaFileExists(const std::string& assetPath);
 
@@ -20,7 +20,9 @@ public:
 
 	static GUID_128 UpdateMetaFile(const std::string& assetPath);
 
-    static constexpr int CURRENT_METADATA_VERSION = 1;
+	static void AddGUID128Mapping(const std::string& assetPath, const GUID_128& guid);
+
+    static constexpr int CURRENT_METADATA_VERSION = 2;
 
 private:
     /**
@@ -35,5 +37,4 @@ private:
 
     static std::unordered_map<std::string, GUID_128> assetPathToGUID128; // Map from an asset's file path to its GUID_128_t value.
 
-	static void AddGUID128Mapping(const std::string& assetPath, const GUID_128& guid);
 };

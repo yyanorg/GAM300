@@ -1,5 +1,6 @@
 #include "pch.h"
 
+#include <filesystem>
 #include "Graphics/ShaderClass.h"
 
 std::string get_file_contents(const char* filename)
@@ -18,7 +19,7 @@ std::string get_file_contents(const char* filename)
 	throw(errno);
 }
 
-bool Shader::CompileToResource(const std::string& path) {
+std::string Shader::CompileToResource(const std::string& path) {
 	std::string vertexFile = path + ".vert";
 	std::string fragmentFile = path + ".frag";
 
@@ -44,7 +45,7 @@ bool Shader::CompileToResource(const std::string& path) {
 	{
 		glGetShaderInfoLog(vertexShader, 512, NULL, infoLog);
 		std::cout << "ERROR::SHADER::VERTEX::COMPILATION_FAILED\n" << infoLog << std::endl;
-		return false;
+		return std::string{};
 	}
 
 	// Create Fragment Shader Object and get its reference
@@ -59,7 +60,7 @@ bool Shader::CompileToResource(const std::string& path) {
 	{
 		glGetShaderInfoLog(fragmentShader, 512, NULL, infoLog);
 		std::cout << "ERROR::SHADER::FRAGMENT::COMPILATION_FAILED\n" << infoLog << std::endl;
-		return false;
+		return std::string{};
 	}
 
 	// Create Shader Program Object and get its reference
@@ -74,20 +75,76 @@ bool Shader::CompileToResource(const std::string& path) {
 	if (!success) {
 		glGetProgramInfoLog(ID, 512, NULL, infoLog);
 		std::cout << "ERROR::SHADER::PROGRAM::LINKING_FAILED\n" << infoLog << std::endl;
-		return false;
+		return std::string{};
 	}
 
 	// Delete the now useless Vertex and Fragment Shader objects
 	glDeleteShader(vertexShader);
 	glDeleteShader(fragmentShader);
 
-	if (success) 
-	{
-		std::cout << "Successfully loaded shader ID: " << ID << " from: " << path << std::endl;
-		return true;
+	// Retrieve the binary code of the compiled shader.
+	glGetProgramiv(ID, GL_PROGRAM_BINARY_LENGTH, &binaryLength);
+
+	binaryData.resize(binaryLength);
+	glGetProgramBinary(ID, binaryLength, nullptr, &binaryFormat, binaryData.data());
+
+	// Save the binary code to a file.
+	std::filesystem::path p(path);
+	std::string shaderPath = (p.parent_path() / p.stem()).generic_string() + ".shader";
+
+	std::ofstream shaderFile(shaderPath, std::ios::binary);
+	if (shaderFile.is_open()) {
+		// Write the binary format to the file.
+		shaderFile.write(reinterpret_cast<const char*>(&binaryFormat), sizeof(binaryFormat));
+		// Write the binary length to the file.
+		shaderFile.write(reinterpret_cast<const char*>(&binaryLength), sizeof(binaryLength));
+		// Write the binary code to the file.
+		shaderFile.write(reinterpret_cast<const char*>(binaryData.data()), binaryData.size());
+		shaderFile.close();
+		return shaderPath;
 	}
 
-	return true;
+	return std::string{};
+}
+
+bool Shader::LoadResource(const std::string& assetPath)
+{
+	std::filesystem::path assetPathFS(assetPath);
+	std::string resourcePath = (assetPathFS.parent_path() / assetPathFS.stem()).generic_string() + ".shader";
+
+	std::ifstream shaderFile(resourcePath, std::ios::binary);
+	if (shaderFile.is_open()) {
+		// Read the binary format from the file.
+		shaderFile.read(reinterpret_cast<char*>(&binaryFormat), sizeof(binaryFormat));
+		// Read the binary length from the file.
+		shaderFile.read(reinterpret_cast<char*>(&binaryLength), sizeof(binaryLength));
+		binaryData.resize(binaryLength);
+		// Read the binary code from the file.
+		shaderFile.read(reinterpret_cast<char*>(binaryData.data()), binaryLength);
+
+		// Create a new shader program.
+		ID = glCreateProgram();
+		glProgramBinary(ID, binaryFormat, binaryData.data(), binaryLength);
+
+		// Check if the program was successfully loaded.
+		GLint status = 0;
+		glGetProgramiv(ID, GL_LINK_STATUS, &status);
+		if (status == GL_FALSE) {
+			std::cerr << "[SHADER]: Failed to load shader program from binary." << std::endl;
+			return false;
+		}
+
+		return true;
+	}
+	else {
+		std::cerr << "[SHADER]: Shader file not found: " << resourcePath << std::endl;
+		return false;
+	}
+}
+
+std::shared_ptr<AssetMeta> Shader::ExtendMetaFile(const std::string& assetPath, std::shared_ptr<AssetMeta> currentMetaData)
+{
+	return std::shared_ptr<AssetMeta>();
 }
 
 void Shader::Activate()

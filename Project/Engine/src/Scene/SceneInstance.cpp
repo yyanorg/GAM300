@@ -2,7 +2,7 @@
 #include <Scene/SceneInstance.hpp>
 #include <Input/InputManager.hpp>
 #include <ECS/ECSRegistry.hpp>
-#include <Asset Manager/AssetManager.hpp>
+#include <Asset Manager/ResourceManager.hpp>
 #include <Transform/TransformComponent.hpp>
 #include <Graphics/TextRendering/TextUtils.hpp>
 #include "ECS/NameComponent.hpp"
@@ -25,8 +25,8 @@ void SceneInstance::Initialize() {
 	backpacktransform.scale = { .1f, .1f, .1f };
 	backpacktransform.rotation = { 0, 0, 0 };
 	ecsManager.AddComponent<NameComponent>(backpackEntt, NameComponent{"dora the explorer"});
-	ecsManager.AddComponent<ModelRenderComponent>(backpackEntt, ModelRenderComponent{ AssetManager::GetInstance().GetAsset<Model>("Resources/Models/backpack/backpack.obj"),
-		AssetManager::GetInstance().GetAsset<Shader>("Resources/Shaders/default")});
+	ecsManager.AddComponent<ModelRenderComponent>(backpackEntt, ModelRenderComponent{ ResourceManager::GetInstance().GetResource<Model>("Resources/Models/backpack/backpack.obj"),
+		ResourceManager::GetInstance().GetResource<Shader>("Resources/Shaders/default")});
 
 	Entity backpackEntt2 = ecsManager.CreateEntity();
 	ecsManager.AddComponent<Transform>(backpackEntt2, Transform{});
@@ -35,30 +35,30 @@ void SceneInstance::Initialize() {
 	backpacktransform2.scale = { .2f, .2f, .2f };
 	backpacktransform2.rotation = { 0, 0, 0 };
 	ecsManager.AddComponent<NameComponent>(backpackEntt2, NameComponent{ "ash ketchum" });
-	ecsManager.AddComponent<ModelRenderComponent>(backpackEntt2, ModelRenderComponent{ AssetManager::GetInstance().GetAsset<Model>("Resources/Models/backpack/backpack.obj"),
-		AssetManager::GetInstance().GetAsset<Shader>("Resources/Shaders/default")});
+	ecsManager.AddComponent<ModelRenderComponent>(backpackEntt2, ModelRenderComponent{ ResourceManager::GetInstance().GetResource<Model>("Resources/Models/backpack/backpack.obj"),
+		ResourceManager::GetInstance().GetResource<Shader>("Resources/Shaders/default") });
 
 	// GRAPHICS TEST CODE
 	ecsManager.transformSystem->Initialise();
 	ecsManager.modelSystem->Initialise();
 
-	// Text
-	auto textShader = std::make_shared<Shader>();
-	if (textShader->CompileToResource("Resources/Shaders/text")) {
-		std::cout << "Text shader loaded successfully!" << std::endl;
-	}
-	else {
-		std::cout << "Failed to load text shader!" << std::endl;
-	}
-	Entity text = ecsManager.CreateEntity();
-	ecsManager.AddComponent<TextRenderComponent>(text, TextRenderComponent{ "Hello World!", AssetManager::GetInstance().GetAsset<Font>("Resources/Fonts/Kenney Mini.ttf"), textShader });
-	TextRenderComponent& textComp = ecsManager.GetComponent<TextRenderComponent>(text);
-	TextUtils::SetPosition(textComp, glm::vec3(800,0,0));
-	TextUtils::SetAlignment(textComp, TextRenderComponent::Alignment::CENTER);
+	//// Text
+	//auto textShader = std::make_shared<Shader>();
+	//if (textShader->CompileToResource("Resources/Shaders/text")) {
+	//	std::cout << "Text shader loaded successfully!" << std::endl;
+	//}
+	//else {
+	//	std::cout << "Failed to load text shader!" << std::endl;
+	//}
+	//Entity text = ecsManager.CreateEntity();
+	//ecsManager.AddComponent<TextRenderComponent>(text, TextRenderComponent{ "Hello World!", AssetManager::GetInstance().CompileAsset<Font>("Resources/Fonts/Kenney Mini.ttf"), textShader });
+	//TextRenderComponent& textComp = ecsManager.GetComponent<TextRenderComponent>(text);
+	//TextUtils::SetPosition(textComp, glm::vec3(800,0,0));
+	//TextUtils::SetAlignment(textComp, TextRenderComponent::Alignment::CENTER);
 
 	// Creates light
 	lightShader = std::make_shared<Shader>();
-	lightShader = AssetManager::GetInstance().GetAsset<Shader>("Resources/Shaders/light");
+	lightShader = ResourceManager::GetInstance().GetResource<Shader>("Resources/Shaders/light");
 	//lightShader->LoadAsset("Resources/Shaders/light");
 	std::vector<std::shared_ptr<Texture>> emptyTextures = {};
 	lightCubeMesh = std::make_shared<Mesh>(lightVertices, lightIndices, emptyTextures);

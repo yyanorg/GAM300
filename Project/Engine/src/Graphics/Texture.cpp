@@ -6,23 +6,21 @@
 #include "Graphics/stb_image.h"
 #include "GLI/gli.hpp"
 #include <filesystem>
+#include <rapidjson/document.h>
+#include <rapidjson/prettywriter.h>
 
-Texture::Texture() : ID(0), type(type), unit(0) {}
+Texture::Texture() : ID(0), type(""), unit(-1), target(GL_TEXTURE_2D) {}
 
-Texture::Texture(const char* texType, GLuint slot)
-{
-	// Assigns the type of the texture ot the texture object
-	type = texType;
-	unit = slot; // Store the slot, but don't bind if it's -1
-}
+Texture::Texture(const char* texType, GLint slot) :
+	ID(0), type(texType), unit(slot), target(GL_TEXTURE_2D) {}
 
-bool Texture::CompileToResource(const std::string& path) {
+std::string Texture::CompileToResource(const std::string& assetPath) {
 	// Stores the width, height, and the number of color channels of the image
 	int widthImg, heightImg, numColCh;
 	// Flips the image so it appears right side up
 	stbi_set_flip_vertically_on_load(true);
 	// Reads the image from a file and stores it in bytes
-	unsigned char* bytes = stbi_load(path.c_str(), &widthImg, &heightImg, &numColCh, 0);
+	unsigned char* bytes = stbi_load(assetPath.c_str(), &widthImg, &heightImg, &numColCh, 0);
 
 	// Dynamically choose the appropriate format.
 	gli::format gliFormat;
@@ -42,7 +40,8 @@ bool Texture::CompileToResource(const std::string& path) {
 			break;
 		default:
 			stbi_image_free(bytes);
-			return false; // Unsupported format
+			std::cerr << "[TEXTURE]: Unsupported number of color channels: " << numColCh << std::endl;
+			return std::string{}; // Unsupported format
 	}
 
 	// Create GLI texture object.
@@ -50,14 +49,49 @@ bool Texture::CompileToResource(const std::string& path) {
 	std::memcpy(texture.data(), bytes, widthImg * heightImg * numColCh);
 
 	// Save the texture to a DDS file.
-	std::filesystem::path p(path);
-	gli::save(texture, p.stem().string() + ".dds");
+	std::filesystem::path p(assetPath);
+	std::string outPath = (p.parent_path() / p.stem()).generic_string() + ".dds";
+	gli::save(texture, outPath);
 
 	// Free original image data.
 	stbi_image_free(bytes);
+
+	return outPath;
 }
 
-bool Texture::LoadResource(const std::string& path) {
+bool Texture::LoadResource(const std::string& assetPath) {
+	std::filesystem::path assetPathFS(assetPath);
+
+	// Load the meta file to get texture parameters
+	std::string metaFilePath = assetPathFS.string() + ".meta";
+	if (!std::filesystem::exists(metaFilePath)) {
+		std::cerr << "[TEXTURE]: Meta file not found for texture: " << assetPath << std::endl;
+		return false;
+	}
+
+	std::ifstream ifs(metaFilePath);
+	std::string jsonContent((std::istreambuf_iterator<char>(ifs)), std::istreambuf_iterator<char>());
+
+	rapidjson::Document doc;
+	doc.Parse(jsonContent.c_str());
+
+	const auto& textureMetaData = doc["TextureMetaData"];
+
+	//if (textureMetaData.HasMember("id")) {
+	//	ID = static_cast<GLuint>(textureMetaData["id"].GetInt());
+	//}
+	
+	if (textureMetaData.HasMember("type")) {
+		type = textureMetaData["type"].GetString();
+	}
+
+	if (textureMetaData.HasMember("unit")) {
+		unit = static_cast<GLuint>(textureMetaData["unit"].GetInt());
+	}
+
+	// Load the DDS file using GLI
+	std::string path = (assetPathFS.parent_path() / assetPathFS.stem()).generic_string() + ".dds";
+
 	gli::texture texture = gli::load(path);
 	void* bytes = texture.data();
 	int widthImg = texture.extent().x;
@@ -65,7 +99,7 @@ bool Texture::LoadResource(const std::string& path) {
 	
 	gli::gl GL(gli::gl::PROFILE_GL33);
 	gli::gl::format const format = GL.translate(texture.format(), texture.swizzles());
-	GLenum target = texture.target();
+	target = GL.translate(texture.target());
 
 	// Generates an OpenGL texture object
 	glGenTextures(1, &ID);
@@ -76,11 +110,11 @@ bool Texture::LoadResource(const std::string& path) {
 	//glBindTexture(GL_TEXTURE_2D, ID);
 
 	// Only bind to unit if slot is valid
-	if (unit >= 0)
-	{
-		glActiveTexture(GL_TEXTURE0 + unit);
-		glBindTexture(target, ID);
-	}
+	//if (unit >= 0)
+	//{
+	//	glActiveTexture(GL_TEXTURE0 + unit);
+	//}
+	glBindTexture(target, ID);
 
 	// Configures the type of algorithm that is used to make the image smaller or bigger
 	glTexParameteri(target, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_LINEAR);
@@ -99,7 +133,14 @@ bool Texture::LoadResource(const std::string& path) {
 	// glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, flatColor);
 
 	// Assigns the image to the OpenGL Texture object
-	glTexImage2D(target, 0, format.Internal, widthImg, heightImg, 0, format.External, format.Type, bytes);
+	if (target == GL_TEXTURE_2D) {
+		glTexImage2D(target, 0, format.Internal, widthImg, heightImg, 0, format.External, format.Type, bytes);
+	}
+	else {
+		std::cerr << "[TEXTURE]: Unsupported texture target: " << target << std::endl;
+		return false;
+	}
+
 	// Generates MipMaps
 	glGenerateMipmap(target);
 
@@ -107,6 +148,48 @@ bool Texture::LoadResource(const std::string& path) {
 	glBindTexture(target, 0);
 
 	return true;
+}
+
+std::shared_ptr<AssetMeta> Texture::ExtendMetaFile(const std::string& assetPath, std::shared_ptr<AssetMeta> currentMetaData) {
+	std::string metaFilePath = assetPath + ".meta";
+	std::ifstream ifs(metaFilePath);
+	std::string jsonContent((std::istreambuf_iterator<char>(ifs)), std::istreambuf_iterator<char>());
+
+	rapidjson::Document doc;
+	doc.Parse(jsonContent.c_str());
+	ifs.close();
+
+	auto& allocator = doc.GetAllocator();
+
+	rapidjson::Value textureMetaData(rapidjson::kObjectType);
+
+	// Add ID
+	textureMetaData.AddMember("id", rapidjson::Value().SetInt(static_cast<int>(ID)), allocator);
+	// Add type
+	textureMetaData.AddMember("type", rapidjson::Value().SetString(type.c_str(), allocator), allocator);
+	// Add unit
+	textureMetaData.AddMember("unit", rapidjson::Value().SetInt(static_cast<int>(unit)), allocator);
+
+	doc.AddMember("TextureMetaData", textureMetaData, allocator);
+
+	rapidjson::StringBuffer buffer;
+	rapidjson::PrettyWriter<rapidjson::StringBuffer> writer(buffer);
+	doc.Accept(writer);
+
+	std::ofstream metaFile(metaFilePath);
+	metaFile << buffer.GetString();
+	metaFile.close();
+
+	std::shared_ptr<TextureMeta> metaData = std::make_shared<TextureMeta>();
+	metaData->guid = currentMetaData->guid;
+	metaData->sourceFilePath = currentMetaData->sourceFilePath;
+	metaData->compiledFilePath = currentMetaData->compiledFilePath;
+	metaData->lastCompileTime = currentMetaData->lastCompileTime;
+	metaData->version = currentMetaData->version;
+	metaData->ID = ID;
+	metaData->type = type;
+	metaData->unit = unit;
+	return metaData;
 }
 
 GLenum Texture::GetFormatFromExtension(const std::string& filepath) {
@@ -139,15 +222,18 @@ void Texture::texUnit(Shader& shader, const char* uniform, GLuint unit)
 	shader.setInt(uniform, unit);
 }
 
-void Texture::Bind()
+void Texture::Bind(GLint runtimeUnit)
 {
-	glActiveTexture(GL_TEXTURE0 + unit);
-	glBindTexture(GL_TEXTURE_2D, ID);
+	GLint unitToUse = (runtimeUnit >= 0) ? runtimeUnit : (unit >= 0 ? unit : 0);
+	glActiveTexture(GL_TEXTURE0 + unitToUse);
+	glBindTexture(target, ID);
 }
 
-void Texture::Unbind()
+void Texture::Unbind(GLint runtimeUnit)
 {
-	glBindTexture(GL_TEXTURE_2D, 0);
+	GLint unitToUse = (runtimeUnit >= 0) ? runtimeUnit : (unit >= 0 ? unit : 0);
+	glActiveTexture(GL_TEXTURE0 + unitToUse);
+	glBindTexture(target, 0);
 }
 
 void Texture::Delete()

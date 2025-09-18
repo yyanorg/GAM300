@@ -52,29 +52,39 @@ void Material::SetAO(float ao)
 	m_ao = glm::clamp(ao, 0.f, 1.f);
 }
 
-void Material::SetTexture(TextureType type, std::shared_ptr<Texture> texture)
+void Material::SetTexture(TextureType type, std::unique_ptr<TextureInfo> textureInfo)
 {
-	if (texture)
+	if (textureInfo)
 	{
-		m_textures[type] = texture;
+		m_textureInfo[type] = std::move(textureInfo);
 	}
 }
 
 
-std::shared_ptr<Texture> Material::GetTexture(TextureType type) const
+std::optional<std::reference_wrapper<TextureInfo>> Material::GetTextureInfo(TextureType type) const
 {
-	auto it = m_textures.find(type);
-	return (it != m_textures.end() ? it->second : nullptr);
+	std::optional<std::reference_wrapper<TextureInfo>> textureInfo = std::nullopt;
+	auto it = m_textureInfo.find(type);
+	if (it != m_textureInfo.end()) {
+		textureInfo = *(it->second);
+	}
+
+	return textureInfo;
+}
+
+const std::unordered_map<TextureType, std::unique_ptr<TextureInfo>>& Material::GetAllTextureInfo()
+{
+	return m_textureInfo;
 }
 
 bool Material::HasTexture(TextureType type) const
 {
-	return m_textures.find(type) != m_textures.end();
+	return m_textureInfo.find(type) != m_textureInfo.end();
 }
 
 void Material::RemoveTexture(TextureType type)
 {
-	m_textures.erase(type);
+	m_textureInfo.erase(type);
 }
 
 void Material::SetName(const std::string& name)
@@ -124,12 +134,12 @@ void Material::BindTextures(Shader& shader) const
 	shader.setBool("material.hasRoughnessMap", hasTexture(TextureType::ROUGHNESS));*/
 
 	// Bind each texture type
-	for (const auto& [type, texture] : m_textures)
+	for (const auto& [type, textureInfo] : m_textureInfo)
 	{
-		if (texture && textureUnit < 16) 
+		if (textureInfo && textureUnit < 16) 
 		{
-			glActiveTexture(GL_TEXTURE0 + textureUnit);
-			texture->Bind();
+			//glActiveTexture(GL_TEXTURE0 + textureUnit);
+			textureInfo->texture->Bind(textureUnit);
 
 			std::string uniformName = "material." + TextureTypeToString(type);
 			shader.setInt(uniformName.c_str(), textureUnit);

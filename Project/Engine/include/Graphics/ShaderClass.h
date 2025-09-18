@@ -16,7 +16,9 @@ public:
     //Shader() {};
 	//Shader(const char* vertexFile, const char* fragmentFile);
 
-	bool CompileToResource(const std::string& path) override;
+	std::string CompileToResource(const std::string& path) override;
+	bool LoadResource(const std::string& assetPath) override;
+    std::shared_ptr<AssetMeta> ExtendMetaFile(const std::string& assetPath, std::shared_ptr<AssetMeta> currentMetaData) override;
 
 	void Activate();
 	void Delete();
@@ -40,4 +42,9 @@ public:
 private:
     std::unordered_map<std::string, GLint> m_uniformCache;
     GLint getUniformLocation(const std::string& name);
+
+    // Store shader binary data (precompiled shader).
+    GLint binaryLength;
+	std::vector<uint8_t> binaryData;
+	GLenum binaryFormat;
 };

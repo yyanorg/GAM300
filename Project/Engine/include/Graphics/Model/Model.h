@@ -16,14 +16,17 @@ public:
 	std::string directory;
 
 	//Model(const std::string& filePath);
-	bool CompileToResource(const std::string& path) override;
-	bool CompileMesh(aiMesh* mesh, const std::vector<Vertex>& vertices, const std::vector<GLuint>& indices, std::shared_ptr<Material> mat);
+	std::string CompileToResource(const std::string& assetPath) override;
+	std::string CompileToMesh(const std::string& modelPath, const std::vector<Mesh>& meshesToCompile);
+	bool LoadResource(const std::string& assetPath) override;
+	std::shared_ptr<AssetMeta> ExtendMetaFile(const std::string& assetPath, std::shared_ptr<AssetMeta> currentMetaData) override;
+	
 	void Draw(Shader& shader, const Camera& camera);
 
 private:
 	//void loadModel(const std::string& path);
 	void ProcessNode(aiNode* node, const aiScene* scene);
 	Mesh ProcessMesh(aiMesh* mesh, const aiScene* scene);
-	std::vector<std::shared_ptr<Texture>> LoadMaterialTexture(aiMaterial* mat, aiTextureType type, std::string typeName);
+	std::vector<std::shared_ptr<Texture>> LoadMaterialTexture(std::shared_ptr<Material> material, aiMaterial* mat, aiTextureType type, std::string typeName);
 
 };

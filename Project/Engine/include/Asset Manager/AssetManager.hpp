@@ -6,6 +6,8 @@
 #include <filesystem>
 #include "GUID.hpp"
 #include "MetaFilesManager.hpp"
+#include "Asset Manager/AssetMeta.hpp"
+#include <Graphics/Model/Model.h>
 
 class AssetManager {
 public:
@@ -14,118 +16,175 @@ public:
 		return instance;
 	}
 
+	bool CompileAsset(const std::string& filePathStr) {
+		std::filesystem::path filePathObj(filePathStr);
+		std::string extension = filePathObj.extension().string();
+		if (textureExtensions.find(extension) != textureExtensions.end()) {
+			return CompileTexture(filePathStr, "diffuse", -1);
+		}
+		//else if (audioExtensions.find(extension) != audioExtensions.end()) {
+		//	return CompileAsset<Audio>(filePathStr);
+		//}
+		//else if (fontExtensions.find(extension) != fontExtensions.end()) {
+		//	return CompileAsset<Font>(filePathStr);
+		//}
+		else if (modelExtensions.find(extension) != modelExtensions.end()) {
+			return CompileAsset<Model>(filePathStr);
+		}
+		else if (shaderExtensions.find(extension) != shaderExtensions.end()) {
+			return CompileAsset<Shader>(filePathStr);
+		}
+		else {
+			std::cerr << "[AssetManager] ERROR: Unsupported asset extension: " << extension << std::endl;
+			return false;
+		}
+	}
+
 	template <typename T>
-	std::shared_ptr<T> GetAsset(const std::string& filePathStr) {
+	bool CompileAsset(const std::string& filePathStr) {
 		static_assert(!std::is_same_v<T, Texture>,
 			"Calling AssetManager::GetInstance().GetAsset() to get a texture is forbidden. Use GetTexture() instead.");
 
-		auto& assetMap = GetAssetMap<T>();
 		std::filesystem::path filePathObj(filePathStr);
-		std::string filePath = filePathObj.generic_string();
+		std::string filePath;
+		if (std::is_same_v<T, Shader>) {
+			filePath = (filePathObj.parent_path() / filePathObj.stem()).generic_string();
+		}
+		else filePath = filePathObj.generic_string();
 
 		GUID_128 guid{};
-		if (!MetaFilesManager::MetaFileExists(filePath)) {
-			guid = MetaFilesManager::GenerateMetaFile(filePath);
+		if (!MetaFilesManager::MetaFileExists(filePath) || !MetaFilesManager::MetaFileUpdated(filePath)) {
+			GUID_string guidStr = GUIDUtilities::GenerateGUIDString();
+			guid = GUIDUtilities::ConvertStringToGUID128(guidStr);
 		}
 		else {
 			guid = MetaFilesManager::GetGUID128FromAssetFile(filePath);
 		}
 
-		auto it = assetMap.find(guid);
-		if (it != assetMap.end()) {
-			return it->second;
+		auto it = assetMetaMap.find(guid);
+		if (it != assetMetaMap.end()) {
+			return true;
 		}
 		else {
 			return CompileAssetToResource<T>(guid, filePath);
 		}
 	}
 
-	std::shared_ptr<Texture> GetTexture(std::string filePath, std::string texType, GLuint slot, GLenum pixelType) {
-		auto& assetMap = GetAssetMap<Texture>();
-
+	bool CompileTexture(std::string filePath, std::string texType, GLint slot) {
 		GUID_128 guid{};
-		if (!MetaFilesManager::MetaFileExists(filePath)) {
-			guid = MetaFilesManager::GenerateMetaFile(filePath);
+		if (!MetaFilesManager::MetaFileExists(filePath) || !MetaFilesManager::MetaFileUpdated(filePath)) {
+			GUID_string guidStr = GUIDUtilities::GenerateGUIDString();
+			guid = GUIDUtilities::ConvertStringToGUID128(guidStr);
 		}
 		else {
 			guid = MetaFilesManager::GetGUID128FromAssetFile(filePath);
 		}
 
-		auto it = assetMap.find(guid);
-		if (it != assetMap.end()) {
-			return it->second;
+		auto it = assetMetaMap.find(guid);
+		if (it != assetMetaMap.end()) {
+			return true;
 		}
 		else {
 			return CompileTextureToResource(guid, filePath.c_str(), texType.c_str(), slot);
 		}
 	}
 
-	template <typename T>
-	void UnloadAsset(const std::string& filePath) {
-		auto& assetMap = GetAssetMap<T>();
-		if (MetaFilesManager::MetaFileExists(filePath)) {
-			GUID_128 guid = MetaFilesManager::GetGUID128FromAssetFile(filePath);
-			auto it = assetMap.find(guid);
-			if (it != assetMap.end()) {
-				assetMap.erase(it);
-			}
-		}
+	bool IsAssetCompiled(GUID_128 guid) {
+		return assetMetaMap.find(guid) != assetMetaMap.end();
 	}
 
-	template <typename T>
-	void UnloadAllAssetsOfType() {
-		GetAssetMap<T>().clear();
+	//void UnloadAsset(const std::string& filePath) {
+	//	if (MetaFilesManager::MetaFileExists(filePath)) {
+	//		GUID_128 guid = MetaFilesManager::GetGUID128FromAssetFile(filePath);
+	//		auto it = assetMetaMap.find(guid);
+	//		if (it != assetMetaMap.end()) {
+	//			assetMetaMap.erase(it);
+	//		}
+	//	}
+	//}
+
+	void UnloadAllAssets() {
+		assetMetaMap.clear();
+	}
+
+	void InitializeSupportedExtensions() {
+		supportedExtensions.insert(textureExtensions.begin(), textureExtensions.end());
+		supportedExtensions.insert(audioExtensions.begin(), audioExtensions.end());
+		supportedExtensions.insert(fontExtensions.begin(), fontExtensions.end());
+		supportedExtensions.insert(modelExtensions.begin(), modelExtensions.end());
+		supportedExtensions.insert(shaderExtensions.begin(), shaderExtensions.end());
+	}
+
+	std::unordered_set<std::string>& GetSupportedExtensions() {
+		return supportedExtensions;
+	}
+
+	const std::unordered_set<std::string>& GetShaderExtensions() const {
+		return shaderExtensions;
 	}
 
 private:
 	AssetManager() {};
 
-	/**
-	 * \brief Returns a singleton container for the asset type T.
-	 *
-	 * \tparam T The type of the assets.
-	 * \return A reference to the map of assets for the specified type.
-	 */
-	template <typename T>
-	std::unordered_map<GUID_128, std::shared_ptr<T>>& GetAssetMap() {
-		static std::unordered_map<GUID_128, std::shared_ptr<T>> assetMap;
-		return assetMap;
-	}
+	std::unordered_map<GUID_128, std::shared_ptr<AssetMeta>> assetMetaMap;
+
+	// Supported extensions
+	const std::unordered_set<std::string> textureExtensions = { ".png", ".PNG", ".jpg", ".JPG", ".jpeg", ".JPEG", ".bmp", ".BMP" };
+	const std::unordered_set<std::string> audioExtensions = { ".wav", ".ogg" };
+	const std::unordered_set<std::string> fontExtensions = { ".ttf" };
+	const std::unordered_set<std::string> modelExtensions = { ".obj", ".fbx" };
+	const std::unordered_set<std::string> shaderExtensions = { ".vert", ".frag" };
+	std::unordered_set<std::string> supportedExtensions;
+
+	///**
+	// * \brief Returns a singleton container for the asset type T.
+	// *
+	// * \tparam T The type of the assets.
+	// * \return A reference to the map of assets for the specified type.
+	// */
+	//template <typename T>
+	//std::unordered_map<GUID_128, std::shared_ptr<T>>& GetAssetMap() {
+	//	static std::unordered_map<GUID_128, std::shared_ptr<T>> assetMap;
+	//	return assetMap;
+	//}
 
 	template <typename T>
-	std::shared_ptr<T> CompileAssetToResource(GUID_128 guid, const std::string& filePath) {
-		auto& assetMap = GetAssetMap<T>();
-
+	bool CompileAssetToResource(GUID_128 guid, const std::string& filePath) {
 		// If the asset is not already loaded, load and store it using the GUID.
-		if (assetMap.find(guid) == assetMap.end()) {
+		if (assetMetaMap.find(guid) == assetMetaMap.end()) {
 			std::shared_ptr<T> asset = std::make_shared<T>();
-			if (!asset->CompileToResource(filePath)) {
-				std::cerr << "[AssetManager] ERROR: Failed to load asset: " << filePath << std::endl;
-				return nullptr;
+			std::string compiledPath = asset->CompileToResource(filePath);
+			if (compiledPath.empty()) {
+				std::cerr << "[AssetManager] ERROR: Failed to compile asset: " << filePath << std::endl;
+				return false;
 			}
 
-			assetMap[guid] = asset;
-			return asset;
+			std::shared_ptr<AssetMeta> assetMeta = asset->GenerateBaseMetaFile(guid, filePath, compiledPath);
+			assetMetaMap[guid] = assetMeta;
+			std::cout << "[AssetManager] Compiled asset: " << filePath << " to " << compiledPath << std::endl;
+			return true;
 		}
 
-		return assetMap[guid];
+		return true;
 	}
 
-	std::shared_ptr<Texture> CompileTextureToResource(GUID_128 guid, const char* filePath, const char* texType, GLuint slot) {
-		auto& assetMap = GetAssetMap<Texture>();
-
+	bool CompileTextureToResource(GUID_128 guid, const char* filePath, const char* texType, GLint slot) {
 		// If the asset is not already loaded, load and store it using the GUID.
-		if (assetMap.find(guid) == assetMap.end()) {
-			std::shared_ptr<Texture> asset = std::make_shared<Texture>( texType, slot);
-			if (!asset->CompileToResource(filePath)) {
+		if (assetMetaMap.find(guid) == assetMetaMap.end()) {
+			Texture texture{ texType, slot };
+			std::string compiledPath = texture.CompileToResource(filePath);
+			if (compiledPath.empty()) {
 				std::cerr << "[AssetManager] ERROR: Failed to compile asset: " << filePath << std::endl;
-				return nullptr;
+				return false;
 			}
 
-			assetMap[guid] = asset;
-			return asset;
+			std::shared_ptr<AssetMeta> assetMeta = texture.GenerateBaseMetaFile(guid, filePath, compiledPath);
+			assetMeta = texture.ExtendMetaFile(filePath, assetMeta);
+			assetMetaMap[guid] = assetMeta;
+			std::cout << "[AssetManager] Compiled asset: " << filePath << " to " << compiledPath << std::endl;
+			return true;
 		}
 
-		return assetMap[guid];
+		return true;
 	}
 };

@@ -3,18 +3,21 @@
 #include <memory>
 #include <string>
 #include <unordered_map>
+#include <optional>
+#include <functional>
 #include "Texture.h"
 #include "ShaderClass.h"
 
 enum class TextureType {
-	DIFFUSE,
-	SPECULAR,
-	NORMAL,
-	HEIGHT,
-	AMBIENT_OCCLUSION,
-	METALLIC,
-	ROUGHNESS,
-	EMISSIVE
+	NONE = 0,
+	DIFFUSE = 1,
+	SPECULAR = 2,
+	AMBIENT_OCCLUSION = 3,
+	EMISSIVE = 4,
+	HEIGHT = 5,
+	NORMAL = 6,
+	METALLIC = 15,
+	ROUGHNESS = 16,
 };
 
 class Material {
@@ -48,8 +51,9 @@ public:
 	const float& GetAO() const { return m_ao; }
 
 	// Texture Managment
-	void SetTexture(TextureType type, std::shared_ptr<Texture> texture);
-	std::shared_ptr<Texture> GetTexture(TextureType type) const;
+	void SetTexture(TextureType type, std::unique_ptr<TextureInfo> textureInfo);
+	std::optional<std::reference_wrapper<TextureInfo>> GetTextureInfo(TextureType type) const;
+	const std::unordered_map<TextureType, std::unique_ptr<TextureInfo>>& GetAllTextureInfo();
 	bool HasTexture(TextureType type) const;
 	void RemoveTexture(TextureType type);
 
@@ -84,7 +88,7 @@ private:
 	float m_ao{ 1.0f };
 
 	// Texture storage
-	std::unordered_map<TextureType, std::shared_ptr<Texture>> m_textures;
+	std::unordered_map<TextureType, std::unique_ptr<TextureInfo>> m_textureInfo;
 
 	// Helper methods
 	std::string TextureTypeToString(TextureType type) const;
