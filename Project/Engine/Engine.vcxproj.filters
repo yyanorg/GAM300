@@ -59,6 +59,13 @@
     <ClInclude Include="include\Graphics\SceneRenderer.hpp" />
     <ClInclude Include="include\ECS\NameComponent.hpp" />
     <ClInclude Include="include\Sound\AudioManager.hpp" />
+    <ClInclude Include="include\Input\Keys.h" />
+    <ClInclude Include="include\Platform\IPlatform.h" />
+    <ClInclude Include="include\Platform\Platform.h" />
+    <ClInclude Include="include\Platform\DesktopPlatform.h" />
+    <ClInclude Include="include\Platform\AndroidPlatform.h" />
+    <ClInclude Include="include\Reflection\Base64.hpp" />
+    <ClInclude Include="include\Reflection\ReflectionBase.hpp" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Engine.cpp" />
@@ -95,6 +102,10 @@
     <ClCompile Include="src\Graphics\TextRendering\TextUtils.cpp" />
     <ClCompile Include="src\Graphics\SceneRenderer.cpp" />
     <ClCompile Include="src\Sound\AudioManager.cpp" />
+    <ClCompile Include="src\Platform\Platform.cpp" />
+    <ClCompile Include="src\Platform\DesktopPlatform.cpp" />
+    <ClCompile Include="src\Platform\AndroidPlatform.cpp" />
+    <ClCompile Include="src\Reflection\ReflectionBase.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="cpp.hint" />

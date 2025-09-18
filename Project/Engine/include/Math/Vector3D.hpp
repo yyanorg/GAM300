@@ -13,6 +13,7 @@
 #pragma once
 
 #include "pch.h"
+#include "Reflection/ReflectionBase.hpp"
 
 #ifdef _WIN32
 #ifdef ENGINE_EXPORTS
@@ -31,6 +32,8 @@
 
 struct ENGINE_API Vector3D
 {
+	REFL_SERIALIZABLE
+
 	float x, y, z;
 
 	// Constructs
