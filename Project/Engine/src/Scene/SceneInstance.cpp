@@ -44,19 +44,20 @@ void SceneInstance::Initialize() {
 	ecsManager.transformSystem->Initialise();
 	ecsManager.modelSystem->Initialise();
 
-	//// Text
-	//auto textShader = std::make_shared<Shader>();
-	//if (textShader->CompileToResource("Resources/Shaders/text")) {
-	//	std::cout << "Text shader loaded successfully!" << std::endl;
-	//}
-	//else {
-	//	std::cout << "Failed to load text shader!" << std::endl;
-	//}
-	//Entity text = ecsManager.CreateEntity();
-	//ecsManager.AddComponent<TextRenderComponent>(text, TextRenderComponent{ "Hello World!", AssetManager::GetInstance().CompileAsset<Font>("Resources/Fonts/Kenney Mini.ttf"), textShader });
-	//TextRenderComponent& textComp = ecsManager.GetComponent<TextRenderComponent>(text);
-	//TextUtils::SetPosition(textComp, glm::vec3(800,0,0));
-	//TextUtils::SetAlignment(textComp, TextRenderComponent::Alignment::CENTER);
+	// Text entity test
+	Entity text = ecsManager.CreateEntity();
+	ecsManager.AddComponent<NameComponent>(text, NameComponent{ "Hello World Text" });
+	ecsManager.AddComponent<TextRenderComponent>(text, TextRenderComponent{ "Hello World!", ResourceManager::GetInstance().GetFontResource("Resources/Fonts/Kenney Mini.ttf"), ResourceManager::GetInstance().GetResource<Shader>("Resources/Shaders/text") });
+	TextRenderComponent& textComp = ecsManager.GetComponent<TextRenderComponent>(text);
+	TextUtils::SetPosition(textComp, glm::vec3(800, 50, 0));
+	TextUtils::SetAlignment(textComp, TextRenderComponent::Alignment::CENTER);
+
+	Entity text2 = ecsManager.CreateEntity();
+	ecsManager.AddComponent<NameComponent>(text2, NameComponent{ "Text2" });
+	ecsManager.AddComponent<TextRenderComponent>(text2, TextRenderComponent{ "nihao fine shyt", ResourceManager::GetInstance().GetFontResource("Resources/Fonts/Kenney Mini.ttf", 20), ResourceManager::GetInstance().GetResource<Shader>("Resources/Shaders/text") });
+	TextRenderComponent& textComp2 = ecsManager.GetComponent<TextRenderComponent>(text2);
+	TextUtils::SetPosition(textComp2, glm::vec3(800, 800, 0));
+	TextUtils::SetAlignment(textComp2, TextRenderComponent::Alignment::CENTER);
 
 	// Creates light
 	lightShader = std::make_shared<Shader>();

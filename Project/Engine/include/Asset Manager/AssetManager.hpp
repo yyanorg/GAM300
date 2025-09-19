@@ -8,6 +8,7 @@
 #include "MetaFilesManager.hpp"
 #include "Asset Manager/AssetMeta.hpp"
 #include <Graphics/Model/Model.h>
+#include "Graphics/TextRendering/Font.hpp"
 
 class AssetManager {
 public:
@@ -25,9 +26,9 @@ public:
 		//else if (audioExtensions.find(extension) != audioExtensions.end()) {
 		//	return CompileAsset<Audio>(filePathStr);
 		//}
-		//else if (fontExtensions.find(extension) != fontExtensions.end()) {
-		//	return CompileAsset<Font>(filePathStr);
-		//}
+		else if (fontExtensions.find(extension) != fontExtensions.end()) {
+			return CompileAsset<Font>(filePathStr);
+		}
 		else if (modelExtensions.find(extension) != modelExtensions.end()) {
 			return CompileAsset<Model>(filePathStr);
 		}
@@ -43,7 +44,7 @@ public:
 	template <typename T>
 	bool CompileAsset(const std::string& filePathStr) {
 		static_assert(!std::is_same_v<T, Texture>,
-			"Calling AssetManager::GetInstance().GetAsset() to get a texture is forbidden. Use GetTexture() instead.");
+			"Calling AssetManager::GetInstance().GetAsset() to compile a texture is forbidden. Use CompileTexture() instead.");
 
 		std::filesystem::path filePathObj(filePathStr);
 		std::string filePath;

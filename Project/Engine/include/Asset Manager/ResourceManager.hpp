@@ -16,6 +16,9 @@ public:
 
 	template <typename T>
 	std::shared_ptr<T> GetResource(const std::string& assetPath) {
+		static_assert(!std::is_same_v<T, Font>,
+			"Calling ResourceManager::GetInstance().GetResource() to get a font is forbidden. Use GetFontResource() instead.");
+
 		auto& resourceMap = GetResourceMap<T>();
 		std::filesystem::path filePathObj(assetPath);
 		std::string filePath = filePathObj.generic_string();
@@ -39,30 +42,30 @@ public:
 		}
 	}
 
-	//std::shared_ptr<Texture> GetTexture(const std::string& assetPath) {
-	//	// Special handling for textures.
-	//	auto& resourceMap = GetResourceMap<Texture>();
-	//	std::filesystem::path filePathObj(assetPath);
-	//	std::string filePath = filePathObj.generic_string();
+	std::shared_ptr<Font> GetFontResource(const std::string& assetPath, unsigned int fontSize = 48) {
+		auto& resourceMap = GetResourceMap<Font>();
+		std::filesystem::path filePathObj(assetPath);
+		std::string filePath = filePathObj.generic_string();
+		std::string storedFilePath = filePathObj.generic_string() + std::to_string(fontSize);
 
-	//	GUID_128 guid{};
-	//	if (!MetaFilesManager::MetaFileExists(filePath)) {
-	//		GUID_string guidStr = GUIDUtilities::GenerateGUIDString();
-	//		guid = GUIDUtilities::ConvertStringToGUID128(guidStr);
-	//	}
-	//	else {
-	//		guid = MetaFilesManager::GetGUID128FromAssetFile(filePath);
-	//	}
+		GUID_128 guid{};
+		if (!MetaFilesManager::MetaFileExists(storedFilePath)) {
+			GUID_string guidStr = GUIDUtilities::GenerateGUIDString();
+			guid = GUIDUtilities::ConvertStringToGUID128(guidStr);
+		}
+		else {
+			guid = MetaFilesManager::GetGUID128FromAssetFile(storedFilePath);
+		}
 
-	//	// Return a shared pointer to the Texture.
-	//	auto it = resourceMap.find(guid);
-	//	if (it != resourceMap.end()) {
-	//		return it->second;
-	//	}
-	//	else {
-	//		return LoadTexture(guid, filePath.c_str());
-	//	}
-	//}
+		// Return a shared pointer to the resource (Font).
+		auto it = resourceMap.find(guid);
+		if (it != resourceMap.end()) {
+			return it->second;
+		}
+		else {
+			return LoadFontResource(guid, filePath, fontSize);
+		}
+	}
 
 	template <typename T>
 	void UnloadResource(const std::string& assetPath) {
@@ -111,15 +114,16 @@ private:
 		return nullptr;
 	}
 
-	//std::shared_ptr<Texture> LoadTexture(const GUID_128& guid, const char* assetPath) {
-	//	std::shared_ptr<Texture> texture = std::make_shared<Texture>();
-	//	if (texture->LoadResource(assetPath)) {
-	//		auto& resourceMap = GetResourceMap<Texture>();
-	//		resourceMap[guid] = texture;
-	//		return texture;
-	//	}
+	std::shared_ptr<Font> LoadFontResource(const GUID_128& guid, const std::string& assetPath, unsigned int fontSize) {
+		std::shared_ptr<Font> font = std::make_shared<Font>();
+		if (font->LoadResource(assetPath, fontSize)) {
+			auto& resourceMap = GetResourceMap<Font>();
+			resourceMap[guid] = font;
+			std::cout << "[ResourceManager] Loaded resource for: " << assetPath << std::endl;
+			return font;
+		}
 
-	//	std::cerr << "[ResourceManager] ERROR: Failed to load texture: " << assetPath << std::endl;
-	//	return nullptr;
-	//}
+		std::cerr << "[ResourceManager] ERROR: Failed to load resource: " << assetPath << std::endl;
+		return nullptr;
+	}
 };
