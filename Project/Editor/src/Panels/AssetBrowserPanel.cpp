@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <iostream>
 #include <cstring>
+#include "FileWatch.hpp"
 
 #ifdef _WIN32
 #include <windows.h>
@@ -15,11 +16,6 @@ AssetBrowserPanel::AssetInfo::AssetInfo(const std::string& path, const GUID_128&
     : filePath(path), guid(g), isDirectory(isDir) {
     fileName = std::filesystem::path(path).filename().string();
     extension = std::filesystem::path(path).extension().string();
-    try {
-        lastWriteTime = std::filesystem::last_write_time(path);
-    } catch (...) {
-        lastWriteTime = std::filesystem::file_time_type{};
-    }
 }
 
 AssetBrowserPanel::AssetBrowserPanel() 
@@ -27,7 +23,6 @@ AssetBrowserPanel::AssetBrowserPanel()
     , currentDirectory("Resources")
     , rootAssetDirectory("Resources")
     , selectedAssetType(AssetType::All)
-    , isRefreshPending(true)
 {
     // Initialize default GUID for untracked assets
     lastSelectedAsset = GUID_128{0, 0};
@@ -43,13 +38,7 @@ AssetBrowserPanel::~AssetBrowserPanel() {
 }
 
 void AssetBrowserPanel::OnImGuiRender() {
-    if (ImGui::Begin(name.c_str(), &isOpen)) {
-        // Check if refresh is needed
-        if (isRefreshPending) {
-            RefreshAssets();
-            isRefreshPending = false;
-        }
-        
+    if (ImGui::Begin(name.c_str(), &isOpen)) {       
         // Render toolbar
         RenderToolbar();
         ImGui::Separator();
@@ -120,15 +109,10 @@ void AssetBrowserPanel::RenderToolbar() {
     ImGui::SameLine();
     ImGui::SetCursorPosX(ImGui::GetContentRegionAvail().x - 200.0f);
     
-    if (ImGui::Button("Refresh")) {
-        isRefreshPending = true;
-    }
-    
     ImGui::SameLine();
     if (ImGui::Button("New Folder")) {
         std::string newFolderPath = currentDirectory + "/New Folder";
         EnsureDirectoryExists(newFolderPath);
-        isRefreshPending = true;
     }
     
     ImGui::SameLine();
@@ -372,7 +356,6 @@ void AssetBrowserPanel::NavigateToDirectory(const std::string& directory) {
     if (std::filesystem::exists(normalizedPath) && std::filesystem::is_directory(normalizedPath)) {
         currentDirectory = normalizedPath;
         ClearSelection();
-        isRefreshPending = true;
     }
 }
 
@@ -499,7 +482,6 @@ void AssetBrowserPanel::DeleteAsset(const AssetInfo& asset) {
                 std::filesystem::remove(metaFile);
             }
         }
-        isRefreshPending = true;
     } catch (const std::exception& e) {
         std::cerr << "[AssetBrowserPanel] Failed to delete asset: " << e.what() << std::endl;
     }
