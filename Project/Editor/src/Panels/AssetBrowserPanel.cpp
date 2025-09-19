@@ -5,11 +5,20 @@
 #include <algorithm>
 #include <iostream>
 #include <cstring>
+#include <cmath>
+//#include "Asset Manager/AssetManager.hpp"
+#include "Graphics/TextureManager.h"
 
 #ifdef _WIN32
 #include <windows.h>
 #include <shellapi.h>
 #endif
+
+// Thumbnail/grid constants (SCRAMING_SNAKE_CASE)
+static constexpr float THUMBNAIL_BASE_SIZE = 96.0f;
+static constexpr float THUMBNAIL_MIN_SIZE = 48.0f;
+static constexpr float THUMBNAIL_PADDING = 8.0f;
+static constexpr float LABEL_HEIGHT = 18.0f;
 
 AssetBrowserPanel::AssetInfo::AssetInfo(const std::string& path, const GUID_128& g, bool isDir)
     : filePath(path), guid(g), isDirectory(isDir) {
@@ -75,7 +84,8 @@ void AssetBrowserPanel::ProcessFileChange(const std::string& relativePath, const
     std::cout << "[AssetBrowserPanel] File " << eventStr << ": " << relativePath << std::endl;
 
     // Build full path from rootAssetDirectory + relativePath
-    const std::string fullPath = rootAssetDirectory + "/" + relativePath;
+    std::filesystem::path fullPathPath = std::filesystem::path(rootAssetDirectory) / relativePath;
+    const std::string fullPath = fullPathPath.generic_string();
     std::filesystem::path fullPathObj(fullPath);
     try {
         if (std::filesystem::exists(fullPathObj) && std::filesystem::is_directory(fullPathObj)) {
@@ -98,6 +108,9 @@ void AssetBrowserPanel::ProcessFileChange(const std::string& relativePath, const
     // Handle different file events
     switch (event) {
     case filewatch::Event::added:
+        if (!MetaFilesManager::MetaFileExists(fullPath)) {
+            MetaFilesManager::GenerateMetaFile(fullPath);
+        }
         QueueRefresh();
         break;
     case filewatch::Event::renamed_new:
@@ -141,7 +154,7 @@ void AssetBrowserPanel::QueueRefresh() {
 void AssetBrowserPanel::OnImGuiRender() {
     // Check if refresh is needed (from file watcher)
     if (refreshPending.exchange(false)) {
-		std::cout << "[AssetBrowserPanel] Refreshing assets due to file changes." << std::endl;
+        std::cout << "[AssetBrowserPanel] Refreshing assets due to file changes." << std::endl;
         RefreshAssets();
     }
 
@@ -320,79 +333,101 @@ void AssetBrowserPanel::RenderDirectoryNode(const std::filesystem::path& directo
 }
 
 void AssetBrowserPanel::RenderAssetGrid() {
-    // Header with current directory name
     ImGui::Text("Assets in: %s", GetRelativePath(currentDirectory).c_str());
     ImGui::Separator();
 
-    // Show assets in a simple list format
-    for (const auto& asset : currentAssets) {
-        if (PassesFilter(asset)) {
-            bool isSelected = IsAssetSelected(asset.guid);
+    // Use content region width as the source of truth
+    float avail = ImGui::GetContentRegionAvail().x;
+    float pad = THUMBNAIL_PADDING;
 
-            // Show folder or file icon
-            if (asset.isDirectory) {
-                ImGui::Text("[DIR]  %s", asset.fileName.c_str());
-            }
-            else {
-                std::string typeStr;
-                AssetType type = GetAssetTypeFromExtension(asset.extension);
-                switch (type) {
-                case AssetType::Textures: typeStr = "[IMG]"; break;
-                case AssetType::Models: typeStr = "[MDL]"; break;
-                case AssetType::Shaders: typeStr = "[SHD]"; break;
-                case AssetType::Audio: typeStr = "[AUD]"; break;
-                case AssetType::Fonts: typeStr = "[FNT]"; break;
-                default: typeStr = "[FILE]"; break;
-                }
-                ImGui::Text("%s  %s", typeStr.c_str(), asset.fileName.c_str());
-            }
-
-            // Make the whole line selectable
-            if (ImGui::IsItemClicked()) {
-                bool multiSelect = ImGui::GetIO().KeyCtrl;
-                SelectAsset(asset.guid, multiSelect);
-            }
-
-            // Highlight selected items
-            if (isSelected) {
-                ImDrawList* drawList = ImGui::GetWindowDrawList();
-                ImVec2 rectMin = ImGui::GetItemRectMin();
-                ImVec2 rectMax = ImGui::GetItemRectMax();
-                drawList->AddRectFilled(rectMin, rectMax, IM_COL32(100, 150, 255, 50));
-            }
-
-            // Double-click to navigate/open
-            if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left)) {
-                if (asset.isDirectory) {
-                    NavigateToDirectory(asset.filePath);
-                }
-                else {
-                    std::cout << "[AssetBrowserPanel] Opening asset: " << asset.fileName << std::endl;
-                }
-            }
-
-            // Context menu
-            if (ImGui::IsItemHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Right)) {
-                SelectAsset(asset.guid, false);
-                ImGui::OpenPopup("AssetContextMenu");
-            }
-        }
+    // Compute columns from available width using the base thumbnail size,
+    // then compute an even thumbnail size so items fill the row.
+    int cols = std::max(1, static_cast<int>(std::floor((avail + pad) / (THUMBNAIL_BASE_SIZE + pad))));
+    float thumb = (avail - pad * (cols - 1)) / static_cast<float>(cols);
+    if (thumb < THUMBNAIL_MIN_SIZE) {
+        thumb = THUMBNAIL_MIN_SIZE;
+        cols = std::max(1, static_cast<int>(std::floor((avail + pad) / (thumb + pad))));
+        thumb = (avail - pad * (cols - 1)) / static_cast<float>(cols);
     }
 
-    // Context menu popup
-    if (ImGui::BeginPopup("AssetContextMenu")) {
-        // Find the selected asset for context menu
-        AssetInfo* contextAsset = nullptr;
-        for (auto& asset : currentAssets) {
-            if (IsAssetSelected(asset.guid)) {
-                contextAsset = &asset;
-                break;
-            }
+    int index = 0;
+    for (const auto& asset : currentAssets) {
+        if (!PassesFilter(asset)) continue;
+
+        ImGui::BeginGroup();
+        ImGui::PushID(asset.filePath.c_str());
+
+        // Hitbox: thumbnail + label
+        ImGui::InvisibleButton("cell", ImVec2(thumb, thumb + LABEL_HEIGHT));
+        bool hovered = ImGui::IsItemHovered();
+        bool clicked = ImGui::IsItemClicked();
+
+        ImDrawList* dl = ImGui::GetWindowDrawList();
+        ImVec2 rectMin = ImGui::GetItemRectMin();
+        ImVec2 rectMax = ImGui::GetItemRectMax();
+        ImVec2 imgMin = rectMin;
+        ImVec2 imgMax = ImVec2(rectMin.x + thumb, rectMin.y + thumb);
+
+        // Thumbnail fallback
+        ImU32 bg = IM_COL32(80, 80, 80, 255);
+        ImU32 border = IM_COL32(100, 100, 100, 255);
+        dl->AddRectFilled(imgMin, imgMax, bg, 4.0f);
+        dl->AddRect(imgMin, imgMax, border, 4.0f);
+
+        // Centered short name inside thumbnail
+        std::string name = asset.fileName;
+        const size_t maxChars = 12;
+        if (name.size() > maxChars) name = name.substr(0, maxChars - 3) + "...";
+        ImVec2 textSize = ImGui::CalcTextSize(name.c_str());
+        ImVec2 textPos(imgMin.x + (thumb - textSize.x) * 0.5f, imgMin.y + (thumb - textSize.y) * 0.5f);
+        dl->AddText(textPos, IM_COL32(220, 220, 220, 255), name.c_str());
+
+        // Label below thumbnail
+        ImGui::SetCursorScreenPos(ImVec2(imgMin.x, imgMax.y));
+        ImGui::PushTextWrapPos(ImGui::GetCursorPosX() + thumb);
+        ImGui::TextWrapped("%s", asset.fileName.c_str());
+        ImGui::PopTextWrapPos();
+
+        // Selection / activation
+        if (clicked) {
+            SelectAsset(asset.guid, true);
         }
 
-        if (contextAsset) {
-            ShowAssetContextMenu(*contextAsset);
+        bool selected = IsAssetSelected(asset.guid);
+        if (selected) {
+            dl->AddRectFilled(rectMin, rectMax, IM_COL32(100, 150, 255, 50));
+            dl->AddRect(rectMin, rectMax, IM_COL32(100, 150, 255, 120), 4.0f, ImDrawFlags_RoundCornersAll, 2.0f);
         }
+        else if (hovered) {
+            dl->AddRect(rectMin, rectMax, IM_COL32(255, 255, 255, 30), 4.0f, ImDrawFlags_RoundCornersAll, 1.0f);
+        }
+
+        if (hovered && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left)) {
+            if (asset.isDirectory) NavigateToDirectory(asset.filePath);
+            else std::cout << "[AssetBrowserPanel] Opening asset: "
+                << "GUID(high=" << asset.guid.high << ", low=" << asset.guid.low << ")"
+                << std::endl;
+        }
+
+        if (hovered && ImGui::IsMouseClicked(ImGuiMouseButton_Right)) {
+            SelectAsset(asset.guid, false);
+            ImGui::OpenPopup("AssetContextMenu");
+        }
+
+        ImGui::PopID();
+        ImGui::EndGroup();
+
+        ++index;
+        if ((index % cols) != 0) ImGui::SameLine(0.0f, pad);
+    }
+
+    // Context menu
+    if (ImGui::BeginPopup("AssetContextMenu")) {
+        AssetInfo* contextAsset = nullptr;
+        for (auto& a : currentAssets) {
+            if (IsAssetSelected(a.guid)) { contextAsset = &a; break; }
+        }
+        if (contextAsset) ShowAssetContextMenu(*contextAsset);
         ImGui::EndPopup();
     }
 }
@@ -406,7 +441,8 @@ void AssetBrowserPanel::RefreshAssets() {
         }
 
         for (const auto& entry : std::filesystem::directory_iterator(currentDirectory)) {
-            std::string filePath = entry.path().string();
+            // Use normalized generic_string() for map lookups and storage
+            std::string filePath = entry.path().generic_string();
             bool isDirectory = entry.is_directory();
 
             GUID_128 guid{ 0, 0 };
@@ -423,7 +459,7 @@ void AssetBrowserPanel::RefreshAssets() {
                     continue;
                 }
 
-                // Get or generate GUID
+                // Get or generate GUID using normalized filePath
                 if (MetaFilesManager::MetaFileExists(filePath)) {
                     guid = MetaFilesManager::GetGUID128FromAssetFile(filePath);
                 }
@@ -432,11 +468,11 @@ void AssetBrowserPanel::RefreshAssets() {
                 }
             }
             else {
-                // For directories, generate a simple hash-based GUID
+                // For directories, generate a simple hash-based GUID using normalized path
                 std::hash<std::string> hasher;
                 size_t hash = hasher(filePath);
-                guid.high = hash;
-                guid.low = hash >> 32;
+                guid.high = static_cast<uint64_t>(hash);
+                guid.low = static_cast<uint64_t>(hash >> 32);
             }
 
             currentAssets.emplace_back(filePath, guid, isDirectory);
@@ -463,7 +499,8 @@ void AssetBrowserPanel::NavigateToDirectory(const std::string& directory) {
 
     if (std::filesystem::exists(normalizedPath) && std::filesystem::is_directory(normalizedPath)) {
         currentDirectory = normalizedPath;
-        ClearSelection();
+        selectedAssets.clear();
+        lastSelectedAsset = GUID_128{ 0, 0 };
         RefreshAssets(); // Immediate refresh when navigating
     }
 }
@@ -539,11 +576,6 @@ void AssetBrowserPanel::SelectAsset(const GUID_128& guid, bool multiSelect) {
         selectedAssets.insert(guid);
         lastSelectedAsset = guid;
     }
-}
-
-void AssetBrowserPanel::ClearSelection() {
-    selectedAssets.clear();
-    lastSelectedAsset = GUID_128{ 0, 0 };
 }
 
 bool AssetBrowserPanel::IsAssetSelected(const GUID_128& guid) const {
