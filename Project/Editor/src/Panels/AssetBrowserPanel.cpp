@@ -350,6 +350,9 @@ void AssetBrowserPanel::RenderAssetGrid() {
         thumb = (avail - pad * (cols - 1)) / static_cast<float>(cols);
     }
 
+    bool anyItemClickedInGrid = false;
+    ImGuiIO& io = ImGui::GetIO();
+
     int index = 0;
     for (const auto& asset : currentAssets) {
         if (!PassesFilter(asset)) continue;
@@ -390,7 +393,9 @@ void AssetBrowserPanel::RenderAssetGrid() {
 
         // Selection / activation
         if (clicked) {
-            SelectAsset(asset.guid, true);
+            bool ctrl = io.KeyCtrl;
+            SelectAsset(asset.guid, ctrl);
+            anyItemClickedInGrid = true;
         }
 
         bool selected = IsAssetSelected(asset.guid);
@@ -399,7 +404,7 @@ void AssetBrowserPanel::RenderAssetGrid() {
             dl->AddRect(rectMin, rectMax, IM_COL32(100, 150, 255, 120), 4.0f, ImDrawFlags_RoundCornersAll, 2.0f);
         }
         else if (hovered) {
-            dl->AddRect(rectMin, rectMax, IM_COL32(255, 255, 255, 30), 4.0f, ImDrawFlags_RoundCornersAll, 1.0f);
+            dl->AddRect(rectMin, rectMax, IM_COL32(255, 255, 255, 30), 4.0f, ImDrawFlags_RoundCornersAll, 2.0f);
         }
 
         if (hovered && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left)) {
@@ -419,6 +424,11 @@ void AssetBrowserPanel::RenderAssetGrid() {
 
         ++index;
         if ((index % cols) != 0) ImGui::SameLine(0.0f, pad);
+    }
+
+    if (ImGui::IsMouseClicked(ImGuiMouseButton_Left) && !anyItemClickedInGrid && ImGui::IsWindowHovered()) {
+        selectedAssets.clear();
+        lastSelectedAsset = GUID_128{ 0, 0 };
     }
 
     // Context menu
