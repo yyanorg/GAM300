@@ -40,7 +40,6 @@ void ParallelSystemOrchestrator::Update() {
         frameChannel.Submit([&] {
             // Animation touches Bone Entities
             PROFILE_PLOT_TIMED("Animation",       mainECS.animationSystem->Update());
-            PROFILE_PLOT_TIMED("SpriteAnimation", mainECS.spriteAnimationSystem->Update());
             });
     }
 
@@ -73,6 +72,12 @@ void ParallelSystemOrchestrator::Update() {
     // matrices. Transform must still run after Physics/Animation.
     PROFILE_PLOT_TIMED("UIAnchor", mainECS.uiAnchorSystem->Update());
     PROFILE_PLOT_TIMED("Transform", mainECS.transformSystem->Update());
+
+    // Sprite animation swaps frame textures and loads them lazily through
+    // ResourceManager::GetResourceFromGUID<Texture> -> Texture::LoadResource
+    // -> glGenTextures, so it belongs on the main thread with the other
+    // GL-touching systems. It segfaulted there on a worker.
+    PROFILE_PLOT_TIMED("SpriteAnimation", mainECS.spriteAnimationSystem->Update());
 
     // OpenGL calls must be on main thread
     PROFILE_PLOT_TIMED("Video", mainECS.videoSystem->Update((float)TimeManager::GetDeltaTime()));
@@ -114,31 +119,48 @@ void ParallelSystemOrchestrator::Draw() {
     //    ecs.PreWarmActiveHierarchyCache();
     //}
 
-    frameChannel.Submit([&] {
-        auto& ecs = ECSRegistry::GetInstance().GetActiveECSManager();
-        PROFILE_PLOT_TIMED("Model", ecs.modelSystem->Update());
-        });
     //frameChannel.Submit([&] {
     //    auto& ecs = ECSRegistry::GetInstance().GetActiveECSManager();
     //    PROFILE_PLOT_TIMED("Text", ecs.textSystem->Update());
     //    });
-    frameChannel.Submit([&] {
-        auto& ecs = ECSRegistry::GetInstance().GetActiveECSManager();
-        PROFILE_PLOT_TIMED("Sprite", ecs.spriteSystem->Update());
-        });
     //frameChannel.Submit([&] {
     //    auto& ecs = ECSRegistry::GetInstance().GetActiveECSManager();
     //    PROFILE_PLOT_TIMED("Particle", ecs.particleSystem->Update());
     //    });
-    frameChannel.Submit([&] {
-        auto& ecs = ECSRegistry::GetInstance().GetActiveECSManager();
-        PROFILE_PLOT_TIMED("DebugDraw", ecs.debugDrawSystem->Update());
-        });
 
     {
         PROFILE_SCOPED("DrawJoin");
         frameChannel.join(); // waits for actual work to finish
     }
+
+    // ---------------------------------------------------------------------
+    // Everything below runs on the main thread because it can CREATE OpenGL
+    // objects. The GL context is current on the main thread only, so making a
+    // GL call from a worker is undefined behaviour: on this machine it
+    // segfaulted inside libGLdispatch, and when it happened to survive it left
+    // the resource uncreated, so the geometry silently failed to draw - a black
+    // scene with the UI still on top. Crash or black screen was a race, which
+    // is why it looked intermittent.
+    //
+    // These systems all reach GL through LAZY creation on first use, which is
+    // why it only bites on the frame an asset is first needed:
+    //   Model      -> InstancingManager::TryAddInstance -> GetOrCreateBatch
+    //                 -> InstanceBatch::Initialize -> VBO::InitializeBuffer
+    //                 -> glGenBuffers
+    //   Sprite     -> ResourceManager::GetResourceFromGUID<Texture>/<Shader>
+    //   DebugDraw  -> ResourceManager::GetResource<Shader>
+    //   Text / Fog / Particle -> lazy VAO/VBO/EBO init
+    //
+    // Before adding a system back to the parallel channel above, check it
+    // cannot reach ResourceManager::GetResource/LoadResource or any gl* call.
+    // Animation, Physics, CharacterController and Audio were checked and are
+    // clean, which is why they are still parallel.
+    // ---------------------------------------------------------------------
+    PROFILE_PLOT_TIMED("Model", ecs.modelSystem->Update());
+
+    PROFILE_PLOT_TIMED("Sprite", ecs.spriteSystem->Update());
+
+    PROFILE_PLOT_TIMED("DebugDraw", ecs.debugDrawSystem->Update());
 
 	// Text system runs on the main thread (lazy init may create OpenGL VAO/VBO/EBO)
     PROFILE_PLOT_TIMED("Text", ecs.textSystem->Update());
