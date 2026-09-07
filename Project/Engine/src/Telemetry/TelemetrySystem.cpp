@@ -163,6 +163,13 @@ namespace {
         return present;
     }
 
+    // Guards the crosshair cast: a zero or non-finite forward is meaningless
+    // and Jolt will not thank us for it.
+    bool phys_ok(double x, double y, double z) {
+        const double n = x * x + y * y + z * z;
+        return std::isfinite(n) && n > 1e-6;
+    }
+
     bool GlobalNumber(lua_State* L, const char* name, double& out) {
         if (!L) return false;
         lua_getglobal(L, name);
@@ -519,14 +526,51 @@ namespace Telemetry {
             line += "]";
         }
         double px = 0.0, py = 0.0, pz = 0.0;
-        if (GlobalNumber(L, "CAMERA_POS_X", px)
-            && GlobalNumber(L, "CAMERA_POS_Y", py)
-            && GlobalNumber(L, "CAMERA_POS_Z", pz)) {
+        const bool havePos = GlobalNumber(L, "CAMERA_POS_X", px)
+                             && GlobalNumber(L, "CAMERA_POS_Y", py)
+                             && GlobalNumber(L, "CAMERA_POS_Z", pz);
+        if (havePos) {
             line += ",\"camera_pos\":[";
             AppendNumber(line, px); line += ",";
             AppendNumber(line, py); line += ",";
             AppendNumber(line, pz);
             line += "]";
+        }
+
+        // What the crosshair is actually on.
+        //
+        // This is the quantity that decides whether a hook connects, and it
+        // is not the same as where the camera is pointed. camera_chain_aim.lua
+        // raycasts from the camera along its forward, and publishes the hit
+        // point as the chain's world target; ChainBootstrap then fires from
+        // the player's HAND toward that point. So a shot lands on an enemy
+        // only when the camera ray strikes the enemy's collider. A ray that
+        // passes a few centimetres over it takes its world target from the
+        // wall eight units behind, and the chain flies to that wall instead,
+        // which is exactly what a dozen failed hooks on the second statue
+        // room flyer were doing.
+        if (havePos && phys_ok(fx, fy, fz)) {
+            PhysicsSystem* phys = PhysicsSystemWrappers::g_PhysicsSystem;
+            if (phys) {
+                const auto hit = phys->Raycast(Vector3D(static_cast<float>(px),
+                                                        static_cast<float>(py),
+                                                        static_cast<float>(pz)),
+                                               Vector3D(static_cast<float>(fx),
+                                                        static_cast<float>(fy),
+                                                        static_cast<float>(fz)),
+                                               100.0f);
+                line += ",\"crosshair\":";
+                if (hit.hit) {
+                    line += "{\"dist\":"; AppendNumber(line, hit.distance);
+                    line += ",\"x\":"; AppendNumber(line, hit.hitPoint.x);
+                    line += ",\"y\":"; AppendNumber(line, hit.hitPoint.y);
+                    line += ",\"z\":"; AppendNumber(line, hit.hitPoint.z);
+                    line += ",\"entity\":"; line += std::to_string(hit.entityId);
+                    line += "}";
+                } else {
+                    line += "null";
+                }
+            }
         }
 
         line += ",\"player\":";
