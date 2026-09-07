@@ -19,6 +19,7 @@
 
 #include "Engine.h"
 #include "Logging.hpp"
+#include "Telemetry/TelemetrySystem.hpp"
 
 #include <WindowManager.hpp>
 #include <Input/InputManager.h>
@@ -619,6 +620,8 @@ bool Engine::Initialize() {
 		}
 	}*/
 
+	Telemetry::Initialise();
+
 	ENGINE_LOG_INFO("Engine initialization completed successfully");
 	
 #if !defined(NDEBUG) || defined(_WIN32)
@@ -759,6 +762,10 @@ void Engine::Update() {
         PROFILE_SCOPED("Engine::UpdateScene");
         SceneManager::GetInstance().UpdateScene(TimeManager::GetDeltaTime()); // REPLACE WITH DT LATER
 	}
+
+    // Sampled after the scene has run so the values written are the ones
+    // this frame actually used. Returns immediately unless GAM300_TELEMETRY=1.
+    Telemetry::Sample();
 }
 
 void Engine::StartDraw() {
@@ -861,6 +868,8 @@ void Engine::EndDraw() {
 void Engine::Shutdown() {
 
 	ENGINE_LOG_INFO("Engine shutdown started");
+
+	Telemetry::Shutdown();
 
 	// Shutdown GameSettings first (saves any dirty settings)
 	GameSettingsManager::GetInstance().Shutdown();
