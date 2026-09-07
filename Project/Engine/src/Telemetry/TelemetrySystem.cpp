@@ -172,6 +172,33 @@ namespace {
         return std::isfinite(n) && n > 1e-6;
     }
 
+    // Reads instance[table][key].field where key is a number, for
+    // camera_follow's _lockonHitCounts, which is keyed by entity id and holds
+    // { count, firstHitAt } per enemy. Needed to tell a lock-on switch that
+    // the policy allows from one it does not: a switch is legitimate either
+    // after the engaged enemy goes quiet, or once another has been hit twice
+    // inside the window, and without the count those two look identical.
+    bool FieldTableEntryNumber(lua_State* L, int instanceRef, const char* table,
+                               double key, const char* field, double& out) {
+        if (!PushInstance(L, instanceRef)) return false;
+        lua_getfield(L, -1, table);
+        if (!lua_istable(L, -1)) {
+            lua_pop(L, 2);
+            return false;
+        }
+        lua_pushnumber(L, key);
+        lua_gettable(L, -2);
+        if (!lua_istable(L, -1)) {
+            lua_pop(L, 3);
+            return false;
+        }
+        lua_getfield(L, -1, field);
+        const bool ok = lua_isnumber(L, -1) != 0;
+        if (ok) out = static_cast<double>(lua_tonumber(L, -1));
+        lua_pop(L, 4);
+        return ok;
+    }
+
     bool GlobalNumber(lua_State* L, const char* name, double& out) {
         if (!L) return false;
         lua_getglobal(L, name);
@@ -693,6 +720,25 @@ namespace Telemetry {
                 line += ",\"entity\":";
                 if (haveEntity) line += std::to_string(static_cast<long long>(lockEntity));
                 else line += "null";
+
+                // The clock, when the engaged enemy was last hit, and how many
+                // hits the locked enemy has accumulated. Together these say
+                // whether a switch took the quiet-delay path or the
+                // repeat-hit path, which is the difference between the camera
+                // being stolen and the player deliberately changing target.
+                double clock = 0.0, engagedAt = 0.0;
+                if (FieldNumber(L, cameraRef, "_lockonClock", clock)) {
+                    line += ",\"clock\":"; AppendNumber(line, clock, 2);
+                }
+                if (FieldNumber(L, cameraRef, "_lockonEngagedAt", engagedAt)) {
+                    line += ",\"engaged_at\":"; AppendNumber(line, engagedAt, 2);
+                }
+                double hits = 0.0;
+                if (haveEntity && lockEntity >= 0
+                    && FieldTableEntryNumber(L, cameraRef, "_lockonHitCounts",
+                                             lockEntity, "count", hits)) {
+                    line += ",\"hits\":"; AppendNumber(line, hits, 0);
+                }
                 line += "}";
             }
         }
