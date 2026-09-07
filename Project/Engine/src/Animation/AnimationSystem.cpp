@@ -2,6 +2,7 @@
 #include "pch.h"
 #include "Animation/AnimationSystem.hpp"
 #include "Animation/AnimatorController.hpp"
+#include "Asset Manager/AssetManager.hpp"
 #include "ECS/ECSRegistry.hpp"
 #include "ECS/ActiveComponent.hpp"
 #include "TimeManager.hpp"
@@ -63,6 +64,28 @@ void AnimationSystem::InitialiseAnimationComponent(Entity entity, ModelRenderCom
 				const auto& ctrlClipPaths = controller.GetClipPaths();
 				animComp.clipPaths = ctrlClipPaths;
 				animComp.clipCount = static_cast<int>(ctrlClipPaths.size());
+
+				// Re-derive the GUIDs from those same paths.
+				//
+				// clipGUIDs is serialised per entity in the prefab or scene,
+				// while clipPaths is taken from the controller here. Once a
+				// controller is edited - a clip added, removed or reordered -
+				// the two no longer describe the same list, and
+				// LoadClipsFromPaths resolves clip i by clipGUIDs[i] BEFORE
+				// falling back to clipPaths[i]. The stale GUID therefore wins
+				// and every state silently plays another state's clip, which is
+				// why enemies played their attack animation while idle or
+				// walking. Deriving the GUIDs from the paths we just adopted
+				// keeps the two lists describing the same clips by
+				// construction. A path with no .meta yields a zero GUID, which
+				// makes the loader fall back to the path exactly as before.
+				animComp.clipGUIDs.clear();
+				animComp.clipGUIDs.reserve(ctrlClipPaths.size());
+				for (const auto& clipPath : ctrlClipPaths) {
+					animComp.clipGUIDs.push_back(
+						AssetManager::GetInstance().GetGUID128FromAssetMeta(
+							NormalizeAnimationAssetPath(clipPath)));
+				}
 
 				ENGINE_PRINT("[AnimationSystem] Loaded controller: ", animComp.controllerPath, " with ", ctrlClipPaths.size(), " clips\n");
 			}
