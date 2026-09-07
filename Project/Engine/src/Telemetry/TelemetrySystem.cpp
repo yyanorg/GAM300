@@ -16,6 +16,7 @@ extern "C" {
 }
 
 #include <chrono>
+#include <cctype>
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
@@ -139,6 +140,23 @@ namespace {
         if (ok) out = lua_tostring(L, -1);
         lua_pop(L, 3);
         return ok;
+    }
+
+    // Mirrors EnemyAI.lua's IsFlying(): strip quotes and whitespace, fold
+    // case, compare. One enemy in 04_Level has its EnemyType authored as the
+    // literal string "\"Flying\"", quote characters included. The game copes
+    // because IsFlying normalises, but a consumer comparing the raw string
+    // classifies that enemy as a ground unit. A static scan made exactly that
+    // mistake and concluded the statue room had one flying enemy when it has
+    // two, so normalise here rather than leave the trap in place downstream.
+    bool IsFlyingType(const std::string& raw) {
+        std::string t;
+        t.reserve(raw.size());
+        for (const char c : raw) {
+            if (c == '"' || std::isspace(static_cast<unsigned char>(c))) continue;
+            t += static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
+        }
+        return t == "flying";
     }
 
     // Yaw about Y, in degrees, from the world rotation quaternion.
@@ -310,6 +328,8 @@ namespace Telemetry {
             if (FieldString(L, a.instanceRef, "EnemyType", type)) {
                 line += ",\"type\":";
                 AppendEscaped(line, type);
+                line += ",\"flying\":";
+                line += IsFlyingType(type) ? "true" : "false";
             }
             double hp = 0.0;
             if (FieldNumber(L, a.instanceRef, "health", hp)) {
