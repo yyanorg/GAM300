@@ -51,6 +51,7 @@ namespace {
     constexpr const char* kMinibossScript = "MinibossAI";
     constexpr const char* kInputScript = "InputInterpreter";
     constexpr const char* kChainScript = "ChainBootstrap";
+    constexpr const char* kCameraScript = "camera_follow";
 
     std::string BaseName(const std::string& path) {
         const size_t slash = path.find_last_of("/\\");
@@ -441,6 +442,8 @@ namespace Telemetry {
         bool haveInput = false;
         int chainRef = LUA_NOREF;
         bool haveChain = false;
+        int cameraRef = LUA_NOREF;
+        bool haveCamera = false;
         std::vector<std::pair<Actor, const char*>> enemies;  // actor, script kind
 
         for (const Entity entity : ecs.GetAllEntities()) {
@@ -459,6 +462,7 @@ namespace Telemetry {
                 else if (base == kMinibossScript) kind = kMinibossScript;
                 else if (base == kInputScript)    kind = kInputScript;
                 else if (base == kChainScript)    kind = kChainScript;
+                else if (base == kCameraScript)   kind = kCameraScript;
                 else continue;
                 if (sd.instanceCreated) instanceRef = sd.instanceId;
                 break;
@@ -475,6 +479,11 @@ namespace Telemetry {
             if (kind == kChainScript) {
                 chainRef = instanceRef;
                 haveChain = true;
+                continue;
+            }
+            if (kind == kCameraScript) {
+                cameraRef = instanceRef;
+                haveCamera = true;
                 continue;
             }
 
@@ -662,6 +671,28 @@ namespace Telemetry {
                 line += locked ? "true" : "false";
                 line += ",\"wall\":";
                 line += snapped ? "true" : "false";
+                line += "}";
+            }
+        }
+
+        // Which enemy the camera has locked onto, if any. Two open reports
+        // are about this: the camera swinging between enemies mid-fight, and
+        // the camera locking onto nothing or onto a corpse. Both are claims
+        // about how this value changes over time, and neither can be checked
+        // from outside without it. Reported next to every enemy's dead flag,
+        // so "locked onto an enemy that is already dead" is a comparison
+        // rather than an impression.
+        if (haveCamera) {
+            bool lockActive = false;
+            const bool haveActive = FieldBool(L, cameraRef, "_lockonActive", lockActive);
+            double lockEntity = -1.0;
+            const bool haveEntity = FieldNumber(L, cameraRef, "_lockonEntityId", lockEntity);
+            if (haveActive || haveEntity) {
+                line += ",\"lockon\":{\"active\":";
+                line += lockActive ? "true" : "false";
+                line += ",\"entity\":";
+                if (haveEntity) line += std::to_string(static_cast<long long>(lockEntity));
+                else line += "null";
                 line += "}";
             }
         }
