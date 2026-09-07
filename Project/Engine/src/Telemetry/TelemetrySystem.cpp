@@ -9,6 +9,7 @@
 #include "Scene/SceneManager.hpp"
 #include "TimeManager.hpp"
 #include "Scripting.h"
+#include "Script/LuaBindableSystems.hpp"
 
 extern "C" {
 #include "lua.h"
@@ -33,6 +34,8 @@ namespace {
     double g_accumulator = 0.0;
     unsigned long long g_frame = 0;
     std::string g_lastScene;
+    double g_walkmapPeriod = 0.0;   // seconds; 0 disables
+    double g_walkmapAccum = 0.0;
     std::chrono::steady_clock::time_point g_start;
 
     // Sample rate. Fast enough to close a movement loop, slow enough that
@@ -46,6 +49,7 @@ namespace {
     constexpr const char* kEnemyScript = "EnemyAI";
     constexpr const char* kMinibossScript = "MinibossAI";
     constexpr const char* kInputScript = "InputInterpreter";
+    constexpr const char* kChainScript = "ChainBootstrap";
 
     std::string BaseName(const std::string& path) {
         const size_t slash = path.find_last_of("/\\");
@@ -127,6 +131,45 @@ namespace {
         if (ok) out = lua_tostring(L, -1);
         lua_pop(L, 2);
         return ok;
+    }
+
+    // Reads instance[outer][inner] as a number, for controller.chainLen.
+    bool FieldNestedNumber(lua_State* L, int instanceRef, const char* outer, const char* inner, double& out) {
+        if (!PushInstance(L, instanceRef)) return false;
+        lua_getfield(L, -1, outer);
+        if (!lua_istable(L, -1)) {
+            lua_pop(L, 2);
+            return false;
+        }
+        lua_getfield(L, -1, inner);
+        const bool ok = lua_isnumber(L, -1) != 0;
+        if (ok) out = static_cast<double>(lua_tonumber(L, -1));
+        lua_pop(L, 3);
+        return ok;
+    }
+
+    // Reads instance[outer][inner] as a boolean, for controller.isExtending.
+    bool FieldNestedBool(lua_State* L, int instanceRef, const char* outer, const char* inner, bool& out) {
+        if (!PushInstance(L, instanceRef)) return false;
+        lua_getfield(L, -1, outer);
+        if (!lua_istable(L, -1)) {
+            lua_pop(L, 2);
+            return false;
+        }
+        lua_getfield(L, -1, inner);
+        const bool present = !lua_isnil(L, -1);
+        if (present) out = lua_toboolean(L, -1) != 0;
+        lua_pop(L, 3);
+        return present;
+    }
+
+    bool GlobalBool(lua_State* L, const char* name, bool& out) {
+        if (!L) return false;
+        lua_getglobal(L, name);
+        const bool present = !lua_isnil(L, -1);
+        if (present) out = lua_toboolean(L, -1) != 0;
+        lua_pop(L, 1);
+        return present;
     }
 
     // Reads instance[outer][inner] as a string, for fsm.currentName.
@@ -224,6 +267,65 @@ namespace {
         g_out.flush();
     }
 
+    // A local height map, sampled by casting rays straight down on a grid
+    // around the player.
+    //
+    // This exists because neither the scene file nor the engine's own nav
+    // data can say where the player may walk. NavGrid is a single XZ layer
+    // bounded to +/-20 with one ground height per cell, so it cannot
+    // represent a balcony above a floor and does not reach the statue room
+    // at x 23 to 42 at all. Without geometry, an external driver navigates by
+    // walking into walls and backing off, which is slow and cannot tell a
+    // staircase from a bookshelf.
+    //
+    // A downward ray reports the top of whatever occupies a cell, so a wall
+    // reads as a tall column and a step reads as a small rise. That is enough
+    // to route: a neighbouring cell is reachable when its height differs from
+    // the current one by less than the character's step height.
+    void WriteWalkmap(const Vector3D& centre) {
+        PhysicsSystem* phys = PhysicsSystemWrappers::g_PhysicsSystem;
+        if (!phys) return;
+
+        constexpr int kHalf = 24;          // cells each side of the player
+        constexpr float kCell = 0.5f;      // world units per cell
+        // Start just above head height, not higher. Storeys in this level are
+        // about 3.27 apart, so a ray starting several units up begins above
+        // the ceiling and reports the floor of the storey above instead of
+        // the one the player is standing on.
+        constexpr float kUp = 1.5f;
+        constexpr float kDown = 8.0f;
+
+        std::string line;
+        line.reserve(1 << 15);
+        line += "{\"type\":\"walkmap\",\"cx\":"; AppendNumber(line, centre.x);
+        line += ",\"cz\":"; AppendNumber(line, centre.z);
+        line += ",\"cy\":"; AppendNumber(line, centre.y);
+        line += ",\"cell\":"; AppendNumber(line, kCell, 2);
+        line += ",\"half\":"; line += std::to_string(kHalf);
+        line += ",\"h\":[";
+
+        const Vector3D down(0.0f, -1.0f, 0.0f);
+        bool first = true;
+        for (int gz = -kHalf; gz <= kHalf; ++gz) {
+            for (int gx = -kHalf; gx <= kHalf; ++gx) {
+                const float wx = centre.x + gx * kCell;
+                const float wz = centre.z + gz * kCell;
+                const Vector3D origin(wx, centre.y + kUp, wz);
+                const auto r = phys->Raycast(origin, down, kDown);
+                if (!first) line += ",";
+                first = false;
+                if (r.hit) {
+                    AppendNumber(line, centre.y + kUp - r.distance, 2);
+                } else {
+                    line += "null";
+                }
+            }
+        }
+        line += "]}\n";
+        g_out << line;
+        g_out.flush();
+    }
+
     struct Actor {
         Entity entity = 0;
         std::string name;
@@ -259,6 +361,13 @@ namespace Telemetry {
         if (!flag || std::string(flag) != "1") {
             g_enabled = false;
             return;
+        }
+
+        // Optional, and off by default: sampling a 49x49 grid is 2401 raycasts,
+        // which is cheap at a fraction of a hertz and wasteful every frame.
+        if (const char* wm = std::getenv("GAM300_TELEMETRY_WALKMAP")) {
+            g_walkmapPeriod = std::atof(wm);
+            if (g_walkmapPeriod < 0.0) g_walkmapPeriod = 0.0;
         }
 
         const char* path = std::getenv("GAM300_TELEMETRY_PATH");
@@ -305,6 +414,8 @@ namespace Telemetry {
         bool havePlayer = false;
         int inputRef = LUA_NOREF;
         bool haveInput = false;
+        int chainRef = LUA_NOREF;
+        bool haveChain = false;
         std::vector<std::pair<Actor, const char*>> enemies;  // actor, script kind
 
         for (const Entity entity : ecs.GetAllEntities()) {
@@ -322,6 +433,7 @@ namespace Telemetry {
                 else if (base == kEnemyScript)    kind = kEnemyScript;
                 else if (base == kMinibossScript) kind = kMinibossScript;
                 else if (base == kInputScript)    kind = kInputScript;
+                else if (base == kChainScript)    kind = kChainScript;
                 else continue;
                 if (sd.instanceCreated) instanceRef = sd.instanceId;
                 break;
@@ -333,6 +445,11 @@ namespace Telemetry {
             if (kind == kInputScript) {
                 inputRef = instanceRef;
                 haveInput = true;
+                continue;
+            }
+            if (kind == kChainScript) {
+                chainRef = instanceRef;
+                haveChain = true;
                 continue;
             }
 
@@ -412,6 +529,34 @@ namespace Telemetry {
             }
         }
 
+        // Chain state. Without it the hook is opaque: a shot that never fired,
+        // one that fired into a wall, and one that hit an enemy all look
+        // identical from outside, because the only visible consequence of a
+        // successful hook is a change on the enemy that a miss does not
+        // produce either.
+        if (haveChain) {
+            bool aiming = false;
+            const bool haveAim = GlobalBool(L, "CHAIN_AIM_ACTIVE", aiming);
+            double len = 0.0;
+            const bool haveLen = FieldNestedNumber(L, chainRef, "controller", "chainLen", len);
+            bool extending = false, locked = false, snapped = false;
+            const bool haveExt = FieldNestedBool(L, chainRef, "controller", "isExtending", extending);
+            FieldNestedBool(L, chainRef, "controller", "endPointLocked", locked);
+            FieldNestedBool(L, chainRef, "controller", "_raycastSnapped", snapped);
+            if (haveAim || haveLen || haveExt) {
+                line += ",\"chain\":{\"aiming\":";
+                line += aiming ? "true" : "false";
+                line += ",\"len\":"; AppendNumber(line, len, 2);
+                line += ",\"extending\":";
+                line += extending ? "true" : "false";
+                line += ",\"locked\":";
+                line += locked ? "true" : "false";
+                line += ",\"wall\":";
+                line += snapped ? "true" : "false";
+                line += "}";
+            }
+        }
+
         line += ",\"enemies\":[";
         bool first = true;
         int alive = 0;
@@ -455,6 +600,14 @@ namespace Telemetry {
 
         g_out << line;
         g_out.flush();  // the reader is another process tailing the file
+
+        if (g_walkmapPeriod > 0.0 && havePlayer) {
+            g_walkmapAccum += kSampleInterval;
+            if (g_walkmapAccum >= g_walkmapPeriod) {
+                g_walkmapAccum = 0.0;
+                WriteWalkmap(player.pos);
+            }
+        }
     }
 
 }  // namespace Telemetry
