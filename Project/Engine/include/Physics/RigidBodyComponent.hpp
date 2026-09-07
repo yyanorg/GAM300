@@ -56,6 +56,19 @@ struct RigidBodyComponent {
 	void AddTorque(float xTorque, float yTorque, float zTorque)		{ torqueApplied += Vector3D(xTorque, yTorque, zTorque);}
 	void AddImpulse(float xImpulse, float yImpulse, float zImpulse) { impulseApplied += Vector3D(xImpulse, yImpulse, zImpulse);}
 
+	// linearVel and angularVel are SERIALISED authoring fields, so their stored
+	// value cannot be used to detect a pending request - every body on disk
+	// carries the struct default, and linearVel's default is {0,-9.81,0}.
+	// Gameplay asks for a velocity change through these setters, which raise
+	// velocity_dirty for PhysicsSystem to consume. Setting zero is a valid
+	// request, so the FLAG - not the magnitude - is what marks one as pending.
+	void SetLinearVelocity(float x, float y, float z)  { linearVel  = Vector3D(x, y, z); velocity_dirty = true; }
+	void SetAngularVelocity(float x, float y, float z) { angularVel = Vector3D(x, y, z); velocity_dirty = true; }
+
+	// Runtime only, deliberately NOT reflected: adding a reflected field would
+	// change the on-disk field order for every rigid body in every scene.
+	bool velocity_dirty = false;      // set by the setters above; consumed each fixed step
+
 	bool collideWithStatic = false;		//To be used only by rigidbody Kinematic 
 
 
