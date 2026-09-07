@@ -2073,6 +2073,20 @@ return Component {
         self.health = self.health - (dmg or 1)
         --print(string.format("[EnemyAI] Remaining health: %d", self.health))
 
+        -- Hit feathers are spawned HERE, for every landed hit, rather than from
+        -- GroundHurtState:Enter.
+        --
+        -- Entering the Hurt state is not the same thing as being hit, and
+        -- several hits deliberately never enter it: LIFT/AIR/SLAM/KNOCKUP are
+        -- owned by the juggle system and return before the hurt block below,
+        -- a FEATHER hit sets _hurtTriggeredByFeather which skips that block,
+        -- and a Hooked enemy returns early. Every one of those landed a hit and
+        -- spawned no feathers, which is why it looked random to the player.
+        -- A lethal hit is left alone: the Death states spawn their own.
+        if self.health > 0 then
+            self:SpawnHitFeathers()
+        end
+
         -- Juggle hit types: LIFT/AIR/SLAM are fully owned by the juggle system.
         -- They MUST return after their juggle call — the hurt FSM block below
         -- must NOT run for these types. Running it caused:
@@ -2377,6 +2391,14 @@ return Component {
 
         local len = math.sqrt(lenSq)
         return dx / len, dy / len, dz / len
+    end,
+
+    -- One burst of hit feathers. Called from ApplyHit for every landed,
+    -- non-lethal hit regardless of which reaction path the hit takes.
+    SpawnHitFeathers = function(self)
+        for i = 1, (self.NumFeathersSpawnedPerHit or 0) do
+            self:SpawnFeather(i)
+        end
     end,
 
     SpawnFeather = function(self, featherIndex)
