@@ -45,6 +45,7 @@ namespace {
     constexpr const char* kPlayerScript = "PlayerHealth";
     constexpr const char* kEnemyScript = "EnemyAI";
     constexpr const char* kMinibossScript = "MinibossAI";
+    constexpr const char* kInputScript = "InputInterpreter";
 
     std::string BaseName(const std::string& path) {
         const size_t slash = path.find_last_of("/\\");
@@ -302,6 +303,8 @@ namespace Telemetry {
 
         Actor player;
         bool havePlayer = false;
+        int inputRef = LUA_NOREF;
+        bool haveInput = false;
         std::vector<std::pair<Actor, const char*>> enemies;  // actor, script kind
 
         for (const Entity entity : ecs.GetAllEntities()) {
@@ -318,11 +321,20 @@ namespace Telemetry {
                 if (base == kPlayerScript)        kind = kPlayerScript;
                 else if (base == kEnemyScript)    kind = kEnemyScript;
                 else if (base == kMinibossScript) kind = kMinibossScript;
+                else if (base == kInputScript)    kind = kInputScript;
                 else continue;
                 if (sd.instanceCreated) instanceRef = sd.instanceId;
                 break;
             }
             if (!kind) continue;
+
+            // InputInterpreter is not an actor; it is picked up here only
+            // because this is the one pass over the entity list.
+            if (kind == kInputScript) {
+                inputRef = instanceRef;
+                haveInput = true;
+                continue;
+            }
 
             auto transformOpt = ecs.TryGetComponent<Transform>(entity);
             if (!transformOpt.has_value()) continue;
@@ -380,6 +392,24 @@ namespace Telemetry {
             line += "}";
         } else {
             line += "null";
+        }
+
+        // Whether the game is currently ignoring input matters as much as
+        // where the player is. A cinematic freeze looks identical to walking
+        // into a wall from the outside: position stops changing while keys
+        // are held. Telling them apart from telemetry stops a driver from
+        // reporting "stuck" when the right response is "wait".
+        if (haveInput) {
+            bool frozen = false, dead = false;
+            const bool haveFrozen = FieldBool(L, inputRef, "_frozenByCinematic", frozen);
+            const bool haveDead = FieldBool(L, inputRef, "_playerDead", dead);
+            if (haveFrozen || haveDead) {
+                line += ",\"input\":{\"frozen\":";
+                line += (haveFrozen && frozen) ? "true" : "false";
+                line += ",\"dead\":";
+                line += (haveDead && dead) ? "true" : "false";
+                line += "}";
+            }
         }
 
         line += ",\"enemies\":[";
