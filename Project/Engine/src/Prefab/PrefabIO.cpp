@@ -12,6 +12,7 @@
 #include <filesystem>
 #include <sstream>
 #include <type_traits> // std::void_t
+#include <cctype>
 
 #include "Reflection/ReflectionBase.hpp"
 #include "Asset Manager/AssetManager.hpp"
@@ -284,6 +285,23 @@ ENGINE_API Entity InstantiatePrefabFromFile(const std::string& prefabPath, bool 
 
     // Normalize the path - strip leading "../../" for Android asset paths
     std::string assetPath = prefabPath;
+
+    // Trim surrounding whitespace and quote characters.
+    //
+    // These paths come from editor text fields, and a value typed WITH quotes is
+    // stored with the quotes as part of the string. Four enemies in
+    // 04_Level.scene carry FeatherPrefabPath as "\"Resources/Prefabs/EnemyHurtFeather.prefab\"",
+    // so the lookup failed and they silently spawned no hit feathers while their
+    // neighbours did - which is what made the bug look random. A stray quote in
+    // an authored path should degrade to the path, not disable the feature.
+    {
+        const auto notTrimmable = [](char c) {
+            return c != '"' && c != '\'' && !std::isspace(static_cast<unsigned char>(c));
+        };
+        auto begin = std::find_if(assetPath.begin(), assetPath.end(), notTrimmable);
+        auto end   = std::find_if(assetPath.rbegin(), assetPath.rend(), notTrimmable).base();
+        assetPath  = (begin < end) ? std::string(begin, end) : std::string();
+    }
 
     // Convert backslashes to forward slashes
     std::replace(assetPath.begin(), assetPath.end(), '\\', '/');
