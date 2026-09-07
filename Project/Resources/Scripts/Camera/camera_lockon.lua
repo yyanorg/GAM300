@@ -140,6 +140,25 @@ end
 -- Call each frame BEFORE updateMouseLook.
 -- When returning true the caller should skip normal mouse look (the lock-on
 -- consumes the mouse axis to detect intentional camera movement).
+-- Is this entity still a legal lock-on target RIGHT NOW?
+--
+-- Queued hits are resolved a frame after the event, so everything the
+-- subscriber checked can have changed in between - most importantly the enemy
+-- can have died from that very hit. Without re-checking here the camera locked
+-- onto a corpse, or onto an entity already being torn down, which read as the
+-- camera swinging to face nothing.
+local function isLockable(self, id)
+    if not id then return false end
+    if self._deadEnemies[id] then return false end
+    if not (Engine and Engine.GetEntityPosition) then return false end
+    local ex, ey, ez = Engine.GetEntityPosition(id)
+    if not ex then return false end
+    local dx = ex - self._targetPos.x
+    local dz = ez - self._targetPos.z
+    if math.sqrt(dx * dx + dz * dz) > (self.lockOnAcquireDistance or 12.0) then return false end
+    return hasLineOfSight(self, ex, ey, ez)
+end
+
 -- Resolve this frame's queued hits into at most one target change.
 --
 -- Policy, in order:
@@ -163,7 +182,7 @@ local function resolvePendingHits(self, dt)
     local engaged      = self._lockonEntityId
 
     -- 1. engaged enemy hit again -> refresh, ignore everyone else this frame
-    if engaged then
+    if engaged and not self._deadEnemies[engaged] then
         for i = 1, #pending do
             if pending[i] == engaged then
                 self._lockonEngagedAt = now
@@ -178,6 +197,7 @@ local function resolvePendingHits(self, dt)
     local candidate
     for i = 1, #pending do
         local id = pending[i]
+        if not isLockable(self, id) then goto continue end
         local rec = counts[id]
         if not rec or (now - rec.firstHitAt) > switchWindow then
             rec = { count = 0, firstHitAt = now }
@@ -185,6 +205,7 @@ local function resolvePendingHits(self, dt)
         end
         rec.count = rec.count + 1
         candidate = candidate or id
+        ::continue::
     end
     self._lockonPending = {}
     if not candidate then return end
