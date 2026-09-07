@@ -701,6 +701,15 @@ namespace Telemetry {
                 line += ",\"state\":";
                 AppendEscaped(line, state);
             }
+            // How long the AI has been in that state. A state whose age keeps
+            // resetting towards zero is flapping, and flapping is invisible in
+            // the state name alone: sampling only the name shows a steady
+            // "Chase" whether the enemy has been chasing for five seconds or
+            // has re-entered Chase twenty times in those five seconds.
+            double stateAge = 0.0;
+            if (FieldNestedNumber(L, a.instanceRef, "fsm", "timeInState", stateAge)) {
+                line += ",\"state_age\":"; AppendNumber(line, stateAge, 2);
+            }
             if (a.haveAnim) {
                 line += ",\"anim\":";
                 AppendEscaped(line, a.animState);
