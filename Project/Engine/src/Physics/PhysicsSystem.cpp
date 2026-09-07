@@ -560,13 +560,23 @@ void PhysicsSystem::Update(float fixedDt, ECSManager& ecsManager) {
                 bi.SetAngularVelocity(bodyId, JPH::Vec3::sZero());
             }
 
-            if (rb.linearVel.x != 0.0f || rb.linearVel.y != 0.0f || rb.linearVel.z != 0.0f) {
+            // Push velocity only when gameplay actually asked for it.
+            //
+            // This used to treat a non-zero linearVel/angularVel as a pending
+            // command. Both are serialised, and linearVel's struct default is
+            // {0,-9.81,0}, so EVERY rigid body on disk carries that value - all
+            // 157 in 04_Level.scene do. The result was that every dynamic body
+            // had its velocity OVERWRITTEN with a 9.81 m/s downward kick on its
+            // first simulated step. For a breakable door that landed on the very
+            // frame the launch impulse was applied, and friction against the
+            // floor then ate the horizontal launch, so the door sagged instead of
+            // flying. The fields are no longer zeroed either: that was only
+            // needed to make the old heuristic work, and it corrupted the
+            // authoring values for any scene re-saved after play.
+            if (rb.velocity_dirty) {
                 bi.SetLinearVelocity(bodyId, ToJoltVec3(rb.linearVel));
-                rb.linearVel = Vector3D(0, 0, 0);
-            }
-            if (rb.angularVel.x != 0.0f || rb.angularVel.y != 0.0f || rb.angularVel.z != 0.0f) {
                 bi.SetAngularVelocity(bodyId, ToJoltVec3(rb.angularVel));
-                rb.angularVel = Vector3D(0, 0, 0);
+                rb.velocity_dirty = false;
             }
             if (rb.forceApplied.x != 0.0f || rb.forceApplied.y != 0.0f || rb.forceApplied.z != 0.0f) {
                 bi.AddForce(bodyId, ToJoltVec3(rb.forceApplied));

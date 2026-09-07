@@ -353,6 +353,8 @@ BEGIN_COMPONENT(RigidBodyComponent, "RigidBodyComponent")
     METHOD("AddForce", &RigidBodyComponent::AddForce)
     METHOD("AddTorque", &RigidBodyComponent::AddTorque)
     METHOD("AddImpulse", &RigidBodyComponent::AddImpulse)
+    METHOD("SetLinearVelocity", &RigidBodyComponent::SetLinearVelocity)
+    METHOD("SetAngularVelocity", &RigidBodyComponent::SetAngularVelocity)
 END_COMPONENT()
 
 // ============================================================================
