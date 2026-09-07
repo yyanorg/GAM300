@@ -588,6 +588,18 @@ namespace Telemetry {
                 line += ",\"godmode\":";
                 line += god ? "true" : "false";
             }
+            // Feather count and the skill's cost, both Lua globals. The
+            // feather skill's only externally visible effect is this number
+            // going down, so without it there is no way to tell a cast that
+            // fired and did nothing from a keypress the game ignored.
+            double feathers = 0.0;
+            if (GlobalNumber(L, "_numFeathers", feathers)) {
+                line += ",\"feathers\":"; AppendNumber(line, feathers, 0);
+            }
+            double featherCost = 0.0;
+            if (GlobalNumber(L, "_featherSkillRequirement", featherCost)) {
+                line += ",\"feather_skill_cost\":"; AppendNumber(line, featherCost, 0);
+            }
             line += "}";
         } else {
             line += "null";
