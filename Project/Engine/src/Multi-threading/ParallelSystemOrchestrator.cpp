@@ -70,6 +70,12 @@ void ParallelSystemOrchestrator::Update() {
     // -------------------------------------------------------------------------
     // Anchors write local transforms, so apply them before propagating world
     // matrices. Transform must still run after Physics/Animation.
+    // Physics collision/trigger callbacks call into Lua, which can create GL
+    // resources, so they are dispatched here on the main thread rather than
+    // inline on the physics worker. See PhysicsSystem::DispatchScriptEvents.
+    if (mainECS.physicsSystem)
+        PROFILE_PLOT_TIMED("PhysicsScriptEvents", mainECS.physicsSystem->DispatchScriptEvents(mainECS));
+
     PROFILE_PLOT_TIMED("UIAnchor", mainECS.uiAnchorSystem->Update());
     PROFILE_PLOT_TIMED("Transform", mainECS.transformSystem->Update());
 

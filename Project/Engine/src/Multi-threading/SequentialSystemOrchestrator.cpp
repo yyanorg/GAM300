@@ -27,6 +27,10 @@ void SequentialSystemOrchestrator::Update() {
 	}
 
 	PROFILE_PLOT_TIMED("Physics",             mainECS.physicsSystem->Update((float)TimeManager::GetDeltaTime(), mainECS));
+	// Collision/trigger callbacks are dispatched separately from the simulation
+	// step (see PhysicsSystem::DispatchScriptEvents). Everything here is already
+	// on the main thread, so it simply follows the step.
+	PROFILE_PLOT_TIMED("PhysicsScriptEvents", mainECS.physicsSystem->DispatchScriptEvents(mainECS));
 	PROFILE_PLOT_TIMED("CharacterController", mainECS.characterControllerSystem->Update((float)TimeManager::GetDeltaTime(), mainECS));
 	PROFILE_PLOT_TIMED("UIAnchor",            mainECS.uiAnchorSystem->Update());
 	PROFILE_PLOT_TIMED("Transform",           mainECS.transformSystem->Update());

@@ -586,7 +586,20 @@ void PhysicsSystem::Update(float fixedDt, ECSManager& ecsManager) {
     // ========== RUN PHYSICS SIMULATION ==========
     physics.Update(safeFixedDt, /*collisionSteps=*/1, temp.get(), jobs.get());
 
-    // ========== DISPATCH COLLISION/TRIGGER EVENTS TO LUA ==========
+
+    // ========== SYNC JOLT -> ECS (after physics step) ==========
+    PhysicsSyncBack(ecsManager);
+}
+
+// Collision and trigger callbacks run Lua, and a Lua binding can touch OpenGL -
+// SpriteRenderComponent::SetTextureFromPath loads a texture, which reaches
+// glGenTextures. PhysicsSystem::Update runs as a worker job and a worker has no
+// GL context, so dispatching inline segfaulted the moment a collision handler
+// swapped a sprite. Reproducible by hooking an enemy: the crash fires when the
+// hook lands. Lua is not thread safe either. The events are therefore drained
+// and dispatched separately, from the main thread, once the simulation jobs
+// have joined.
+void PhysicsSystem::DispatchScriptEvents(ECSManager& ecsManager) {
     if (contactListener && ecsManager.scriptSystem) {
         std::vector<CollisionEvent> enters, exits;
         contactListener->DrainEvents(enters, exits);
@@ -667,9 +680,6 @@ void PhysicsSystem::Update(float fixedDt, ECSManager& ecsManager) {
             ++it;
         }
     }
-
-    // ========== SYNC JOLT -> ECS (after physics step) ==========
-    PhysicsSyncBack(ecsManager);
 }
 
 void PhysicsSystem::EditorUpdate(ECSManager& ecs) {

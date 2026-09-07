@@ -37,6 +37,11 @@ public:
 	void PostInitialize(ECSManager& ecsManager);
 
 	void Update(float fixedDt, ECSManager& ecsManager);	//SIMULATE PHYSICS e.g APPLY FORCES e.t.c
+
+	// Runs the queued collision/trigger callbacks into Lua. MUST be called from the
+	// main thread, after the physics job has joined - the handlers can create
+	// OpenGL resources and Lua is not thread safe. See the definition.
+	void DispatchScriptEvents(ECSManager& ecsManager);
 	void EditorUpdate(ECSManager& ecs); // CALLED ONLY WHEN THE EDITOR IS IN STOP MODE.
 	//void SyncDirtyComponents(ECSManager& ecsManager);	//APPLY INSPECTOR CHANGES TO JOLT
 	void PhysicsSyncBack(ECSManager& ecsManager);	//JOLT -> ECS
