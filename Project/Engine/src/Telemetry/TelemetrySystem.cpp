@@ -32,6 +32,7 @@ namespace {
     std::ofstream g_out;
     double g_accumulator = 0.0;
     unsigned long long g_frame = 0;
+    std::string g_lastScene;
     std::chrono::steady_clock::time_point g_start;
 
     // Sample rate. Fast enough to close a movement loop, slow enough that
@@ -159,11 +160,67 @@ namespace {
         return t == "flying";
     }
 
+    // camera_follow.lua publishes its orbit yaw as the global CAMERA_YAW.
+    // WASD is camera-relative, so without this a world-space destination
+    // cannot be turned into a key to hold: the same key walks a different
+    // direction depending on where the camera happens to be pointing.
+    bool CameraYaw(lua_State* L, double& out) {
+        if (!L) return false;
+        lua_getglobal(L, "CAMERA_YAW");
+        const bool ok = lua_isnumber(L, -1) != 0;
+        if (ok) out = static_cast<double>(lua_tonumber(L, -1));
+        lua_pop(L, 1);
+        return ok;
+    }
+
     // Yaw about Y, in degrees, from the world rotation quaternion.
     double YawDegrees(const Quaternion& q) {
         const double siny_cosp = 2.0 * (static_cast<double>(q.w) * q.y + static_cast<double>(q.x) * q.z);
         const double cosy_cosp = 1.0 - 2.0 * (static_cast<double>(q.y) * q.y + static_cast<double>(q.z) * q.z);
         return std::atan2(siny_cosp, cosy_cosp) * 180.0 / 3.14159265358979323846;
+    }
+
+    // A census is written once per scene load: every named entity with a
+    // transform, in WORLD coordinates.
+    //
+    // This exists because the scene file cannot answer the question. Transform
+    // is serialised as localPosition/localScale/localRotation only (see
+    // REFL_REGISTER_START(Transform)), so every position on disk is relative
+    // to a parent, and rooms nest their contents several levels deep. Reading
+    // a door or pickup's world position statically means recomposing the whole
+    // ancestor chain. The running game has already done that work, so ask it.
+    void WriteCensus(ECSManager& ecs, const std::string& scene) {
+        std::string line;
+        line.reserve(1 << 16);
+        line += "{\"type\":\"census\",\"scene\":";
+        AppendEscaped(line, scene);
+        line += ",\"entities\":[";
+
+        bool first = true;
+        for (const Entity entity : ecs.GetAllEntities()) {
+            auto nameOpt = ecs.TryGetComponent<NameComponent>(entity);
+            if (!nameOpt.has_value()) continue;
+            const std::string& name = nameOpt.value().get().name;
+            if (name.empty()) continue;
+
+            auto transformOpt = ecs.TryGetComponent<Transform>(entity);
+            if (!transformOpt.has_value()) continue;
+            const Transform& tr = transformOpt.value().get();
+
+            if (!first) line += ",";
+            first = false;
+            line += "{\"id\":";
+            line += std::to_string(entity);
+            line += ",\"name\":";
+            AppendEscaped(line, name);
+            line += ",\"x\":"; AppendNumber(line, tr.worldPosition.x);
+            line += ",\"y\":"; AppendNumber(line, tr.worldPosition.y);
+            line += ",\"z\":"; AppendNumber(line, tr.worldPosition.z);
+            line += "}";
+        }
+        line += "]}\n";
+        g_out << line;
+        g_out.flush();
     }
 
     struct Actor {
@@ -237,6 +294,12 @@ namespace Telemetry {
         ECSManager& ecs = ECSRegistry::GetInstance().GetActiveECSManager();
         lua_State* L = Scripting::GetLuaState();
 
+        const std::string scene = SceneManager::GetInstance().GetSceneName();
+        if (scene != g_lastScene) {
+            g_lastScene = scene;
+            WriteCensus(ecs, scene);
+        }
+
         Actor player;
         bool havePlayer = false;
         std::vector<std::pair<Actor, const char*>> enemies;  // actor, script kind
@@ -291,7 +354,13 @@ namespace Telemetry {
         line += "{\"t\":"; AppendNumber(line, elapsed, 2);
         line += ",\"frame\":"; line += std::to_string(g_frame);
         line += ",\"scene\":";
-        AppendEscaped(line, SceneManager::GetInstance().GetSceneName());
+        AppendEscaped(line, scene);
+
+        double camYaw = 0.0;
+        if (CameraYaw(L, camYaw)) {
+            line += ",\"camera_yaw\":";
+            AppendNumber(line, camYaw, 2);
+        }
 
         line += ",\"player\":";
         if (havePlayer) {
