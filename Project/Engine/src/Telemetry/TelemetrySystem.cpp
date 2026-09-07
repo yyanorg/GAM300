@@ -163,6 +163,15 @@ namespace {
         return present;
     }
 
+    bool GlobalNumber(lua_State* L, const char* name, double& out) {
+        if (!L) return false;
+        lua_getglobal(L, name);
+        const bool ok = lua_isnumber(L, -1) != 0;
+        if (ok) out = static_cast<double>(lua_tonumber(L, -1));
+        lua_pop(L, 1);
+        return ok;
+    }
+
     bool GlobalBool(lua_State* L, const char* name, bool& out) {
         if (!L) return false;
         lua_getglobal(L, name);
@@ -489,6 +498,35 @@ namespace Telemetry {
         if (CameraYaw(L, camYaw)) {
             line += ",\"camera_yaw\":";
             AppendNumber(line, camYaw, 2);
+        }
+        double camPitch = 0.0;
+        if (GlobalNumber(L, "CAMERA_PITCH", camPitch)) {
+            line += ",\"camera_pitch\":";
+            AppendNumber(line, camPitch, 2);
+        }
+        // The camera's world position and unit forward vector, which
+        // camera_follow.lua already publishes. The chain fires along this
+        // forward, so having it turns aiming from guess-and-check into a
+        // measurable angular error against the direction to the target.
+        double fx = 0.0, fy = 0.0, fz = 0.0;
+        if (GlobalNumber(L, "CAMERA_FWD_X", fx)
+            && GlobalNumber(L, "CAMERA_FWD_Y", fy)
+            && GlobalNumber(L, "CAMERA_FWD_Z", fz)) {
+            line += ",\"camera_fwd\":[";
+            AppendNumber(line, fx, 4); line += ",";
+            AppendNumber(line, fy, 4); line += ",";
+            AppendNumber(line, fz, 4);
+            line += "]";
+        }
+        double px = 0.0, py = 0.0, pz = 0.0;
+        if (GlobalNumber(L, "CAMERA_POS_X", px)
+            && GlobalNumber(L, "CAMERA_POS_Y", py)
+            && GlobalNumber(L, "CAMERA_POS_Z", pz)) {
+            line += ",\"camera_pos\":[";
+            AppendNumber(line, px); line += ",";
+            AppendNumber(line, py); line += ",";
+            AppendNumber(line, pz);
+            line += "]";
         }
 
         line += ",\"player\":";
