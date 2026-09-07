@@ -5,6 +5,7 @@
 #include "ECS/ECSManager.hpp"
 #include "ECS/NameComponent.hpp"
 #include "Transform/TransformComponent.hpp"
+#include "Animation/AnimationComponent.hpp"
 #include "Script/ScriptComponentData.hpp"
 #include "Scene/SceneManager.hpp"
 #include "TimeManager.hpp"
@@ -348,6 +349,14 @@ namespace {
         Vector3D pos{};
         double yaw = 0.0;
         int instanceRef = LUA_NOREF;
+        // The animation state machine's current state, and which clip is
+        // actually playing. Reported alongside the AI's own FSM state so the
+        // two can be compared: "the enemy is idle but playing the attack
+        // clip" is a claim about the relationship between them, and without
+        // both it can only be judged by eye from a screenshot.
+        bool haveAnim = false;
+        std::string animState;
+        long long animClip = -1;
     };
 
     void AppendActorCommon(std::string& out, const Actor& a) {
@@ -478,6 +487,12 @@ namespace Telemetry {
             a.pos = tr.worldPosition;
             a.yaw = YawDegrees(tr.worldRotation);
             a.instanceRef = instanceRef;
+            if (auto animOpt = ecs.TryGetComponent<AnimationComponent>(entity); animOpt.has_value()) {
+                AnimationComponent& anim = animOpt.value().get();
+                a.haveAnim = true;
+                a.animState = anim.GetCurrentState();
+                a.animClip = static_cast<long long>(anim.GetActiveClipIndex());
+            }
             if (auto nameOpt = ecs.TryGetComponent<NameComponent>(entity); nameOpt.has_value()) {
                 a.name = nameOpt.value().get().name;
             }
@@ -685,6 +700,12 @@ namespace Telemetry {
             if (FieldNestedString(L, a.instanceRef, "fsm", "currentName", state)) {
                 line += ",\"state\":";
                 AppendEscaped(line, state);
+            }
+            if (a.haveAnim) {
+                line += ",\"anim\":";
+                AppendEscaped(line, a.animState);
+                line += ",\"anim_clip\":";
+                line += std::to_string(a.animClip);
             }
             line += "}";
         }
