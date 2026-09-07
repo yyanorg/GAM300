@@ -69,7 +69,7 @@ AnimationComponent::AnimationComponent(const AnimationComponent& other)
 {
     clips.reserve(other.clips.size());
     for (const auto& c : other.clips) {
-        clips.emplace_back(std::make_unique<Animation>(*c));
+        clips.emplace_back(c ? std::make_unique<Animation>(*c) : nullptr);
     }
 
     Animation* active = clips.empty() ? nullptr
@@ -222,7 +222,7 @@ void AnimationComponent::AddClipFromFile(const std::string& path, const std::map
     clipGUIDs.push_back(guid);
     clipCount = static_cast<int>(clipPaths.size());
 
-    if(clips.size() == 1)
+    if(clips.size() == 1 && clips[0])
     {
         activeClip = 0;
         EnsureAnimator();
@@ -234,7 +234,7 @@ void AnimationComponent::AddClipFromFile(const std::string& path, const std::map
 void AnimationComponent::Play(Entity entity)
 {
     isPlay = true;
-    if (!clips.empty() && activeClip < clips.size())
+    if (activeClip < clips.size() && clips[activeClip])
     {
 		EnsureAnimator();
 		animator->PlayAnimation(clips[activeClip].get(), entity);
@@ -245,7 +245,7 @@ void AnimationComponent::Pause() { isPlay = false; }
 void AnimationComponent::Stop(Entity entity)
 {
     isPlay = false;
-    if(!clips.empty() && activeClip < clips.size() && animator)
+    if(activeClip < clips.size() && clips[activeClip] && animator)
         animator->PlayAnimation(clips[activeClip].get(), entity);
 }
 
@@ -273,16 +273,16 @@ Animator* AnimationComponent::EnsureAnimator()
 }
 
 Animation& AnimationComponent::GetClip(size_t i) {
-    if (i >= clips.size()) {
-        ENGINE_PRINT(EngineLogging::LogLevel::Error, "[AnimationComponent] GetClip index ", i, " out of bounds (size=", clips.size(), ")\n");
+    if (i >= clips.size() || !clips[i]) {
+        ENGINE_PRINT(EngineLogging::LogLevel::Error, "[AnimationComponent] GetClip index ", i, " unavailable (size=", clips.size(), ")\n");
         static Animation dummyAnim;
         return dummyAnim;
     }
     return *clips[i];
 }
 const Animation& AnimationComponent::GetClip(size_t i) const {
-    if (i >= clips.size()) {
-        ENGINE_PRINT(EngineLogging::LogLevel::Error, "[AnimationComponent] GetClip const index ", i, " out of bounds (size=", clips.size(), ")\n");
+    if (i >= clips.size() || !clips[i]) {
+        ENGINE_PRINT(EngineLogging::LogLevel::Error, "[AnimationComponent] GetClip const index ", i, " unavailable (size=", clips.size(), ")\n");
         static Animation dummyAnim;
         return dummyAnim;
     }
@@ -364,20 +364,26 @@ void AnimationComponent::LoadClipsFromPaths(const std::map<std::string, BoneInfo
             pathToLoad = NormalizeAnimationAssetPath(pathToLoad);
         }
 
+        // A clip that cannot be resolved still occupies its index. States address
+        // clips positionally (clipIndex), so dropping one used to shift every
+        // later clip up and silently repoint every state after it. Keeping an
+        // empty slot confines the damage to the state that actually lost its
+        // clip.
         if (pathToLoad.empty()) {
-            //ENGINE_PRINT("[AnimationComponent] Skipping empty path\n");
+            clips.emplace_back(nullptr);
+            validClipPaths.push_back(path);
+            validClipGUIDs.push_back(currentGUID);
             continue;
         }
 
         //ENGINE_PRINT("[AnimationComponent] Loading clip from: ", pathToLoad, "\n");
         auto anim = LoadClipFromPath(pathToLoad, boneInfoMap, boneCount);
-        if (anim) {
-            clips.emplace_back(std::move(anim));
-            validClipPaths.push_back(path);
-            validClipGUIDs.push_back(currentGUID);
-            //ENGINE_PRINT("[AnimationComponent] Successfully loaded clip, total: ", clips.size(), "\n");
-        } else {
-            ENGINE_PRINT(EngineLogging::LogLevel::Error, "[AnimationComponent] Failed to load clip from: ", pathToLoad, " - removing from list\n");
+        clips.emplace_back(std::move(anim));
+        validClipPaths.push_back(path);
+        validClipGUIDs.push_back(currentGUID);
+        if (!clips.back()) {
+            ENGINE_PRINT(EngineLogging::LogLevel::Error, "[AnimationComponent] Failed to load clip from: ", pathToLoad,
+                " - keeping an empty slot so later clip indices stay valid\n");
         }
     }
 
@@ -408,7 +414,7 @@ void AnimationComponent::PlayClip(std::size_t clipIndex, bool loop, Entity entit
 	mLoopJustCompleted = false;  // Reset loop tracking for new animation
 
 	// Actually start playing the animation on the animator
-	if (!clips.empty() && clipIndex < clips.size()) {
+	if (clipIndex < clips.size() && clips[clipIndex]) {
 		EnsureAnimator();
 		// Use crossfade by default when switching from an existing animation
 		if (hadAnimation) {
@@ -436,7 +442,7 @@ void AnimationComponent::PlayClipWithCrossfade(std::size_t clipIndex, bool loop,
 	isPlay = true;
 	mLoopJustCompleted = false;
 
-	if (!clips.empty() && clipIndex < clips.size())
+	if (clipIndex < clips.size() && clips[clipIndex])
 	{
 		EnsureAnimator();
 		animator->StartCrossfade(clips[clipIndex].get(), crossfadeDuration, prevLoop, entity);
@@ -597,6 +603,6 @@ void AnimationComponent::ResetSM(Entity entity)
 }
 
 float AnimationComponent::GetClipDuration(size_t clipIndex) const {
-    if (clips.size() <= 0 || clipIndex >= clips.size()) return 0.0f;
+    if (clipIndex >= clips.size() || !clips[clipIndex]) return 0.0f;
     return clips[clipIndex]->GetDuration();
 }

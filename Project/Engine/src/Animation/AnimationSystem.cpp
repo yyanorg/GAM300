@@ -115,7 +115,11 @@ void AnimationSystem::InitialiseAnimationComponent(Entity entity, ModelRenderCom
 			sm->SetInitialState(entryState, entity);
 		}
 		animComp.SetClip(clipToPlay, entity);
-		animator->PlayAnimation(animComp.GetClips()[clipToPlay].get(), entity);
+		// The entry clip can be an empty slot when its asset failed to load;
+		// the slot is kept so later clip indices stay valid.
+		if (clipToPlay < animComp.GetClips().size() && animComp.GetClips()[clipToPlay]) {
+			animator->PlayAnimation(animComp.GetClips()[clipToPlay].get(), entity);
+		}
 	}
 
 	ENGINE_PRINT("[AnimationSystem] AnimationComponent initialized for entity ", entity, "\n");
