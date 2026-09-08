@@ -1043,34 +1043,6 @@ return Component {
         self.attackTimer = 0
         --self:_ResetCombatAnimatorParams()
         self:StopCC()
-
-        -- Clear the in-flight swing as well, not just its timer.
-        --
-        -- GroundAttackState only allows the enemy to leave the Attack state
-        -- when the swing has finished:
-        --
-        --     (not _attackCommitted) and (not meleeAnimTriggered)
-        --
-        -- and those flags are cleared in one place, after damage has landed
-        -- and the cooldown has elapsed. Resetting attackTimer without
-        -- clearing them restarts the clock on a swing that can then never
-        -- complete, so that exit condition becomes permanently unsatisfiable
-        -- and the enemy stays in Attack for the rest of the level, animating
-        -- an attack in place.
-        --
-        -- Observed directly: a ranged enemy held Attack for 284 seconds,
-        -- looping its attack animation, never moving, while the player was
-        -- free to walk around. OnEnemyAlert calls this, and every enemy
-        -- within AlertRadiusOnHit receives that alert when one of them is
-        -- hit, which is why hitting a single enemy could leave a whole room
-        -- of them swinging at nothing.
-        --
-        -- interruptOut in GroundAttackState already resets exactly this set
-        -- when it aborts an attack; a cancellation has to do the same.
-        self.meleeAnimTriggered  = false
-        self.rangedAnimTriggered = false
-        self._attackCommitted    = false
-        self._attackCommitTimer  = 0
     end,
 
     BeginAttackWindow = function(self)
