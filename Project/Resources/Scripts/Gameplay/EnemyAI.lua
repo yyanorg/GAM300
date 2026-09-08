@@ -502,7 +502,21 @@ return Component {
 
             self._chainEndpointHitSub = _G.event_bus.subscribe("chain.endpoint_hit_entity", function(payload)
                 if not payload then return end
-                if payload.rootName ~= self._entityName then return end
+                -- Match the entity, not its name. Every ground melee enemy in
+                -- 04_Level is named "V2FinalGroundMeleeEnemy", so matching on
+                -- rootName fired this on all eleven of them whenever any one
+                -- was hooked. They then all took Idle -> Hooked -> Melee
+                -- Attack, which the controllers have no transition out of, and
+                -- stood where they were looping the attack animation while
+                -- their AI stayed in Idle. The publisher sends rootEntityId
+                -- for exactly this, and the chain.enemy_hooked subscription
+                -- immediately below already matches that way.
+                local rootId = payload.rootEntityId or payload.entityId
+                if rootId ~= nil then
+                    if rootId ~= self.entityId then return end
+                elseif payload.rootName ~= self._entityName then
+                    return
+                end
                 self._animator:SetTrigger("Hooked")
                 -- Immediately tell chain button icon to show Pull (grounded) or Slam (flying)
                 if _G.event_bus and _G.event_bus.publish then
