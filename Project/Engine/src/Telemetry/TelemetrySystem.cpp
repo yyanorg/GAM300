@@ -39,6 +39,19 @@ namespace {
     std::ofstream g_out;
     double g_accumulator = 0.0;
     unsigned long long g_frame = 0;
+
+    // Hitstop is a dip of about 3 to 7 frames, and samples are 0.25s apart, so
+    // reading the time scale at sample time would miss almost every dip. These
+    // are updated every frame and reset when emitted, so a dip that happened
+    // between two samples is still reported.
+    float g_timeScaleMin = 1.0f;
+    int g_timeScaleDips = 0;
+    bool g_timeScaleWasDipped = false;
+
+    // Peak of player_air_height since the last emit. A jump lasts about half a
+    // second, so its apex falls between two 0.25s samples more often than not,
+    // and reading the value at sample time understates how high the jump got.
+    double g_airHeightPeak = 0.0;
     std::string g_lastScene;
     double g_walkmapPeriod = 0.0;   // seconds; 0 disables
     double g_walkmapAccum = 0.0;
@@ -58,6 +71,7 @@ namespace {
     constexpr const char* kChainScript = "ChainBootstrap";
     constexpr const char* kCameraScript = "camera_follow";
     constexpr const char* kFlythroughScript = "CameraFlythrough";
+    constexpr const char* kComboScript = "ComboManager";
 
     std::string BaseName(const std::string& path) {
         const size_t slash = path.find_last_of("/\\");
@@ -509,6 +523,20 @@ namespace Telemetry {
         if (!g_enabled) return;
 
         ++g_frame;
+        {
+            const float ts = TimeManager::GetTimeScale();
+            if (ts < g_timeScaleMin) g_timeScaleMin = ts;
+            const bool dipped = ts < 0.999f;
+            if (dipped && !g_timeScaleWasDipped) ++g_timeScaleDips;
+            g_timeScaleWasDipped = dipped;
+        }
+        {
+            lua_State* Lp = Scripting::GetLuaState();
+            double ah = 0.0;
+            if (Lp && GlobalNumber(Lp, "player_air_height", ah) && ah > g_airHeightPeak) {
+                g_airHeightPeak = ah;
+            }
+        }
         g_accumulator += TimeManager::GetUnscaledDeltaTime();
         if (g_accumulator < kSampleInterval) return;
         g_accumulator = 0.0;
@@ -529,6 +557,7 @@ namespace Telemetry {
         int chainRef = LUA_NOREF;
         bool haveChain = false;
         int cameraRef = LUA_NOREF;
+        int comboRef = LUA_NOREF;
         // Every CameraFlythrough rig in the scene, so a stub can be told from a
         // working one without reading Lua print output, which never reaches the log.
         std::vector<std::pair<Entity, int>> flyRefs;
@@ -543,43 +572,33 @@ namespace Telemetry {
             const char* kind = nullptr;
             int instanceRef = LUA_NOREF;
 
+            // One entity carries several of these scripts. The Player holds
+            // PlayerHealth and ComboManager together, so a loop that stopped
+            // at the first script it recognised reported whichever came first
+            // and never saw the other: the combo block came back empty on a
+            // scene that has a ComboManager. So the whole list is scanned, the
+            // scripts that are not actors are taken wherever they appear, and
+            // only the actor kind is settled once.
             for (const ScriptData& sd : sc.scripts) {
                 if (!sd.enabled) continue;
                 const std::string base = BaseName(sd.scriptPath);
+                const int ref = sd.instanceCreated ? sd.instanceId : LUA_NOREF;
+
+                if (base == kInputScript)       { inputRef = ref;  haveInput = true;  continue; }
+                if (base == kChainScript)       { chainRef = ref;  haveChain = true;  continue; }
+                if (base == kCameraScript)      { cameraRef = ref; haveCamera = true; continue; }
+                if (base == kComboScript)       { comboRef = ref;  continue; }
+                if (base == kFlythroughScript)  { flyRefs.push_back({entity, ref});   continue; }
+
+                if (kind) continue;  // actor kind already settled for this entity
                 if (base == kPlayerScript)        kind = kPlayerScript;
                 else if (base == kEnemyScript)    kind = kEnemyScript;
                 else if (base == kMinibossScript) kind = kMinibossScript;
-                else if (base == kInputScript)    kind = kInputScript;
-                else if (base == kChainScript)    kind = kChainScript;
-                else if (base == kCameraScript)   kind = kCameraScript;
-                else if (base == kFlythroughScript) kind = kFlythroughScript;
                 else continue;
-                if (sd.instanceCreated) instanceRef = sd.instanceId;
-                break;
+                instanceRef = ref;
             }
             if (!kind) continue;
 
-            // InputInterpreter is not an actor; it is picked up here only
-            // because this is the one pass over the entity list.
-            if (kind == kInputScript) {
-                inputRef = instanceRef;
-                haveInput = true;
-                continue;
-            }
-            if (kind == kChainScript) {
-                chainRef = instanceRef;
-                haveChain = true;
-                continue;
-            }
-            if (kind == kCameraScript) {
-                cameraRef = instanceRef;
-                haveCamera = true;
-                continue;
-            }
-            if (kind == kFlythroughScript) {
-                flyRefs.push_back({entity, instanceRef});
-                continue;
-            }
 
             auto transformOpt = ecs.TryGetComponent<Transform>(entity);
             if (!transformOpt.has_value()) continue;
@@ -912,6 +931,73 @@ namespace Telemetry {
                 }
                 line += "}";
             }
+        }
+
+        // Time scale over the interval just ended, not at the instant of the
+        // sample. min is the deepest dip; dips counts how many separate dips
+        // began. Hitstop used to fire only for damage at or above 20, which is
+        // four of the nine attacks in the combo tree, so this is what says
+        // whether a light hit now produces a pause at all.
+        line += ",\"time_scale\":{\"now\":";
+        AppendNumber(line, TimeManager::GetTimeScale(), 3);
+        line += ",\"min\":"; AppendNumber(line, g_timeScaleMin, 3);
+        line += ",\"dips\":"; line += std::to_string(g_timeScaleDips);
+        line += "}";
+        g_timeScaleMin = TimeManager::GetTimeScale();
+        g_timeScaleDips = 0;
+
+        // The combo state machine. air_light_2 branches on whether the aerial
+        // hit confirmed: confirmed loops back to air_light_1 and stays
+        // airborne, unconfirmed commits to air_slam. Nothing published the
+        // confirm event, so the flag was permanently false and the loop had
+        // never once happened. aerial_hit is that flag.
+        if (comboRef != LUA_NOREF) {
+            std::string stateId;
+            bool aerialHit = false, canMove = false;
+            double stateTimer = 0.0;
+            line += ",\"combo\":{";
+            bool wrote = false;
+            if (FieldString(L, comboRef, "_currentStateId", stateId)) {
+                line += "\"state\":"; AppendEscaped(line, stateId); wrote = true;
+            }
+            if (FieldBool(L, comboRef, "_lastAerialHitLanded", aerialHit)) {
+                if (wrote) line += ",";
+                line += "\"aerial_hit\":"; line += aerialHit ? "true" : "false";
+                wrote = true;
+            }
+            bool stringHit = false;
+            if (FieldBool(L, comboRef, "_aerialStringHit", stringHit)) {
+                if (wrote) line += ",";
+                line += "\"string_hit\":"; line += stringHit ? "true" : "false";
+                wrote = true;
+            }
+            if (FieldNumber(L, comboRef, "_stateTimer", stateTimer)) {
+                if (wrote) line += ",";
+                line += "\"state_t\":"; AppendNumber(line, stateTimer, 2);
+                wrote = true;
+            }
+            if (GlobalBool(L, "player_can_move", canMove)) {
+                if (wrote) line += ",";
+                line += "\"can_move\":"; line += canMove ? "true" : "false";
+                wrote = true;
+            }
+            // The gate on every aerial attack. ComboManager refuses one below
+            // MinAerialAttackHeight, so this is what says whether the aerial
+            // moveset is reachable with the jump the level actually ships.
+            double airNow = 0.0;
+            bool jumping = false;
+            if (GlobalNumber(L, "player_air_height", airNow)) {
+                if (wrote) line += ",";
+                line += "\"air_h\":"; AppendNumber(line, airNow, 3);
+                line += ",\"air_peak\":"; AppendNumber(line, g_airHeightPeak, 3);
+                wrote = true;
+            }
+            if (GlobalBool(L, "player_is_jumping", jumping)) {
+                if (wrote) line += ",";
+                line += "\"jumping\":"; line += jumping ? "true" : "false";
+            }
+            line += "}";
+            g_airHeightPeak = 0.0;
         }
 
         line += ",\"enemies\":[";

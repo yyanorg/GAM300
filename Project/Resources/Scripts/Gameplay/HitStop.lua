@@ -52,9 +52,24 @@ return Component {
         HeavyColorDurationMin = 0.12,
         HeavyColorDurationMax = 0.25,
 
-        -- === Slow-mo (heavy hits only) ===
+        -- === Slow-mo ===
         -- Brief camera_effects-managed time dilation — does NOT conflict with
         -- slam or dodge slow-mo since camera_effects resolves the highest caller.
+        --
+        -- Every hit that clears LightHitThreshold gets a dip, lerped from the
+        -- Light values to the Heavy ones across the damage range. The dip used
+        -- to be gated at t >= 0.5, meaning damage >= 20, so the 10, 12, 14 and
+        -- 15 damage hits — five of the nine attacks in the combo tree, and the
+        -- ones a player lands most — produced shake and colour and no pause at
+        -- all. A short pause on impact is the main thing that makes a hit read
+        -- as having connected with something solid, and it was switched off for
+        -- the majority of hits.
+        --
+        -- Durations are in frames at 60 Hz: 0.05 is three frames, 0.12 is seven.
+        -- Light hits want to be felt without interrupting the flow of a combo;
+        -- the heavy ones want to land.
+        LightTimeScale         = 0.55,
+        LightTimeScaleDuration = 0.05,
         HeavyTimeScale         = 0.25,
         HeavyTimeScaleDuration = 0.12,
     },
@@ -123,6 +138,17 @@ return Component {
                 tonumber(self.VignetteDurationMax) or 0.50, t),
         })
 
+        -- ── Time dip, on every hit, scaled with damage ───────────────────────
+        -- Unscaled timer inside camera_effects, so it survives its own dilation.
+        eb.publish("fx_time_scale", {
+            scale    = lerp(
+                tonumber(self.LightTimeScale)         or 0.55,
+                tonumber(self.HeavyTimeScale)         or 0.25, t),
+            duration = lerp(
+                tonumber(self.LightTimeScaleDuration) or 0.05,
+                tonumber(self.HeavyTimeScaleDuration) or 0.12, t),
+        })
+
         -- ── Heavy-hit extras (past the halfway point between thresholds) ─────
         if t >= 0.5 then
             -- Colour desaturation snap
@@ -132,12 +158,6 @@ return Component {
                     tonumber(self.HeavyColorDurationMin) or 0.12,
                     tonumber(self.HeavyColorDurationMax) or 0.25,
                     (t - 0.5) * 2.0),
-            })
-
-            -- Slow-mo dip via camera_effects (unscaled timer, survives its own dilation)
-            eb.publish("fx_time_scale", {
-                scale    = tonumber(self.HeavyTimeScale)         or 0.25,
-                duration = tonumber(self.HeavyTimeScaleDuration) or 0.12,
             })
         end
     end,
