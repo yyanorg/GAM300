@@ -7,12 +7,50 @@
 #include <WindowManager.hpp>
 #include "Graphics/Model/Model.h"
 #include "Asset Manager/AssetManager.hpp"
+#include <filesystem>
 
 namespace {
     std::string NormalizeAnimationAssetPath(std::string path)
     {
         std::replace(path.begin(), path.end(), '\\', '/');
         return path;
+    }
+
+    // Last resort when an authored clip path does not exist: look for a file
+    // of the same name under the animation root.
+    //
+    // Five miniboss clips are authored as Resources/Animations/Enemy@Hurt.fbx
+    // and similar, missing the Enemy/ directory the files actually live in, so
+    // they failed to load on every run and the miniboss had no hurt, death or
+    // throw animation. The paths are in editor-written prefabs and an animator
+    // controller, so the fix belongs here rather than in that data, the same
+    // way a stray quote in an authored prefab path is tolerated rather than
+    // edited out of the scene.
+    //
+    // Only reached after the exact path has already failed, and only accepted
+    // when exactly one file matches, so it can turn a failure into a success
+    // but never redirect a path that already resolves. Every .fbx basename
+    // under Resources/Animations is currently unique.
+    std::string FindAnimationByFileName(const std::string& path)
+    {
+        namespace fs = std::filesystem;
+
+        const std::string wanted = fs::path(path).filename().string();
+        if (wanted.empty()) return {};
+
+        const fs::path root{"Resources/Animations"};
+        std::error_code ec;
+        if (!fs::is_directory(root, ec)) return {};
+
+        std::string found;
+        for (fs::recursive_directory_iterator it(root, ec), end; it != end; it.increment(ec)) {
+            if (ec) break;
+            if (!it->is_regular_file(ec)) continue;
+            if (it->path().filename().string() != wanted) continue;
+            if (!found.empty()) return {};      // ambiguous, so refuse to guess
+            found = NormalizeAnimationAssetPath(it->path().generic_string());
+        }
+        return found;
     }
 }
 
@@ -377,6 +415,17 @@ void AnimationComponent::LoadClipsFromPaths(const std::map<std::string, BoneInfo
         }
 
         //ENGINE_PRINT("[AnimationComponent] Loading clip from: ", pathToLoad, "\n");
+        if (std::error_code ec; !std::filesystem::exists(pathToLoad, ec)) {
+            const std::string alternative = FindAnimationByFileName(pathToLoad);
+            if (!alternative.empty()) {
+                ENGINE_PRINT(EngineLogging::LogLevel::Warn,
+                    "[AnimationComponent] Authored clip path does not exist: ", pathToLoad,
+                    " - using ", alternative, " instead. The authored path is wrong; "
+                    "fix it in the editor to silence this.\n");
+                pathToLoad = alternative;
+            }
+        }
+
         auto anim = LoadClipFromPath(pathToLoad, boneInfoMap, boneCount);
         clips.emplace_back(std::move(anim));
         validClipPaths.push_back(path);
