@@ -6,6 +6,9 @@
 #include "ECS/NameComponent.hpp"
 #include "Transform/TransformComponent.hpp"
 #include "Animation/AnimationComponent.hpp"
+#include "Asset Manager/AssetManager.hpp"
+#include "Animation/AnimationStateMachine.hpp"
+#include "Animation/AnimationParam.hpp"
 #include "Script/ScriptComponentData.hpp"
 #include "Scene/SceneManager.hpp"
 #include "TimeManager.hpp"
@@ -385,7 +388,39 @@ namespace {
         bool haveAnim = false;
         std::string animState;
         long long animClip = -1;
+        // Which animation FILE each clip slot actually resolves to.
+        //
+        // The state name and the clip index are both the state machine's own
+        // account of itself, so comparing them can only ever agree. Neither
+        // says which asset was loaded into that slot. A clip slot resolved by
+        // a stale GUID loads a different file while still being called
+        // "Idle" and still reporting index 2, so an enemy can stand in Idle,
+        // report Idle, and play the attack animation with nothing in either
+        // field disagreeing. This is the only field that can see that.
+        std::string animAsset;
+        std::string animMiswired;
+        // The animator's own parameters. The transitions out of an attack
+        // state are gated on these, so when an enemy is stuck in one, the
+        // parameter that is holding it there is the answer and everything
+        // else is inference.
+        std::string animParams;
     };
+
+    // The loader resolves a clip by GUID first and only falls back to the
+    // authored path, so this repeats that decision rather than assuming the
+    // two agree.
+    static std::string ResolvedClipFile(const AnimationComponent& anim, size_t i) {
+        if (i < anim.clipGUIDs.size()) {
+            const GUID_128 guid = anim.clipGUIDs[i];
+            if (guid.high != 0 || guid.low != 0) {
+                const std::string byGuid =
+                    AssetManager::GetInstance().GetAssetPathFromGUID(guid);
+                if (!byGuid.empty()) return BaseName(byGuid);
+            }
+        }
+        if (i < anim.clipPaths.size()) return BaseName(anim.clipPaths[i]);
+        return {};
+    }
 
     void AppendActorCommon(std::string& out, const Actor& a) {
         out += "{\"id\":";
@@ -527,7 +562,40 @@ namespace Telemetry {
                 AnimationComponent& anim = animOpt.value().get();
                 a.haveAnim = true;
                 a.animState = anim.GetCurrentState();
-                a.animClip = static_cast<long long>(anim.GetActiveClipIndex());
+                const size_t active = anim.GetActiveClipIndex();
+                a.animClip = static_cast<long long>(active);
+                a.animAsset = ResolvedClipFile(anim, active);
+                if (const AnimationStateMachine* sm = anim.GetStateMachine()) {
+                    for (const auto& kv : sm->GetParams().GetAllParams()) {
+                        double v = 0.0;
+                        switch (kv.second.type) {
+                            case AnimParamType::Bool:
+                            case AnimParamType::Trigger:
+                                v = std::get<bool>(kv.second.value) ? 1.0 : 0.0;
+                                break;
+                            case AnimParamType::Int:
+                                v = static_cast<double>(std::get<int>(kv.second.value));
+                                break;
+                            case AnimParamType::Float:
+                                v = static_cast<double>(std::get<float>(kv.second.value));
+                                break;
+                        }
+                        if (v == 0.0) continue;          // only the ones that are set
+                        if (!a.animParams.empty()) a.animParams += " ";
+                        a.animParams += kv.first;
+                    }
+                }
+                const size_t slots =
+                    anim.clipPaths.size() > anim.clipGUIDs.size()
+                        ? anim.clipPaths.size() : anim.clipGUIDs.size();
+                for (size_t i = 0; i < slots; ++i) {
+                    if (i >= anim.clipPaths.size()) continue;
+                    const std::string authored = BaseName(anim.clipPaths[i]);
+                    const std::string got = ResolvedClipFile(anim, i);
+                    if (authored.empty() || got.empty() || authored == got) continue;
+                    if (!a.animMiswired.empty()) a.animMiswired += " ";
+                    a.animMiswired += std::to_string(i) + ":" + authored + ">" + got;
+                }
             }
             if (auto nameOpt = ecs.TryGetComponent<NameComponent>(entity); nameOpt.has_value()) {
                 a.name = nameOpt.value().get().name;
@@ -792,6 +860,14 @@ namespace Telemetry {
                 AppendEscaped(line, a.animState);
                 line += ",\"anim_clip\":";
                 line += std::to_string(a.animClip);
+                line += ",\"anim_asset\":";
+                AppendEscaped(line, a.animAsset);
+                line += ",\"anim_params\":";
+                AppendEscaped(line, a.animParams);
+                if (!a.animMiswired.empty()) {
+                    line += ",\"anim_miswired\":";
+                    AppendEscaped(line, a.animMiswired);
+                }
             }
 
             // The flags that decide whether an enemy is allowed to leave its
