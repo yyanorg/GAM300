@@ -9,6 +9,8 @@
 #include "Asset Manager/AssetManager.hpp"
 #include "Animation/AnimationStateMachine.hpp"
 #include "Animation/AnimationParam.hpp"
+#include "Graphics/Camera/CameraSystem.hpp"
+#include "Graphics/Camera/Camera.hpp"
 #include "Script/ScriptComponentData.hpp"
 #include "Scene/SceneManager.hpp"
 #include "TimeManager.hpp"
@@ -55,6 +57,7 @@ namespace {
     constexpr const char* kInputScript = "InputInterpreter";
     constexpr const char* kChainScript = "ChainBootstrap";
     constexpr const char* kCameraScript = "camera_follow";
+    constexpr const char* kFlythroughScript = "CameraFlythrough";
 
     std::string BaseName(const std::string& path) {
         const size_t slash = path.find_last_of("/\\");
@@ -118,6 +121,27 @@ namespace {
         if (ok) out = static_cast<double>(lua_tonumber(L, -1));
         lua_pop(L, 2);
         return ok;
+    }
+
+    // Length of a sequence field, and whether the field exists at all. The
+    // flythrough builds `_waypoints` from its child entities and refuses to
+    // run with fewer than two, so the count is the difference between "the
+    // rig is wired up" and "the rig is a stub".
+    bool FieldTableLen(lua_State* L, int instanceRef, const char* key, int& out) {
+        if (!PushInstance(L, instanceRef)) return false;
+        lua_getfield(L, -1, key);
+        const bool ok = lua_istable(L, -1) != 0;
+        if (ok) out = static_cast<int>(lua_rawlen(L, -1));
+        lua_pop(L, 2);
+        return ok;
+    }
+
+    bool FieldIsNil(lua_State* L, int instanceRef, const char* key, bool& isNil) {
+        if (!PushInstance(L, instanceRef)) return false;
+        lua_getfield(L, -1, key);
+        isNil = lua_isnil(L, -1) != 0;
+        lua_pop(L, 2);
+        return true;
     }
 
     bool FieldBool(lua_State* L, int instanceRef, const char* key, bool& out) {
@@ -505,6 +529,9 @@ namespace Telemetry {
         int chainRef = LUA_NOREF;
         bool haveChain = false;
         int cameraRef = LUA_NOREF;
+        // Every CameraFlythrough rig in the scene, so a stub can be told from a
+        // working one without reading Lua print output, which never reaches the log.
+        std::vector<std::pair<Entity, int>> flyRefs;
         bool haveCamera = false;
         std::vector<std::pair<Actor, const char*>> enemies;  // actor, script kind
 
@@ -525,6 +552,7 @@ namespace Telemetry {
                 else if (base == kInputScript)    kind = kInputScript;
                 else if (base == kChainScript)    kind = kChainScript;
                 else if (base == kCameraScript)   kind = kCameraScript;
+                else if (base == kFlythroughScript) kind = kFlythroughScript;
                 else continue;
                 if (sd.instanceCreated) instanceRef = sd.instanceId;
                 break;
@@ -546,6 +574,10 @@ namespace Telemetry {
             if (kind == kCameraScript) {
                 cameraRef = instanceRef;
                 haveCamera = true;
+                continue;
+            }
+            if (kind == kFlythroughScript) {
+                flyRefs.push_back({entity, instanceRef});
                 continue;
             }
 
@@ -644,10 +676,33 @@ namespace Telemetry {
             AppendNumber(line, fz, 4);
             line += "]";
         }
+        // Prefer the real render camera over the Lua globals.
+        //
+        // camera_follow.lua publishes CAMERA_POS_* every frame, but
+        // `Cinematic.updateCinematic` returns early before that code runs, so
+        // during a flythrough the globals freeze at the last gameplay value
+        // while the view is actually moving. That made a working flythrough
+        // look like a broken one for half an hour. The camera system knows the
+        // truth; the globals are the fallback.
         double px = 0.0, py = 0.0, pz = 0.0;
-        const bool havePos = GlobalNumber(L, "CAMERA_POS_X", px)
-                             && GlobalNumber(L, "CAMERA_POS_Y", py)
-                             && GlobalNumber(L, "CAMERA_POS_Z", pz);
+        bool havePos = false;
+        bool camFromEngine = false;
+        if (const Camera* cam = ecs.cameraSystem ? ecs.cameraSystem->GetActiveCamera() : nullptr) {
+            px = cam->Position.x; py = cam->Position.y; pz = cam->Position.z;
+            havePos = true;
+            camFromEngine = true;
+            line += ",\"camera_fwd_true\":[";
+            AppendNumber(line, cam->Front.x, 4); line += ",";
+            AppendNumber(line, cam->Front.y, 4); line += ",";
+            AppendNumber(line, cam->Front.z, 4);
+            line += "]";
+        }
+        if (!havePos) {
+            havePos = GlobalNumber(L, "CAMERA_POS_X", px)
+                      && GlobalNumber(L, "CAMERA_POS_Y", py)
+                      && GlobalNumber(L, "CAMERA_POS_Z", pz);
+        }
+        (void)camFromEngine;
         if (havePos) {
             line += ",\"camera_pos\":[";
             AppendNumber(line, px); line += ",";
@@ -777,7 +832,55 @@ namespace Telemetry {
         // from outside without it. Reported next to every enemy's dead flag,
         // so "locked onto an enemy that is already dead" is a comparison
         // rather than an impression.
+        if (!flyRefs.empty()) {
+            line += ",\"flythrough\":[";
+            bool firstFly = true;
+            for (const auto& fr : flyRefs) {
+                if (!firstFly) line += ",";
+                firstFly = false;
+                line += "{\"id\":";
+                line += std::to_string(fr.first);
+                bool active = false;
+                if (FieldBool(L, fr.second, "_active", active)) {
+                    line += ",\"active\":";
+                    line += active ? "true" : "false";
+                }
+                int wps = 0;
+                if (FieldTableLen(L, fr.second, "_waypoints", wps)) {
+                    line += ",\"waypoints\":";
+                    line += std::to_string(wps);
+                } else {
+                    line += ",\"waypoints\":null";
+                }
+                double timer = 0.0;
+                if (FieldNumber(L, fr.second, "_timer", timer)) {
+                    line += ",\"timer\":"; AppendNumber(line, timer, 2);
+                }
+                double fkey = 0.0;
+                if (FieldNumber(L, fr.second, "FKey", fkey)) {
+                    line += ",\"fkey\":";
+                    line += std::to_string(static_cast<long long>(fkey));
+                }
+                double dur = 0.0;
+                if (FieldNumber(L, fr.second, "TotalDuration", dur)) {
+                    line += ",\"duration\":"; AppendNumber(line, dur, 2);
+                }
+                line += "}";
+            }
+            line += "]";
+        }
+
         if (haveCamera) {
+            bool cineActive = false;
+            if (FieldBool(L, cameraRef, "_cinematicActive", cineActive)) {
+                line += ",\"cinematic_active\":";
+                line += cineActive ? "true" : "false";
+            }
+            bool tgtNil = true;
+            if (FieldIsNil(L, cameraRef, "_cinematicTarget", tgtNil)) {
+                line += ",\"cinematic_target\":";
+                line += tgtNil ? "false" : "true";
+            }
             bool lockActive = false;
             const bool haveActive = FieldBool(L, cameraRef, "_lockonActive", lockActive);
             double lockEntity = -1.0;
