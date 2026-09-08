@@ -147,6 +147,11 @@ return Component {
         -- Which F-key triggers this flythrough (5 = F5, 6 = F6, ... 10 = F10)
         FKey = 5,
         EaseInOut = true,
+        -- Roots whose sprites and text are faded out while the flythrough
+        -- runs, and restored when it stops. Trailer footage with a health bar
+        -- and a feather counter in the corner is not trailer footage. Set to
+        -- an empty string to keep the HUD visible.
+        HideRoots = "PlayerHUD,UI,TutorialUI",
     },
 
     Awake = function(self)
@@ -318,6 +323,49 @@ return Component {
         return pos, rot
     end,
 
+    -- Walk a subtree and apply `fn(entityId)` to every entity in it.
+    _forEachInTree = function(self, entityId, fn)
+        if not entityId or entityId < 0 then return end
+        fn(entityId)
+        local n = Engine.GetChildCount and Engine.GetChildCount(entityId) or 0
+        for i = 0, n - 1 do
+            local child = Engine.GetChildAtIndex(entityId, i)
+            if child then self:_forEachInTree(child, fn) end
+        end
+    end,
+
+    -- Fade the HUD out for the duration of a flythrough, remembering each
+    -- original alpha so stopping puts it back exactly as it was. There is no
+    -- SetActive binding in Lua, and alpha is how the rest of the UI code
+    -- hides things, so this follows that.
+    _setHudHidden = function(self, hidden)
+        if not self.HideRoots or self.HideRoots == "" then return end
+        self._hudAlphas = self._hudAlphas or {}
+        for name in string.gmatch(self.HideRoots, "([^,]+)") do
+            name = string.gsub(name, "^%s*(.-)%s*$", "%1")
+            local root = Engine.GetEntityByName and Engine.GetEntityByName(name)
+            if root then
+                self:_forEachInTree(root, function(id)
+                    for _, comp in ipairs({ "SpriteRenderComponent", "TextRenderComponent" }) do
+                        local c = GetComponent(id, comp)
+                        if c and c.alpha ~= nil then
+                            local key = tostring(id) .. ":" .. comp
+                            if hidden then
+                                if self._hudAlphas[key] == nil then
+                                    self._hudAlphas[key] = c.alpha
+                                end
+                                c.alpha = 0.0
+                            elseif self._hudAlphas[key] ~= nil then
+                                c.alpha = self._hudAlphas[key]
+                                self._hudAlphas[key] = nil
+                            end
+                        end
+                    end
+                end)
+            end
+        end
+    end,
+
     _start = function(self)
         self:_buildWaypoints()
         if not self._waypoints or #self._waypoints < 2 then
@@ -338,6 +386,9 @@ return Component {
             event_bus.publish("flythrough.active", true)
             event_bus.publish("set_attacks_enabled", false)
         end
+        pcall(function() self:_setHudHidden(true) end)
+        if event_bus and event_bus.publish then
+        end
         print("[CameraFlythrough] Started — " .. #self._waypoints .. " waypoints, " .. self.TotalDuration .. "s")
     end,
 
@@ -348,6 +399,9 @@ return Component {
         if event_bus and event_bus.publish then
             event_bus.publish("flythrough.active", false)
             event_bus.publish("set_attacks_enabled", true)
+        end
+        pcall(function() self:_setHudHidden(false) end)
+        if event_bus and event_bus.publish then
         end
         print("[CameraFlythrough] Stopped")
     end,
