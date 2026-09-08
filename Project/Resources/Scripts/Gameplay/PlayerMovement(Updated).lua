@@ -218,6 +218,22 @@ return Component {
 
         -- === Feel / timing ===
         DamageStunDuration  = 0.5,    -- Seconds of stun after being hit.
+        -- Minimum seconds between one stun starting and the next being allowed.
+        --
+        -- Damage stun returns from Update before movement and before the jump,
+        -- so while it is set the player has no control at all. Measured while
+        -- standing in melee range at the first fight, with godmode on so no
+        -- damage was actually taken: one enemy held the player stunned 35% of
+        -- the time, two enemies 72%, three 75%. Nothing coordinates which
+        -- enemy attacks, so a second attacker does not add damage so much as
+        -- it takes away the frames between stuns.
+        --
+        -- This does not shorten a stun or stop the damage; it stops a stun
+        -- being re-applied while the player has barely had the controls back.
+        -- At 1.2 against a 0.5 duration the worst case is locked for 0.5 of
+        -- every 1.2 seconds, and a single enemy, which lands a hit about every
+        -- 1.4 seconds, is unaffected.
+        DamageStunCooldown  = 1.2,
         CinematicSettleTime = 0.8,    -- Seconds to settle before cinematic hard-freeze locks movement.
         footstepInterval    = 0.30,   -- Seconds between footstep SFX triggers while running.
         -- TO ADD new feel tuning: add field here.
@@ -312,6 +328,16 @@ return Component {
 
         sub(self, "_playerHurtTriggeredSub", "playerHurtTriggered", function(hit)
             if hit then
+                -- Refuse to re-apply the control lock too soon after the last
+                -- one. See DamageStunCooldown for the measurements.
+                local now = self._stunClock or 0
+                local gap = self.DamageStunCooldown or 0
+                if gap > 0 and self._lastStunAt and (now - self._lastStunAt) < gap then
+                    -- Still play the reaction, just do not take control away.
+                    self:_squashTrigger("horizontal", 0.5)
+                    return
+                end
+                self._lastStunAt = now
                 self._isDamageStun = true
                 if self._animator then self._animator:SetBool("IsJumping", false) end
                 -- Hit reaction: horizontal squash (pushed-sideways feel)
@@ -609,6 +635,8 @@ return Component {
         self._rollDirX          = 0
         self._rollDirZ          = 0
         self._isDamageStun      = false
+        self._stunClock         = 0
+        self._lastStunAt        = nil
         self._playerDead        = false
         self._playerDeadPending = false
 
@@ -843,6 +871,8 @@ return Component {
         end
 
         -- ── 6. Damage stun timer ──────────────────────────────────────────────
+        self._stunClock = (self._stunClock or 0) + dt
+
         if self._isDamageStun then
             self._damageStunDuration = self._damageStunDuration - dt
             if self._damageStunDuration <= 0 then
@@ -865,7 +895,9 @@ return Component {
         -- ── 8. Damage stun early-return (grounded only) ───────────────────────
         -- If airborne during stun, fall through so movement stays active.
         local isGroundedStun = CharacterController.IsGrounded(self._controller)
+        _G.player_is_damage_stun = self._isDamageStun or false
         if self._isDamageStun and isGroundedStun then
+            _G.player_jump_block = "damage_stun"
             self._animator:SetBool("IsGrounded", isGroundedStun)
             self._animator:SetBool("IsRunning",  self._isRunning)
             local position = CharacterController.GetPosition(self._controller)
@@ -909,6 +941,7 @@ return Component {
 
         -- ── 11. Skill cast lock (grounded only) ───────────────────────────────
         if _G.player_is_casting_skill and CharacterController.IsGrounded(self._controller) then
+            _G.player_jump_block = "casting_skill"
             self._animator:SetBool("IsRunning", false)
             self._isRunning = false
             local position = CharacterController.GetPosition(self._controller)
@@ -920,13 +953,14 @@ return Component {
         end
 
         -- ── 12. Interactable lock ─────────────────────────────────────────────
-        if _G.playerNearInteractable then return end
+        if _G.playerNearInteractable then _G.player_jump_block = "interactable" return end
 
         -- ── 13. Combat movement lock (grounded only) ──────────────────────────
         -- Bypassed while airborne so air control stays responsive mid-combo.
         -- Velocity bleeds at AttackDecay (slow) so momentum carries into hits.
         local isGroundedForLock = CharacterController.IsGrounded(self._controller)
         if _G.player_is_attacking and not self._playerCanMove and isGroundedForLock then
+            _G.player_jump_block = "combat_lock"
             local decay = 1.0 - math.min(self.AttackDecay * dt, 1.0)
             self._velX = self._velX * decay
             self._velZ = self._velZ * decay
@@ -1100,6 +1134,10 @@ return Component {
         -- measured from the most recent takeoff point.
         -- _G.player_air_height is read by ComboManager to decide whether an airborne
         -- attack should auto-slam instead of starting the aerial combo.
+        -- Published for diagnosis: the jump in section 21 requires isGrounded,
+        -- so whether the player can jump at all is decided here.
+        _G.player_is_grounded = isGrounded
+
         if isGrounded then
             -- Don't overwrite _lastGroundedY on the landing frame (while _isJumping
             -- is still true) — the fall distance calculation needs the takeoff Y.
@@ -1380,9 +1418,36 @@ return Component {
         local isLiftAttack = self._liftAttackJump
         self._liftAttackJump = false
 
+        -- Read the buffered jump, not the one-frame edge. IsJumpJustPressed is
+        -- true for exactly the frame the key went down, and whether this Update
+        -- sees that frame depends on whether it runs before or after
+        -- InputInterpreter's. Measured on flat ground, grounded, not landing
+        -- and not attacking, only 3 of 12 presses produced any height. Attack,
+        -- chain and dash never showed this because all three are buffered.
+        --
+        -- The buffer also gives the jump the forgiveness the other actions
+        -- have: a press a few frames early, during the landing recovery or the
+        -- last of a fall, still fires when the player becomes able to jump,
+        -- instead of being thrown away.
+        local jumpBuffered = interp
+            and (interp.HasBufferedJump and interp:HasBufferedJump()
+                 or interp:IsJumpJustPressed())
+
+        if jumpBuffered and not (not self._isLanding and not self._freezePending
+            and not self._slamBuffering and isGrounded) then
+            _G.player_jump_block =
+                (self._isLanding and "landing")
+                or (self._freezePending and "freeze_pending")
+                or (self._slamBuffering and "slam_buffering")
+                or ((not isGrounded) and "not_grounded")
+                or "unknown"
+        end
+
         if not self._isLanding and not self._freezePending and not self._slamBuffering
-            and (isLiftAttack or (interp and interp:IsJumpJustPressed())) and isGrounded
+            and (isLiftAttack or jumpBuffered) and isGrounded
         then
+            _G.player_jump_block = "none"
+            if interp and interp.ConsumeBufferedJump then interp:ConsumeBufferedJump() end
             local jumpH
             if isLiftAttack then
                 jumpH = self.LiftAttackHeight or 6.0

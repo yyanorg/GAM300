@@ -249,6 +249,15 @@ namespace {
         return ok;
     }
 
+    bool GlobalString(lua_State* L, const char* name, std::string& out) {
+        if (!L) return false;
+        lua_getglobal(L, name);
+        const bool ok = lua_isstring(L, -1) != 0;
+        if (ok) out = lua_tostring(L, -1);
+        lua_pop(L, 1);
+        return ok;
+    }
+
     bool GlobalBool(lua_State* L, const char* name, bool& out) {
         if (!L) return false;
         lua_getglobal(L, name);
@@ -995,6 +1004,51 @@ namespace Telemetry {
             if (GlobalBool(L, "player_is_jumping", jumping)) {
                 if (wrote) line += ",";
                 line += "\"jumping\":"; line += jumping ? "true" : "false";
+                wrote = true;
+            }
+            bool grounded = false;
+            if (GlobalBool(L, "player_is_grounded", grounded)) {
+                if (wrote) line += ",";
+                line += "\"grounded\":"; line += grounded ? "true" : "false";
+                wrote = true;
+            }
+            // The jump is also refused while landing, and while attacking the
+            // combo owns the input, so both are needed to tell "the jump was
+            // blocked" from "the press was never seen".
+            bool landing = false, attacking = false;
+            if (GlobalBool(L, "player_is_landing", landing)) {
+                if (wrote) line += ",";
+                line += "\"landing\":"; line += landing ? "true" : "false";
+                wrote = true;
+            }
+            if (GlobalBool(L, "player_is_attacking", attacking)) {
+                if (wrote) line += ",";
+                line += "\"attacking\":"; line += attacking ? "true" : "false";
+                wrote = true;
+            }
+            // PlayerMovement returns before the jump section while this is
+            // set, so it can stop the player jumping without anything else
+            // in the state saying why.
+            bool nearInteract = false;
+            if (GlobalBool(L, "playerNearInteractable", nearInteract)) {
+                if (wrote) line += ",";
+                line += "\"near_interactable\":"; line += nearInteract ? "true" : "false";
+                wrote = true;
+            }
+            // Which gate refused the jump, named by PlayerMovement at the gate
+            // itself. Every gate reads clear from the outside while the jump is
+            // still refused about half the time after a fight, so the answer
+            // has to come from inside the check rather than from around it.
+            std::string jumpBlock;
+            if (GlobalString(L, "player_jump_block", jumpBlock)) {
+                if (wrote) line += ",";
+                line += "\"jump_block\":"; AppendEscaped(line, jumpBlock);
+                wrote = true;
+            }
+            bool stun = false;
+            if (GlobalBool(L, "player_is_damage_stun", stun)) {
+                if (wrote) line += ",";
+                line += "\"stun\":"; line += stun ? "true" : "false";
             }
             line += "}";
             g_airHeightPeak = 0.0;
