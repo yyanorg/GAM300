@@ -808,6 +808,20 @@ namespace Telemetry {
                 | FieldBool(L, a.instanceRef, "rangedAnimTriggered", rangedTrig)
                 | FieldBool(L, a.instanceRef, "_damageDealt", dealt)
                 | FieldNumber(L, a.instanceRef, "attackTimer", atkTimer);
+            // The ranges the enemy is actually using, from its live config
+            // table. Reading them out of the scene file gives two different
+            // answers depending on which copy of the field you take, the same
+            // way the feather prefab path did, so the running game is asked.
+            double atkRange = 0.0, disengage = 0.0, meleeRange = 0.0;
+            if (FieldNestedNumber(L, a.instanceRef, "config", "AttackRange", atkRange)
+                | FieldNestedNumber(L, a.instanceRef, "config", "AttackDisengageRange", disengage)
+                | FieldNestedNumber(L, a.instanceRef, "config", "MeleeRange", meleeRange)) {
+                line += ",\"ranges\":{\"attack\":"; AppendNumber(line, atkRange, 2);
+                line += ",\"disengage\":"; AppendNumber(line, disengage, 2);
+                line += ",\"melee\":"; AppendNumber(line, meleeRange, 2);
+                line += "}";
+            }
+
             if (haveAtk) {
                 line += ",\"atk\":{\"committed\":";
                 line += committed ? "true" : "false";
