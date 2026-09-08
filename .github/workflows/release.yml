@@ -13,6 +13,11 @@ on:
         description: 'Changelog / release notes (supports markdown)'
         required: false
         type: string
+      allow_uncompiled_assets:
+        description: 'Package even with no compiled textures (the game will render untextured)'
+        required: false
+        default: false
+        type: boolean
 
 env:
   VCPKG_COMMIT: 2d6a6cf3ac9a7cc93942c3d289a2f9c661a6f4a7
@@ -89,6 +94,15 @@ jobs:
         # on POST_BUILD, and avoids xcopy quirks with large trees.
         Copy-Item -Path "Project\Resources" -Destination $gamedir -Recurse -Force
 
+        # ProjectSettings holds TagsAndLayers.json. Without it the game falls back
+        # to the eleven built-in tags, and the project defines 23: Throwables stop
+        # being hookable, 47 NoCameraCollision objects stop fading and block the
+        # camera, and lock-on, checkpoint and dialogue tags stop resolving. Enemy
+        # and Boss are built in, so it still starts and looks fine at a glance.
+        # The shortcuts set WorkingDir to {app}, so the game's fallback lookup of
+        # <cwd>\ProjectSettings\TagsAndLayers.json finds it here.
+        Copy-Item -Path "Project\ProjectSettings" -Destination $gamedir -Recurse -Force
+
         # Verification — fail fast if something looks wrong so we catch it in CI, not in the wild.
         Write-Host "=== Staged top-level files ==="
         Get-ChildItem $gamedir -File | Select-Object Name, @{N='Size(KB)';E={[int]($_.Length/1KB)}} | Format-Table -AutoSize
@@ -103,6 +117,7 @@ jobs:
         $shaderOk = Test-Path "$gamedir\Resources\Shaders"
         $modelOk = Test-Path "$gamedir\Resources\Models"
         $configOk = Test-Path "$gamedir\Resources\Configs\input_config.json"
+        $tagsOk = Test-Path "$gamedir\ProjectSettings\TagsAndLayers.json"
 
         Write-Host "Kusane.exe:                 $exeOk"
         Write-Host "Engine.dll:                 $engineOk"
@@ -111,10 +126,34 @@ jobs:
         Write-Host "Resources\Shaders:          $shaderOk"
         Write-Host "Resources\Models:           $modelOk"
         Write-Host "Resources\Configs\...json:  $configOk"
+        Write-Host "ProjectSettings\Tags...json: $tagsOk"
 
-        if (-not ($exeOk -and $engineOk -and $fmodOk -and $resOk -and $shaderOk -and $modelOk -and $configOk)) {
+        if (-not ($exeOk -and $engineOk -and $fmodOk -and $resOk -and $shaderOk -and $modelOk -and $configOk -and $tagsOk)) {
             Write-Error "Staging is missing required files — installer would produce a broken game."
             exit 1
+        }
+
+        # .dds, .mesh and .font are gitignored, so a clean CI checkout has none of
+        # them. The shipped game only compiles assets under EDITOR, and desktop has
+        # no raw-image fallback (that path is ANDROID-only), so an installer staged
+        # from a clean checkout renders untextured. This has never been noticed
+        # because an installer built on a developer machine picks up the compiled
+        # files already sitting on disk. Count them and say so.
+        $ddsCount  = (Get-ChildItem "$gamedir\Resources" -Recurse -File -Filter *.dds  -ErrorAction SilentlyContinue).Count
+        $meshCount = (Get-ChildItem "$gamedir\Resources" -Recurse -File -Filter *.mesh -ErrorAction SilentlyContinue).Count
+        $fontCount = (Get-ChildItem "$gamedir\Resources" -Recurse -File -Filter *.font -ErrorAction SilentlyContinue).Count
+        Write-Host "=== Compiled assets staged ==="
+        Write-Host "  .dds  textures: $ddsCount"
+        Write-Host "  .mesh models:   $meshCount"
+        Write-Host "  .font fonts:    $fontCount"
+
+        if ($ddsCount -eq 0 -or $meshCount -eq 0) {
+            if ("${{ inputs.allow_uncompiled_assets }}" -eq "true") {
+                Write-Warning "No compiled assets staged. Packaging anyway because allow_uncompiled_assets was set. The installed game will render untextured."
+            } else {
+                Write-Error "No compiled assets staged (.dds=$ddsCount, .mesh=$meshCount). The installer would produce a game that renders untextured. Compile assets before staging, or re-run with allow_uncompiled_assets set to package anyway."
+                exit 1
+            }
         }
 
         $totalMb = [int](((Get-ChildItem $gamedir -Recurse -File | Measure-Object -Property Length -Sum).Sum) / 1MB)

@@ -125,7 +125,21 @@ bool TagsLayersSettings::LoadSettings(const std::string& projectPath) {
 
     // Check if file exists
     if (!fs::exists(filePath)) {
-        //std::cout << "[TagsLayersSettings] Settings file not found, using defaults: " << filePath << std::endl;
+        // Say so loudly. Falling back to the eleven built-in tags is not a
+        // small loss: the project defines 23, and everything from index 11 up
+        // stops existing. GetTagIndex then returns -1 for those names while
+        // entities still carry the index the editor wrote, so comparisons
+        // stop matching instead of failing, and GetTagName returns an empty
+        // string rather than erroring. Objects tagged NoCameraCollision stop
+        // fading and block the camera, Throwables stop being hookable, and
+        // lock-on, checkpoint and dialogue tags stop resolving. Enemy and
+        // Boss are built in, so the game still starts and looks fine at a
+        // glance. This staying silent is why it has shipped this way.
+        std::cerr << "[TagsLayersSettings] TagsAndLayers.json NOT FOUND at: " << filePath
+                  << "\n[TagsLayersSettings] Falling back to built-in tags 0-10 only. "
+                     "Tags 11+ (Throwable, NoCameraCollision, LockOn, Checkpoint, "
+                     "Staircase, Prop, Interactable, dialogue) will not resolve."
+                  << std::endl;
         return false;
     }
 
