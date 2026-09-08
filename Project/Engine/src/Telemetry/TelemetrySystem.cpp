@@ -793,6 +793,33 @@ namespace Telemetry {
                 line += ",\"anim_clip\":";
                 line += std::to_string(a.animClip);
             }
+
+            // The flags that decide whether an enemy is allowed to leave its
+            // Attack state. GroundAttackState only lets it go when
+            // _attackCommitted and the anim-triggered flag are both clear, so
+            // when an enemy sits in Attack indefinitely, exactly one of these
+            // is stuck and this says which. Reading the code to work that out
+            // produced two confident wrong answers, so it is reported instead.
+            bool committed = false, meleeTrig = false, rangedTrig = false, dealt = false;
+            double atkTimer = 0.0;
+            const bool haveAtk =
+                FieldBool(L, a.instanceRef, "_attackCommitted", committed)
+                | FieldBool(L, a.instanceRef, "meleeAnimTriggered", meleeTrig)
+                | FieldBool(L, a.instanceRef, "rangedAnimTriggered", rangedTrig)
+                | FieldBool(L, a.instanceRef, "_damageDealt", dealt)
+                | FieldNumber(L, a.instanceRef, "attackTimer", atkTimer);
+            if (haveAtk) {
+                line += ",\"atk\":{\"committed\":";
+                line += committed ? "true" : "false";
+                line += ",\"melee_trig\":";
+                line += meleeTrig ? "true" : "false";
+                line += ",\"ranged_trig\":";
+                line += rangedTrig ? "true" : "false";
+                line += ",\"dealt\":";
+                line += dealt ? "true" : "false";
+                line += ",\"timer\":"; AppendNumber(line, atkTimer, 2);
+                line += "}";
+            }
             line += "}";
         }
         line += "],\"enemies_alive\":";
