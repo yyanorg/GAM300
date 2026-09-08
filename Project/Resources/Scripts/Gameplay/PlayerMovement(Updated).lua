@@ -1654,6 +1654,12 @@ return Component {
                 self:_squashTrigger("vertical", 1.0)
                 if event_bus and event_bus.publish then
                     event_bus.publish("slam_landed", {})
+                    -- camera_slam_tilt subscribes to this and documents it in
+                    -- its own header as the thing to publish at it. Nothing
+                    -- did, so the slam's camera tilt never fired. The impact
+                    -- of the slam is the moment it exists for; every field is
+                    -- optional and the module has its own defaults.
+                    event_bus.publish("camera_slam", {})
                     event_bus.publish("camera_shake", {
                         intensity = self.SlamShakeIntensity or 0.6,
                         duration  = self.SlamShakeDuration  or 0.45,
