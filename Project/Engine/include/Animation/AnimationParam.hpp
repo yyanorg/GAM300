@@ -219,11 +219,53 @@ public:
 private:
 	void Set(const std::string& name, AnimParamType type, std::variant<bool, int, float> value)
 	{
+		// Keep the type the controller declared.
+		//
+		// Writing a parameter used to replace its type with the type of
+		// whichever setter was called last, so a Trigger became a Bool the
+		// first time script called SetBool on it. Conditions written as
+		// TriggerFired then evaluate to false forever, because
+		// EvaluateCondition only treats a parameter as a trigger when its
+		// type still says Trigger. The enemies' "Hooked" parameter is
+		// declared a Trigger, fired with SetTrigger from EnemyAI and then
+		// written with SetBool from GroundHookedState, so the first hook
+		// silently disabled every later one.
+		auto it = mParams.find(name);
+		if (it != mParams.end() && it->second.type != type)
+		{
+			it->second.value = Coerce(it->second.type, type, value);
+			it->second.consumed = false;
+			return;
+		}
 		AnimParam p;
 		p.type = type;
 		p.value = value;
 		p.consumed = false;
 		mParams[name] = p;
+	}
+
+	// A value written as one type, expressed in the type the parameter was
+	// declared as. A Trigger holds a bool, so writing a bool to it is exact;
+	// the numeric cases are here so a stray SetFloat cannot corrupt an Int.
+	static std::variant<bool, int, float> Coerce(AnimParamType want, AnimParamType got,
+	                                             std::variant<bool, int, float> value)
+	{
+		float n = 0.0f;
+		switch (got)
+		{
+			case AnimParamType::Bool:
+			case AnimParamType::Trigger: n = std::get<bool>(value) ? 1.0f : 0.0f; break;
+			case AnimParamType::Int:     n = static_cast<float>(std::get<int>(value)); break;
+			case AnimParamType::Float:   n = std::get<float>(value); break;
+		}
+		switch (want)
+		{
+			case AnimParamType::Bool:
+			case AnimParamType::Trigger: return n != 0.0f;
+			case AnimParamType::Int:     return static_cast<int>(n);
+			case AnimParamType::Float:   return n;
+		}
+		return value;
 	}
 
 	mutable std::unordered_map<std::string, AnimParam> mParams;
