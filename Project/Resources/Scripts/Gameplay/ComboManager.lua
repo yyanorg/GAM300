@@ -69,7 +69,21 @@ return Component {
         AttacksEnabled      = true,
         -- Minimum height above last grounded Y before aerial attacks are allowed.
         -- Below this the player is too close to the ground for aerial combo to make sense.
-        MinAerialAttackHeight = 0.8,
+        --
+        -- This was 0.8, and the level ships PlayerMovement with JumpHeight
+        -- overridden to 0.5 against a script default of 1.2. Measured over
+        -- eight jumps, player_air_height peaks at 0.527 every time, so the
+        -- gate sat above anything the jump could reach and every aerial
+        -- attack input was silently consumed by the branch below. The whole
+        -- aerial moveset — air_light_1, air_light_2 and the hit-confirm loop
+        -- between them — was unreachable, not merely unfinished.
+        --
+        -- 0.25 is just under half that apex, so an attack pressed at the
+        -- instant of leaving the ground is still refused while the middle of
+        -- the arc accepts one. Raising the jump back to 1.2 would also clear
+        -- the old gate, but that changes how the level traverses; this does
+        -- not change movement at all.
+        MinAerialAttackHeight = 0.25,
         -- Height above ground that auto-routes idle airborne attack to air_slam.
         SlamHeightThreshold   = 5.0,
         -- Minimum seconds between aerial attack state entries.
@@ -377,6 +391,7 @@ return Component {
         self._chainAttackCooldown = 0
         self._chainPressBlocked   = false
         self._lastAerialHitLanded = false
+        self._aerialStringHit     = false
         self._aerialLockoutTimer  = 0   -- blocks aerial attack input when > 0
     end,
 
@@ -455,6 +470,10 @@ return Component {
             self._attackHitSub = _G.event_bus.subscribe("attack_hit_confirmed", function()
                 if self._currentStateData and self._currentStateData.isAerial then
                     self._lastAerialHitLanded = true
+                    -- Scoped to the whole aerial string, not to one state. See
+                    -- the branch in air_light_2 for why the per-state flag
+                    -- cannot be the one that decides it.
+                    self._aerialStringHit = true
                 end
             end)
         end
@@ -734,7 +753,19 @@ return Component {
 
                 elseif state.id == "air_light_2" then
                     -- Hit confirmed → loop; missed → slam.
-                    if self._lastAerialHitLanded then
+                    --
+                    -- This reads the string-scoped flag rather than the
+                    -- per-state one. The branch is evaluated the moment the
+                    -- attack input arrives, which is before air_light_2's own
+                    -- hitbox has connected, while the per-state flag is reset
+                    -- on entry to air_light_2. So the per-state flag could
+                    -- only be true if a hit landed in the sliver between
+                    -- entering the state and the player pressing again, and
+                    -- measured traces took the slam path on every string that
+                    -- did connect. The question the branch is asking is
+                    -- whether this trip through the air has been landing, so
+                    -- the flag it reads is reset when an aerial string begins.
+                    if self._aerialStringHit then
                         candidateStateId = "air_light_1"
                     else
                         candidateStateId = "air_slam"
@@ -867,6 +898,13 @@ return Component {
         -- Reset aerial hit flag and arm lockout on every aerial state entry.
         if newState.isAerial then
             self._lastAerialHitLanded = false
+            -- A new aerial string starts only when entering the air from a
+            -- state that was not itself aerial. Within a string the flag
+            -- carries, so a hit in air_light_1 still counts when air_light_2
+            -- decides whether to loop.
+            if not (oldState and oldState.isAerial) then
+                self._aerialStringHit = false
+            end
             if newState.isSlam ~= true then
                 -- Lockout prevents input being registered again until this decays.
                 -- Slam is excluded — it's a commitment, not a repeatable attack.
