@@ -70,12 +70,34 @@ else()
     # ============================================================================
     # CONSOLE WINDOW TOGGLE
     # ============================================================================
-    # TO SHOW CONSOLE:  Use add_executable(Game ...) without WIN32
-    # TO HIDE CONSOLE:  Use add_executable(Game WIN32 ...) with /ENTRY:mainCRTStartup
+    # Release is built with the console on purpose, because it is what gets
+    # debugged. What must not ship with a console is the installer, and that
+    # used to mean editing this file before every release build.
+    #
+    # So it is an option instead: on by default, and the release workflow
+    # configures with -DGAME_CONSOLE=OFF. Nothing here changes between a local
+    # Release build and a shipping one except that flag.
+    #
+    # WIN32_EXECUTABLE sets the linker subsystem to WINDOWS, which is what
+    # actually removes the console. /ENTRY:mainCRTStartup goes with it because
+    # the entry point is main(), not WinMain(), and the WINDOWS subsystem looks
+    # for WinMain by default.
     # ============================================================================
+    option(GAME_CONSOLE "Show the console window in the Game executable" ON)
 
-    # Console VISIBLE
     add_executable(Game ${GAME_SOURCES} ${GAME_HEADERS} ${APP_ICON_RESOURCE})
+
+    if(NOT WIN32)
+        message(STATUS "Game: console option does not apply on this platform")
+    elseif(GAME_CONSOLE)
+        message(STATUS "Game: console ENABLED (CUI subsystem)")
+    else()
+        message(STATUS "Game: console DISABLED (GUI subsystem)")
+        set_target_properties(Game PROPERTIES WIN32_EXECUTABLE TRUE)
+        if(MSVC)
+            target_link_options(Game PRIVATE /ENTRY:mainCRTStartup)
+        endif()
+    endif()
 
     # ============================================================================
     # INSTALLATION RULES

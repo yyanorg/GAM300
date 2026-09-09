@@ -64,12 +64,39 @@ jobs:
       working-directory: Project
 
     - name: Configure CMake
-      run: cmake --preset release
+      # -DGAME_CONSOLE=OFF is the only difference between this and a local
+      # Release build. It sets the linker subsystem to WINDOWS so the shipped
+      # game has no console window; Release keeps its console everywhere else,
+      # because that is the build people debug with.
+      run: cmake --preset release -DGAME_CONSOLE=OFF
       working-directory: Project
 
     - name: Build
       run: cmake --build --preset release --parallel
       working-directory: Project
+
+    - name: Verify the shipped exe has no console
+      shell: pwsh
+      # Checked rather than trusted. dumpbin reports the PE subsystem: a
+      # console build says "3 subsystem (Windows CUI)" and a windowed one says
+      # "2 subsystem (Windows GUI)". If -DGAME_CONSOLE=OFF ever stops taking
+      # effect, this fails the release instead of shipping a console window.
+      run: |
+        $ErrorActionPreference = "Stop"
+        $exe = "Project\Build\Release\Kusane.exe"
+        if (-not (Test-Path $exe)) { Write-Error "$exe not found"; exit 1 }
+        $headers = & dumpbin /headers $exe
+        $line = $headers | Select-String -Pattern 'subsystem \(Windows' | Select-Object -First 1
+        Write-Host "PE subsystem line: $line"
+        if ($line -match 'Windows GUI') {
+            Write-Host "OK: no console window."
+        } elseif ($line -match 'Windows CUI') {
+            Write-Error "Kusane.exe is a console app; -DGAME_CONSOLE=OFF did not take effect."
+            exit 1
+        } else {
+            Write-Error "Could not read the PE subsystem from dumpbin output."
+            exit 1
+        }
 
     - name: Stage game files for installer
       shell: pwsh
