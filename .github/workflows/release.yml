@@ -13,11 +13,6 @@ on:
         description: 'Changelog / release notes (supports markdown)'
         required: false
         type: string
-      allow_uncompiled_assets:
-        description: 'Package even with no compiled textures (the game will render untextured)'
-        required: false
-        default: false
-        type: boolean
 
 env:
   VCPKG_COMMIT: 2d6a6cf3ac9a7cc93942c3d289a2f9c661a6f4a7
@@ -73,6 +68,30 @@ jobs:
 
     - name: Build
       run: cmake --build --preset release --parallel
+      working-directory: Project
+
+    - name: Build AssetCooker
+      # The game loads .dds and .mesh, which are build output: gitignored, and
+      # absent from a clean checkout. Without this step the installer ships a
+      # game that cannot load a texture, which is what every previous release
+      # build produced. The cooker links the Editor-flavoured Engine because the
+      # compile loop it drives is inside #ifdef EDITOR.
+      run: |
+        cmake --preset editor-release
+        cmake --build --preset editor-release --target AssetCooker --parallel
+      working-directory: Project
+
+    - name: Cook assets
+      shell: pwsh
+      # Run from the build directory: the .meta files store their source paths
+      # relative to one, so the cooker resolves ../../Resources the same way the
+      # editor does. It exits non-zero if it produced no .dds or .mesh.
+      run: |
+        $ErrorActionPreference = "Stop"
+        Push-Location "Build\EditorRelease"
+        .\AssetCooker.exe --resources ..\..\Resources
+        if ($LASTEXITCODE -ne 0) { Write-Error "AssetCooker failed"; exit 1 }
+        Pop-Location
       working-directory: Project
 
     - name: Verify the shipped exe has no console
@@ -160,12 +179,11 @@ jobs:
             exit 1
         }
 
-        # .dds, .mesh and .font are gitignored, so a clean CI checkout has none of
-        # them. The shipped game only compiles assets under EDITOR, and desktop has
-        # no raw-image fallback (that path is ANDROID-only), so an installer staged
-        # from a clean checkout renders untextured. This has never been noticed
-        # because an installer built on a developer machine picks up the compiled
-        # files already sitting on disk. Count them and say so.
+        # .dds, .mesh and .font are gitignored, so a clean checkout has none and
+        # the Cook assets step above is what produces them. Desktop has no
+        # raw-image fallback, that path being ANDROID-only, so shipping without
+        # these gives a game that renders untextured. Counting them here is the
+        # check that the cook actually landed where staging reads from.
         $ddsCount  = (Get-ChildItem "$gamedir\Resources" -Recurse -File -Filter *.dds  -ErrorAction SilentlyContinue).Count
         $meshCount = (Get-ChildItem "$gamedir\Resources" -Recurse -File -Filter *.mesh -ErrorAction SilentlyContinue).Count
         $fontCount = (Get-ChildItem "$gamedir\Resources" -Recurse -File -Filter *.font -ErrorAction SilentlyContinue).Count
@@ -175,12 +193,8 @@ jobs:
         Write-Host "  .font fonts:    $fontCount"
 
         if ($ddsCount -eq 0 -or $meshCount -eq 0) {
-            if ("${{ inputs.allow_uncompiled_assets }}" -eq "true") {
-                Write-Warning "No compiled assets staged. Packaging anyway because allow_uncompiled_assets was set. The installed game will render untextured."
-            } else {
-                Write-Error "No compiled assets staged (.dds=$ddsCount, .mesh=$meshCount). The installer would produce a game that renders untextured. Compile assets before staging, or re-run with allow_uncompiled_assets set to package anyway."
-                exit 1
-            }
+            Write-Error "No compiled assets staged (.dds=$ddsCount, .mesh=$meshCount). The Cook assets step should have produced these, so it either failed or staged from the wrong place."
+            exit 1
         }
 
         $totalMb = [int](((Get-ChildItem $gamedir -Recurse -File | Measure-Object -Property Length -Sum).Sum) / 1MB)
