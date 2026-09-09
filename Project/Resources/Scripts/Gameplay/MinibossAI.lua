@@ -590,6 +590,14 @@ return Component {
             self:ApplyGravity(dtSec)
         end
 
+        -- Diagnosis: the boss stayed dormant with the player four units away
+        -- and the aggro check below never ran once. The counter goes here,
+        -- above the first early return, so "Update is not running" can be told
+        -- apart from "Update runs and returns here".
+        _G.miniboss_ticks = (_G.miniboss_ticks or 0) + 1
+        _G.miniboss_frozen = self._frozenBycinematic or false
+        _G.miniboss_intro_done = self._introDone or false
+
         if self._frozenBycinematic then
             --print("[Miniboss] FROZEN by cinematic, skipping Update. lockReason=", tostring(self._lockReason), "lockT=", tostring(self._lockTimer))
             return
@@ -718,8 +726,17 @@ return Component {
             self:FacePlayer()
 
             local px, py, pz = self:GetPlayerPosForAI()
+            -- Diagnosis: the boss stayed dormant with the player standing four
+            -- units away. These say whether Update is running at all, and what
+            -- position the boss believes the player is at.
+            _G.miniboss_ticks = (_G.miniboss_ticks or 0) + 1
+            _G.miniboss_sees_player = (px ~= nil)
+            _G.miniboss_player_x = px or -999
+            _G.miniboss_player_z = pz or -999
             if px then
                 local ex, ez = self:GetEnemyPosXZ()
+                _G.miniboss_self_x = ex
+                _G.miniboss_self_z = ez
                 local dx, dz = px - ex, pz - ez
                 local r = self.AggroRange or 15.0
 
