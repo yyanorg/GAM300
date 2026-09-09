@@ -70,20 +70,13 @@ return Component {
         -- Minimum height above last grounded Y before aerial attacks are allowed.
         -- Below this the player is too close to the ground for aerial combo to make sense.
         --
-        -- This was 0.8, and the level ships PlayerMovement with JumpHeight
-        -- overridden to 0.5 against a script default of 1.2. Measured over
-        -- eight jumps, player_air_height peaks at 0.527 every time, so the
-        -- gate sat above anything the jump could reach and every aerial
-        -- attack input was silently consumed by the branch below. The whole
-        -- aerial moveset — air_light_1, air_light_2 and the hit-confirm loop
-        -- between them — was unreachable, not merely unfinished.
-        --
-        -- 0.25 is just under half that apex, so an attack pressed at the
-        -- instant of leaving the ground is still refused while the middle of
-        -- the arc accepts one. Raising the jump back to 1.2 would also clear
-        -- the old gate, but that changes how the level traverses; this does
-        -- not change movement at all.
-        MinAerialAttackHeight = 0.25,
+        -- 0.8 is deliberate and correct. The way into the aerial combo is
+        -- lift_attack, which jumps at PlayerMovement's LiftAttackHeight of
+        -- 1.35 and clears this easily. A standing jump peaks at 0.527 and is
+        -- meant to be refused. I lowered this to 0.25 on the mistaken reading
+        -- that the moveset was unreachable, having only ever tested a standing
+        -- jump from idle.
+        MinAerialAttackHeight = 0.8,
         -- Height above ground that auto-routes idle airborne attack to air_slam.
         SlamHeightThreshold   = 5.0,
         -- Minimum seconds between aerial attack state entries.
