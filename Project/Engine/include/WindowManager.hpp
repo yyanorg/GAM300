@@ -76,6 +76,15 @@ public:
     // Platform access
     static class IPlatform* GetPlatform();
 
+    // Creates the platform object without opening a window or a GL context.
+    //
+    // Asset discovery goes through IPlatform::ListAssets, so anything that
+    // walks the asset tree needs a platform, but a command line tool that only
+    // compiles assets has no reason to open a window. Init() does both
+    // together, which makes it unusable on a machine with no display, such as
+    // a CI runner. Returns false if the platform could not be created.
+    static ENGINE_API bool InitPlatformOnly();
+
 
 private:
 

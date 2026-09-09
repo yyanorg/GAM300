@@ -135,7 +135,7 @@ public:
 	const std::unordered_set<std::string>& GetShaderExtensions() const;
 	bool ENGINE_API IsAssetExtensionSupported(const std::string& extension) const;
 	bool ENGINE_API IsExtensionMetaFile(const std::string& extension) const;
-	bool IsExtensionShaderVertFrag(const std::string& extension) const;
+	bool ENGINE_API IsExtensionShaderVertFrag(const std::string& extension) const;
 	bool ENGINE_API IsExtensionTexture(const std::string& extension) const;
 	bool ENGINE_API IsExtensionMaterial(const std::string& extension) const;
 
@@ -146,9 +146,9 @@ public:
 
 	std::string ENGINE_API GetAssetPathFromGUID(const GUID_128 guid);
 	std::vector<std::string> ENGINE_API CompileAllAssetsForAndroid();
-	std::vector<std::string> CompileAllAssetsForDesktop();
+	std::vector<std::string> ENGINE_API CompileAllAssetsForDesktop();
 
-	void SetRootAssetDirectory(const std::string& _rootAssetsFolder);
+	void ENGINE_API SetRootAssetDirectory(const std::string& _rootAssetsFolder);
 	std::string ENGINE_API GetRootAssetDirectory() const;
 	std::string ENGINE_API GetAssetPathFromAssetName(const std::string& assetName);
 

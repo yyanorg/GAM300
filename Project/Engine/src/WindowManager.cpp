@@ -353,3 +353,10 @@ void WindowManager::PollEvents() {
 IPlatform* WindowManager::GetPlatform() {
     return platform;
 }
+
+bool WindowManager::InitPlatformOnly() {
+    if (!platform) {
+        platform = CreatePlatform();
+    }
+    return platform != nullptr;
+}
