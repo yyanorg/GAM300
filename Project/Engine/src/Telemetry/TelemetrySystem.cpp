@@ -249,6 +249,21 @@ namespace {
         return ok;
     }
 
+    // One string field inside a table field on the instance: instance[key][sub].
+    bool FieldTableEntryString(lua_State* L, int instanceRef, const char* key,
+                               const char* sub, std::string& out) {
+        if (!L || instanceRef == LUA_NOREF) return false;
+        lua_rawgeti(L, LUA_REGISTRYINDEX, instanceRef);
+        if (!lua_istable(L, -1)) { lua_pop(L, 1); return false; }
+        lua_getfield(L, -1, key);
+        if (!lua_istable(L, -1)) { lua_pop(L, 2); return false; }
+        lua_getfield(L, -1, sub);
+        const bool ok = lua_isstring(L, -1) != 0;
+        if (ok) out = lua_tostring(L, -1);
+        lua_pop(L, 3);
+        return ok;
+    }
+
     bool GlobalString(lua_State* L, const char* name, std::string& out) {
         if (!L) return false;
         lua_getglobal(L, name);
@@ -1064,6 +1079,46 @@ namespace Telemetry {
 
             line += ",\"kind\":";
             AppendEscaped(line, kind == kMinibossScript ? "Miniboss" : "Enemy");
+
+            if (kind == kMinibossScript) {
+                // Phase and current move. Move5, Death Lotus, is weighted only
+                // in phase 4, and _ComputePhase returned 1, 2 or 3, so the
+                // question these answer is whether the finisher can now be
+                // rolled at all.
+                double phase = 0.0;
+                if (FieldNumber(L, a.instanceRef, "_phase", phase)) {
+                    line += ",\"phase\":"; AppendNumber(line, phase, 0);
+                }
+                std::string moveKind;
+                if (FieldTableEntryString(L, a.instanceRef, "_move", "kind", moveKind)) {
+                    line += ",\"move\":"; AppendEscaped(line, moveKind);
+                }
+                double ticks = 0.0, seenX = 0.0, seenZ = 0.0, selfX = 0.0, selfZ = 0.0;
+                bool sees = false;
+                if (GlobalNumber(L, "miniboss_ticks", ticks)) {
+                    line += ",\"ticks\":"; AppendNumber(line, ticks, 0);
+                }
+                bool frozen = false, introDone = false;
+                if (GlobalBool(L, "miniboss_frozen", frozen)) {
+                    line += ",\"frozen\":"; line += frozen ? "true" : "false";
+                }
+                if (GlobalBool(L, "miniboss_intro_done", introDone)) {
+                    line += ",\"intro_done\":"; line += introDone ? "true" : "false";
+                }
+                if (GlobalBool(L, "miniboss_sees_player", sees)) {
+                    line += ",\"sees_player\":"; line += sees ? "true" : "false";
+                }
+                if (GlobalNumber(L, "miniboss_player_x", seenX)
+                    && GlobalNumber(L, "miniboss_player_z", seenZ)) {
+                    line += ",\"sees_at\":["; AppendNumber(line, seenX, 2);
+                    line += ","; AppendNumber(line, seenZ, 2); line += "]";
+                }
+                if (GlobalNumber(L, "miniboss_self_x", selfX)
+                    && GlobalNumber(L, "miniboss_self_z", selfZ)) {
+                    line += ",\"self_at\":["; AppendNumber(line, selfX, 2);
+                    line += ","; AppendNumber(line, selfZ, 2); line += "]";
+                }
+            }
 
             std::string type;
             if (FieldString(L, a.instanceRef, "EnemyType", type)) {
