@@ -85,12 +85,6 @@ end
 -- Phase definition (HP-based)
 -------------------------------------------------
 local PHASE_THRESHOLDS = {
-    -- Phase 4 exists only to open the move pool. Move5, Death Lotus, is
-    -- weighted 0 in phases 1 to 3 and 30 in phase 4, and _ComputePhase
-    -- returned 1, 2 or 3 and nothing else, so the boss's finisher was
-    -- implemented, animated, and unselectable. There was no Phase4HpPct to
-    -- override either.
-    { id = 4, hpPct = 0.15 },
     { id = 3, hpPct = 0.33 },
     { id = 2, hpPct = 0.66 },
 }
@@ -108,6 +102,12 @@ end
 -------------------------------------------------
 -- Move definitions (DATA-DRIVEN)
 -------------------------------------------------
+-- DEAD CODE, kept because it is the only written record of the intended
+-- weighting. Nothing calls ChooseMove or GetMoveWeightForPhase, so this table
+-- selects nothing: the moves the boss actually uses are driven by the scripted
+-- sequences in _UpdatePhase1/2/3. Death Lotus, for instance, is step 3 of the
+-- phase 3 loop, not a weighted roll, which is why it fires despite being
+-- weighted 0 in every phase this table can reach.
 local MOVES = {
     Move1 = { cooldown = 2.0, weights = { [1]=50, [2]=20, [3]=10, [4]=0 }, execute = function(ai) print("[Miniboss] Move1: Basic Attack") ai:BasicAttack() end },
     Move2 = { cooldown = 2.5, weights = { [1]=25, [2]=35, [3]=30, [4]=20 }, execute = function(ai) print("[Miniboss] Move2: Burst Fire") ai:BurstFire() end },
@@ -158,10 +158,6 @@ return Component {
         -- Phase gates
         Phase2HpPct = 0.66,
         Phase3HpPct = 0.33,
-        -- The last stretch of the fight, where Death Lotus becomes available.
-        -- Behaviour is phase 3's; only the move weights change. See
-        -- _BehaviourPhase for why that is not the same as adding a phase.
-        Phase4HpPct = 0.15,
 
         -- Phase 1 shout checkpoints
         P1_Shout1Pct = 0.90,
@@ -789,12 +785,11 @@ return Component {
         end
         self._phaseRecoverActive = phaseRecoverActive
 
-        local behaviourPhase = self:_BehaviourPhase()
-        if behaviourPhase == 1 then
+        if self._phase == 1 then
             self:_UpdatePhase1(dtSec)
-        elseif behaviourPhase == 2 then
+        elseif self._phase == 2 then
             self:_UpdatePhase2(dtSec)
-        elseif behaviourPhase == 3 then
+        elseif self._phase == 3 then
             self:_UpdatePhase3(dtSec)
         end
 
@@ -898,7 +893,7 @@ return Component {
 
         local tx, tz = self:_ClampToArenaXZ(x, z)
 
-        if self:_BehaviourPhase() == 2 or self:_BehaviourPhase() == 3 or self._inAir then
+        if self._phase == 2 or self._phase == 3 or self._inAir then
             self:_MoveToXZ_Air(tx, tz, dtSec)
         else
             local oldSpeed = self.MoveSpeed
@@ -928,7 +923,7 @@ return Component {
         local tx = self.ArenaCenterX or 0.0
         local tz = self.ArenaCenterZ or 0.0
 
-        if self:_BehaviourPhase() == 2 or self:_BehaviourPhase() == 3 or self._inAir then
+        if self._phase == 2 or self._phase == 3 or self._inAir then
             return self:_MoveToXZ_Air(tx, tz, dtSec)
         else
             return self:_MoveToXZ_Ground(tx, tz, dtSec)
@@ -1312,27 +1307,11 @@ return Component {
 
     _ComputePhase = function(self)
         local pct = self:_GetHpPct()
-        if pct <= (self.Phase4HpPct or 0.15) then return 4 end
         if pct <= (self.Phase3HpPct or 0.33) then 
             return 3 
         end
         if pct <= (self.Phase2HpPct or 0.66) then return 2 end
         return 1
-    end,
-
-    -- The phase whose behaviour should run, as opposed to the phase whose move
-    -- weights should be used.
-    --
-    -- Everything that branches on the phase stops at 3: the per-phase update
-    -- dispatch, the air checks, the hook response. Phase 4 is the same fight
-    -- as phase 3 with Death Lotus added, so it runs phase 3's behaviour and
-    -- differs only in ChooseMove, which reads self._phase directly. Without
-    -- this the dispatch below would match no branch and the boss would stop
-    -- updating entirely.
-    _BehaviourPhase = function(self)
-        local p = self._phase or 1
-        if p > 3 then return 3 end
-        return p
     end,
 
     StartBossPhaseTransition = function(self, newPhase)
@@ -1366,9 +1345,6 @@ return Component {
             self._animator:SetBool("Phase3", true)
             self:EnterPhase3_Air()
         end
-        -- Phase 4 deliberately enters nothing. The boss is already in the
-        -- phase 3 configuration when it crosses into 4, and re-running
-        -- EnterPhase3_Air would restart the hover it is already holding.
     end,
 
     ForceNextPhase = function(self)
@@ -1379,7 +1355,7 @@ return Component {
         local curPhase = self._phase or self:_ComputePhase()
         local nextPhase = curPhase + 1
 
-        if nextPhase > 4 then
+        if nextPhase > 3 then
             --print("[Miniboss][Cheat] Already at final phase.")
             return
         end
@@ -1392,8 +1368,6 @@ return Component {
             self.health = (maxHp * (self.Phase2HpPct or 0.66)) - 0.01
         elseif nextPhase == 3 then
             self.health = (maxHp * (self.Phase3HpPct or 0.33)) - 0.01
-        elseif nextPhase == 4 then
-            self.health = (maxHp * (self.Phase4HpPct or 0.15)) - 0.01
         end
 
         -- Optional cleanup so the transition is clean
@@ -1645,11 +1619,7 @@ return Component {
             return
         end
 
-        -- Behaviour phase, so this still runs in phase 4. The branch below is
-        -- the counterplay to Death Lotus, and Death Lotus can only be rolled
-        -- in phase 4, so gating it on phase 3 alone would have meant the
-        -- finisher shipped with its interrupt unreachable as well.
-        if self:_BehaviourPhase() == 3 and not self._inAir then
+        if self._phase == 3 and not self._inAir then
             -- If hooked during Death Lotus, interrupt it immediately and schedule Fate Sealed
             if self:IsInMove("DeathLotus") then
                 --print("[Miniboss][P3] Hooked DURING DeathLotus -> INTERRUPT")
