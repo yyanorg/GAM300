@@ -197,6 +197,10 @@ add_subdirectory(Engine)
 # Always build Game (executable or static lib depending on config)
 add_subdirectory(Game)
 
+# Host tool: compiles source art into the .dds/.mesh the game loads. Built for
+# desktop Game configurations only; it guards itself for Editor and Android.
+add_subdirectory(Tools/AssetCooker)
+
 # Only add Editor for Editor configurations
 # (Single-config generators like Ninja know CMAKE_BUILD_TYPE at configure time)
 if(CMAKE_BUILD_TYPE MATCHES "Editor")

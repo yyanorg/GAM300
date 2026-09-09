@@ -37,6 +37,15 @@ Mesh::Mesh(std::vector<Vertex>& vertices, std::vector<GLuint>& indices, std::vec
 
 Mesh::~Mesh()
 {
+	// Only tear down GPU objects that were actually created. A Mesh built from
+	// assimp data and never drawn has vaoSetup false and no GL names, and the
+	// Delete calls below go straight to glDeleteVertexArrays. With no GL
+	// context loaded that function pointer is null, so compiling a model
+	// outside the renderer segfaulted here. VAO and EBO already guard their own
+	// destructors on ID != 0; this is the path that skipped those guards.
+	if (!vaoSetup) {
+		return;
+	}
 	vao.Delete();
 	ebo.Delete();
 }

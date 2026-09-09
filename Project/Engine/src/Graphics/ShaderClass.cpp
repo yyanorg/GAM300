@@ -115,6 +115,17 @@ bool Shader::SetupShader(const std::string& path) {
 	}
 #endif
 
+	// Linking a shader is GL work, and the GL entry points are only loaded once
+	// a context exists. A command line tool that only compiles assets has no
+	// context, and the null function pointer segfaults here rather than
+	// failing. Refuse politely instead, so asset compilation can run headless.
+	// Shaders do not need cooking: the .vert and .frag ship as source and the
+	// renderer links them at run time.
+	if (glCreateProgram == nullptr) {
+		ENGINE_LOG_INFO("SetupShader skipped, no GL context: " + path);
+		return false;
+	}
+
 	ENGINE_LOG_INFO("SetupShader path: " + path);
 
 	std::filesystem::path p(path);
