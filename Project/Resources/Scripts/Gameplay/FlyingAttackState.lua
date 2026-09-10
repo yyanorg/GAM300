@@ -1,4 +1,5 @@
 -- Resources/Scripts/GamePlay/FlyingAttackState.lua
+local AttackDirector = require("Gameplay.AttackDirector")
 local FlyingAttack = {}
 
 local function toDtSec(dt)
@@ -144,6 +145,11 @@ function FlyingAttack:Update(ai, dt)
 end
 
 function FlyingAttack:Exit(ai)
+    -- Give the attack slot back, same as the ground attack state. Every exit
+    -- from this state runs through here because StateMachine calls Exit on
+    -- both Change and ForceChange.
+    AttackDirector.Release(ai)
+
     ai:CancelPendingAttack("EXIT_ATTACK")
 
     ai._animator:SetBool("PlayerInAttackRange", false)
