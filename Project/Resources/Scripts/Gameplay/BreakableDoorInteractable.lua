@@ -18,6 +18,30 @@
 -- Works standalone (leave LinkedDoorName blank) or as a dual-door pair.
 -- =============================================================================
 
+-- Diagnostic channel, off by default.
+--
+-- It writes to stderr rather than using print because print goes to stdout,
+-- which is fully buffered once the game's output is redirected to a file, so
+-- the lines sit in the buffer and are lost when the process is killed rather
+-- than exiting normally. cpp_print is no better: it logs at Info and Release
+-- filters Info out. stderr is unbuffered and not level filtered, and it is the
+-- only one of the three that reports from a Release build.
+--
+-- These four lines are what identified the disarm bug below. They say whether
+-- the chain registered on the door at all, which nothing outside this script
+-- can distinguish from the player having missed.
+-- Turned on with GAM300_DOOR_DEBUG=1 in the environment, or by setting
+-- _G.DOOR_DEBUG at runtime. os.getenv simply returns nil where there is no
+-- environment to read, such as Android, which leaves this off.
+local DOOR_DEBUG_ENV = false
+pcall(function()
+    DOOR_DEBUG_ENV = (os.getenv("GAM300_DOOR_DEBUG") == "1")
+end)
+
+local function ddbg(msg)
+    if DOOR_DEBUG_ENV or _G.DOOR_DEBUG then io.stderr:write(msg .. "\n") end
+end
+
 local Component = require("extension.mono_helper")
 
 -- =============================================================================
@@ -643,6 +667,31 @@ return Component {
         if payload.position then self._endpointPos = payload.position end
 
         if self._hitFired       then return end
+
+        -- Re-arm as soon as the endpoint is under control again.
+        --
+        -- A flop (the chain reaching full length, or the player walking out of
+        -- range) publishes chain.detached, and every breakable door in the
+        -- level disarms itself on it so that the loose endpoint dragging past
+        -- one does not count as a hit. The only thing that used to clear that
+        -- was chain.endpoint_retracted, which is published on a single
+        -- transition inside ChainBootstrap and is skipped while a spin is
+        -- pending. When it was missed, every door in the level stayed dead for
+        -- the rest of the session: the player fired at a door, the chain
+        -- visibly struck it, and this handler returned here before testing
+        -- anything. Measured on the first breakable door, that is one route
+        -- run in three failing with three consecutive shots that never
+        -- registered.
+        --
+        -- What the disarm is protecting against is a flopping endpoint, and
+        -- the payload reports that directly, every frame, from the same
+        -- Flopping flag the detach edge is derived from. So a move that is not
+        -- flopping means the chain is under control again and the door can
+        -- listen. The next line still rejects the flopping ones.
+        if self._detachDisarmed and not payload.isFlopping then
+            self._detachDisarmed = false
+        end
+
         if self._detachDisarmed then return end
         if payload.isFlopping   then return end
         if not self._endpointPos then return end
@@ -687,7 +736,7 @@ return Component {
         _G.chain_retract_veto = function()
             return self._isHooked and not self._mashDone
         end
-        --print(string.format("[BreakableDoor] HIT on '%s' — waiting for mash", self._doorName))
+        ddbg(string.format("[BreakableDoor] HIT on '%s' — waiting for mash", self._doorName))
     end,
 
     -- =========================================================================
@@ -702,7 +751,7 @@ return Component {
         -- Persist progress globally so a detach + reattach doesn't reset the count.
         _G.BreakableDoorMashProgress[self._groupKey] = self._mashProgress
         local max = math.max(1, tonumber(self.MashCount) or 1)
-        --print(string.format("[BreakableDoor] Mash %d/%d on '%s'", self._mashProgress, max, self._doorName))
+        ddbg(string.format("[BreakableDoor] Mash %d/%d on '%s'", self._mashProgress, max, self._doorName))
 
         if self._mashProgress >= max then
             self:_doFinalMash()
@@ -718,8 +767,8 @@ return Component {
     _onChainRetracted = function(self, payload)
         if self._isHooked and not self._mashDone then
             -- Re-arm: player retracted before finishing the mash
-            --print(string.format("[BreakableDoor] '%s' retracted at %d/%d — re-arming",
-            --    self._doorName, self._mashProgress, math.max(1, tonumber(self.MashCount) or 1)))
+            ddbg(string.format("[BreakableDoor] '%s' retracted at %d/%d — re-arming",
+                self._doorName, self._mashProgress, math.max(1, tonumber(self.MashCount) or 1)))
             self._hitFired       = false
             self._detachDisarmed = false
             -- NOTE: _currentStep is intentionally NOT reset here.
@@ -741,7 +790,7 @@ return Component {
     -- =========================================================================
 
     _onDetach = function(self)
-        --print(string.format("[BreakableDoor] '%s' detached — disarming until retract", self._doorName))
+        ddbg(string.format("[BreakableDoor] '%s' detached — disarming until retract", self._doorName))
         self._isHooked       = false
         self._detachDisarmed = true
         self._endpointPos    = nil
