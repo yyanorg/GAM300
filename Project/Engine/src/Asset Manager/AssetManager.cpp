@@ -568,7 +568,22 @@ std::vector<std::string> AssetManager::CompileAllAssetsForAndroid() {
 	// Mutex inside CompileTextureToResource guards the shared assetMetaMap writes.
 	// Divide into batches, one per hardware thread.
 	{
-		const unsigned int numThreads = std::max(1u, std::thread::hardware_concurrency());
+		// One batch per hardware thread. Each thread holds, at its peak, the
+		// source buffer, a full-size copy of it for the mip chain, the current
+		// mip and the whole compressed chain: roughly 165 MB for a 4096x4096
+		// RGBA source, so twelve threads ask for about 2 GB.
+		//
+		// Dropping it to four was tried against the Android export dying part
+		// way through and moved the failure by about fifty files out of 2800,
+		// so the peak is not what kills it and the slower export was not worth
+		// it. The cause is a leak inside the compressor, and the export is made
+		// survivable by being resumable instead; see Texture::CompileToResource.
+		// The override is here for a machine that cannot afford the peak.
+		unsigned int numThreads = std::max(1u, std::thread::hardware_concurrency());
+		if (const char* threadsEnv = std::getenv("GAM300_ANDROID_COMPILE_THREADS")) {
+			const int wanted = std::atoi(threadsEnv);
+			if (wanted > 0) numThreads = static_cast<unsigned int>(wanted);
+		}
 		const size_t total = textureTasks.size();
 		const size_t batchSize = std::max((size_t)1, (total + numThreads - 1) / numThreads);
 
