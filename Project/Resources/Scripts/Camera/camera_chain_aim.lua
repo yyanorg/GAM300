@@ -52,6 +52,32 @@ local function hasLineOfSight(ox, oy, oz, ex, ey, ez)
     -- (with 0.3 m tolerance for the enemy's own collider) the LOS is blocked.
     local hitDist = Physics.Raycast(ox, oy, oz, ndx, ndy, ndz, dist)
     if hitDist and hitDist > 0 and hitDist < dist - 0.3 then
+        -- Report what blocked it. This ray starts at the camera, which in a
+        -- third-person game sits behind the player, so the player's own body
+        -- is on the line to anything they are facing. If that is what is being
+        -- hit, every enemy is rejected for being out of sight of the camera
+        -- while being in plain view of the player.
+        if CHAIN_DBG then
+            local who, tag = -1, "?"
+            if Physics.RaycastGetEntity then
+                local ok, _, e = pcall(Physics.RaycastGetEntity, ox, oy, oz, ndx, ndy, ndz, dist)
+                if ok and e then
+                    who = e
+                    local rootId, safety = e, 20
+                    while safety > 0 do
+                        local pOk, parentId = pcall(Engine.GetParentEntity, rootId)
+                        if pOk and parentId and parentId >= 0 then rootId = parentId else break end
+                        safety = safety - 1
+                    end
+                    local tOk, t = pcall(Engine.GetEntityTag, rootId)
+                    if tOk then tag = tostring(t) end
+                    who = rootId
+                end
+            end
+            cdbg(string.format(
+                "[ChainAim] LOS blocked at %.1f of %.1fu by entity %s tag '%s'",
+                hitDist, dist, tostring(who), tag))
+        end
         return false
     end
     return true
@@ -304,7 +330,36 @@ function M.updateAimAssist(self, dt, camX, camY, camZ)
                         local dy = (ey + heightOffset) - camY
                         local dz = ez - camZ
                         local distSq = dx*dx + dy*dy + dz*dz
-                        if distSq <= assistRange * assistRange
+                        -- Angle before line of sight, because the raycast is
+                        -- the expensive half and a candidate outside the
+                        -- window cannot be used whatever the raycast says.
+                        --
+                        -- This is behaviour preserving: the winner is the
+                        -- candidate with the smallest deviation, and if that
+                        -- smallest is outside the window the assist is refused
+                        -- regardless, so a candidate skipped here could never
+                        -- have changed the outcome.
+                        --
+                        -- It is worth doing because 04_Level searches 30 units
+                        -- while accepting 5 degrees, so nearly every candidate
+                        -- is across the room and doomed. Measured over one
+                        -- probe run: 1131 line-of-sight raycasts, every one of
+                        -- them blocked, every one of them for an enemy 20 to
+                        -- 30 units away that was never going to be inside a
+                        -- 5 degree window.
+                        local len3dPre = math.sqrt(distSq)
+                        local inWindow = false
+                        if distSq <= assistRange * assistRange and len3dPre > 0.01 then
+                            local preYaw   = math.deg(atan2(dx, dz))
+                            local prePitch = -math.deg(math.asin(
+                                math.max(-1.0, math.min(1.0, dy / len3dPre))
+                            ))
+                            local pdY = shortestDelta(currentYaw,   preYaw)
+                            local pdP = shortestDelta(currentPitch, prePitch)
+                            inWindow = math.sqrt(pdY*pdY + pdP*pdP) < assistAngle
+                        end
+
+                        if inWindow
                         and hasLineOfSight(camX, camY, camZ, ex, ey + heightOffset, ez) then
                             local len3d = math.sqrt(dx*dx + dy*dy + dz*dz)
                             if len3d > 0.01 then
