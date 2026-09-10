@@ -241,7 +241,13 @@ std::string Texture::CompileToResource(const std::string& assetPath, bool forAnd
 		mipW = std::max(1, mipW / 2);
 		mipH = std::max(1, mipH / 2);
 		if (!CompressAndStoreMip(mipPixels.data(), mipW, mipH, srcChannels, srcCmpFmt, dstCmpFmt, options, tex, mip)) {
-			ENGINE_PRINT(EngineLogging::LogLevel::Warn, "[TEXTURE]: Failed to compress mip ", mip, " - stopping mip chain early.\n");
+			// Name the texture. The Android export dies partway through
+			// compression and this warning is the last thing it prints, so
+			// without the path there is no way to tell which asset it was
+			// working on when it went. The mip 0 failure above already names
+			// it; this one did not.
+			ENGINE_PRINT(EngineLogging::LogLevel::Warn, "[TEXTURE]: Failed to compress mip ", mip,
+				" for: ", assetPath, " - stopping mip chain early.\n");
 			break;
 		}
 		prevPixels = std::move(mipPixels);
