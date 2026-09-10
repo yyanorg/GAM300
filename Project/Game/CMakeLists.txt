@@ -91,12 +91,17 @@ else()
         message(STATUS "Game: console option does not apply on this platform")
     elseif(GAME_CONSOLE)
         message(STATUS "Game: console ENABLED (CUI subsystem)")
+        target_compile_definitions(Game PRIVATE GAME_CONSOLE=1)
     else()
         message(STATUS "Game: console DISABLED (GUI subsystem)")
         set_target_properties(Game PROPERTIES WIN32_EXECUTABLE TRUE)
         if(MSVC)
             target_link_options(Game PRIVATE /ENTRY:mainCRTStartup)
         endif()
+        # The subsystem alone is not enough. main() calls AllocConsole when
+        # SHOW_CONSOLE is defined, which would hand a GUI-subsystem build a
+        # console window at runtime and undo the whole thing.
+        target_compile_definitions(Game PRIVATE GAME_CONSOLE=0)
     endif()
 
     # ============================================================================
