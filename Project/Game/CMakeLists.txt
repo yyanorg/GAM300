@@ -174,12 +174,21 @@ endif()
 
 # Copy resources (only for executable builds)
 if(NOT CMAKE_BUILD_TYPE MATCHES "Editor")
-    add_custom_command(TARGET Game POST_BUILD
+    # This is a target of its own rather than a POST_BUILD step on Game,
+    # because a POST_BUILD step only runs when Game relinks. Editing a Lua
+    # script or a scene does not relink anything, so the build reported
+    # "no work to do" and left the old copy in the runtime directory: the
+    # game then ran the previous version of a script that had already been
+    # edited, with nothing anywhere saying so. file(COPY) skips files that
+    # are already up to date, so running this every build is cheap.
+    add_custom_target(GameResources ALL
         COMMAND ${CMAKE_COMMAND}
             -DSRC="${CMAKE_SOURCE_DIR}/Resources"
             -DDST="${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/Resources"
             -P "${CMAKE_SOURCE_DIR}/cmake/CopyResources.cmake"
+        COMMENT "Syncing Resources into the runtime directory"
     )
+    add_dependencies(Game GameResources)
 
     # Platform-specific: Copy required libraries
     if(WIN32)
