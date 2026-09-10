@@ -38,8 +38,14 @@ pcall(function()
     DOOR_DEBUG_ENV = (os.getenv("GAM300_DOOR_DEBUG") == "1")
 end)
 
+-- Timestamped, because stderr and the engine's own logging are separate
+-- streams into the same file and the engine's is buffered. Without a clock
+-- reading here the door's lines cannot be placed against the engine's, and
+-- a hit gets attributed to the wrong moment in the run.
 local function ddbg(msg)
-    if DOOR_DEBUG_ENV or _G.DOOR_DEBUG then io.stderr:write(msg .. "\n") end
+    if DOOR_DEBUG_ENV or _G.DOOR_DEBUG then
+        io.stderr:write(os.date("[%H:%M:%S] ") .. msg .. "\n")
+    end
 end
 
 local Component = require("extension.mono_helper")
