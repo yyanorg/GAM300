@@ -319,6 +319,14 @@ bool Texture::LoadResource(const std::string& resourcePath, const std::string& a
 			}
 		}
 #endif
+		// Say which texture is missing. A texture that fails to load here is
+		// not visible as an error anywhere: the object simply renders in the
+		// default grey, and the incense burners in the shrine room have been
+		// shipping like that. Desktop has no raw-image fallback, so a missing
+		// compiled file is the whole story and worth naming.
+		ENGINE_PRINT(EngineLogging::LogLevel::Error,
+			"[TEXTURE] compiled file missing, object will render untextured: ",
+			resourcePath, " (source: ", assetPath, ")\n");
 		return false;
 	}
 
@@ -328,7 +336,9 @@ bool Texture::LoadResource(const std::string& resourcePath, const std::string& a
 	//std::cout << "[TEXTURE] DEBUG: GLI texture loaded, empty: " << texture.empty() << ", size: " << texture.size() << std::endl;
 
 	if (texture.empty()) {
-		//std::cerr << "[TEXTURE] DEBUG: GLI texture is empty!" << std::endl;
+		ENGINE_PRINT(EngineLogging::LogLevel::Error,
+			"[TEXTURE] compiled file could not be parsed, object will render "
+			"untextured: ", resourcePath, "\n");
 		return false;
 	}
 
