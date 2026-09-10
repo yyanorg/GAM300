@@ -78,6 +78,17 @@ static bool CompressAndStoreMip(
 	mipDst.format = dstFmt;
 	mipDst.dwDataSize = CMP_CalculateBufferSize(&mipDst);
 	mipDst.pData = (CMP_BYTE*)malloc(mipDst.dwDataSize);
+	if (!mipDst.pData) {
+		// Fail rather than hand a null pointer to the compressor. The Android
+		// export exhausts memory partway through and dies with no message and
+		// no kernel OOM record, which is what a write through this pointer
+		// looks like. Returning false makes the caller report the texture by
+		// name and stop that mip chain, so the failure says what it is.
+		ENGINE_PRINT(EngineLogging::LogLevel::Error,
+			"[TEXTURE]: out of memory allocating ", (unsigned long long)mipDst.dwDataSize,
+			" bytes for a ", w, "x", h, " mip\n");
+		return false;
+	}
 
 	CMP_ERROR status = CMP_ConvertTexture(&mipSrc, &mipDst, &options, nullptr);
 	if (status != CMP_OK) {
