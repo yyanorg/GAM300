@@ -76,20 +76,48 @@ return Component {
 
     Start = function(self)
         self._subDmg = nil
+        self._subDied = nil
+        self._subRespawn = nil
+        -- Entities that have already died. AttackHitbox tests the target's tag
+        -- and whether it was hit this swing, and nothing else, so a corpse
+        -- still carries the Enemy tag and its collider and still publishes
+        -- deal_damage_to_entity when the weapon passes through it. EnemyHealth
+        -- ignores that because it keeps its own _isDead; every other
+        -- subscriber, this one included, took it at face value and played the
+        -- full impact effect for a hit on a body lying on the floor.
+        self._dead = {}
 
         if event_bus and event_bus.subscribe then
+            self._subDied = event_bus.subscribe("enemy_died", function(payload)
+                if payload and payload.entityId then
+                    self._dead[payload.entityId] = true
+                end
+            end)
+
+            -- The table outlives a scene, so ids from the previous run would
+            -- suppress hitstop on whatever reused them.
+            self._subRespawn = event_bus.subscribe("respawnPlayer", function()
+                self._dead = {}
+            end)
+
             self._subDmg = event_bus.subscribe("deal_damage_to_entity", function(payload)
                 if not payload or not payload.damage or payload.damage <= 0 then return end
+                if payload.entityId and self._dead[payload.entityId] then return end
                 self:_trigger(payload.damage, payload.hitType)
             end)
         end
     end,
 
     OnDisable = function(self)
-        if event_bus and event_bus.unsubscribe and self._subDmg then
-            event_bus.unsubscribe(self._subDmg)
-            self._subDmg = nil
+        if event_bus and event_bus.unsubscribe then
+            for _, key in ipairs({"_subDmg", "_subDied", "_subRespawn"}) do
+                if self[key] then
+                    event_bus.unsubscribe(self[key])
+                    self[key] = nil
+                end
+            end
         end
+        self._dead = {}
     end,
 
     -- No Update needed — all effects are owned by camera_effects and the shake system.
