@@ -22,6 +22,21 @@ end
 -- ox/oy/oz should be the camera position, which is outside the player's physics
 -- capsule. Starting inside the capsule causes Physics.Raycast to return -1 (no hit)
 -- making every enemy appear visible regardless of walls.
+-- Diagnostic channel, off unless GAM300_CHAIN_DEBUG=1. stderr because print
+-- goes to a fully buffered stdout that is lost when the process is killed and
+-- cpp_print logs at Info, which Release filters out.
+local ASSIST_ANGLE_OVERRIDE = nil
+pcall(function()
+    local v = tonumber(os.getenv("GAM300_ASSIST_ANGLE"))
+    if v and v > 0 then ASSIST_ANGLE_OVERRIDE = v end
+end)
+
+local CHAIN_DBG = false
+pcall(function() CHAIN_DBG = (os.getenv("GAM300_CHAIN_DEBUG") == "1") end)
+local function cdbg(msg)
+    if CHAIN_DBG then io.stderr:write(os.date("[%H:%M:%S] ") .. msg .. "\n") end
+end
+
 local function hasLineOfSight(ox, oy, oz, ex, ey, ez)
     if not (Physics and Physics.Raycast) then return true end
 
@@ -149,6 +164,30 @@ function M.updateChainAim(self, dt)
                 local d = Physics.Raycast(camX, camY, camZ, fx, fy, fz, crosshairMaxDist)
                 if d and d > 0 then hitDist = d end
             end
+            if CHAIN_DBG and Physics and Physics.RaycastGetEntity then
+                -- No assist target, so the shot goes wherever the crosshair
+                -- ray lands. Name what that is: this is what separates "the
+                -- aim missed" from "the ray hit the enemy and the chain
+                -- snapped to it as if it were a wall".
+                local ok, r1, r2 = pcall(Physics.RaycastGetEntity,
+                                         camX, camY, camZ, fx, fy, fz, crosshairMaxDist)
+                local hitId = ok and (r2 or -1) or -1
+                local tag = "?"
+                if hitId and hitId >= 0 and Engine and Engine.GetEntityTag then
+                    local rootId, safety = hitId, 20
+                    while safety > 0 do
+                        local pOk, parentId = pcall(Engine.GetParentEntity, rootId)
+                        if pOk and parentId and parentId >= 0 then rootId = parentId else break end
+                        safety = safety - 1
+                    end
+                    local tOk, t = pcall(Engine.GetEntityTag, rootId)
+                    if tOk then tag = tostring(t) end
+                    hitId = rootId
+                end
+                cdbg(string.format(
+                    "[ChainAim] no assist; crosshair ray hits entity %s tag '%s' at %.1fu",
+                    tostring(hitId), tag, hitDist))
+            end
             -- Use camera position as origin so the world target matches exactly
             -- where the crosshair is pointing. Previously this used the player's
             -- eye position with the camera's hit distance, causing parallax error.
@@ -230,6 +269,11 @@ function M.updateAimAssist(self, dt, camX, camY, camZ)
     if not (Engine and Engine.FindEntitiesWithScript and Engine.GetEntityPosition) then return end
 
     local assistAngle    = self.chainAimAssistAngle         or 30.0
+    -- Overridable so the authored value can be measured against alternatives
+    -- without editing the scene, which is editor-written data. 04_Level sets
+    -- this to 5 degrees against a script default of 30, and at 5 the assist
+    -- was refused 252 times out of 252 in a real fight.
+    if ASSIST_ANGLE_OVERRIDE then assistAngle = ASSIST_ANGLE_OVERRIDE end
     local assistStrength = self.chainAimAssistStrength     or 15.0   -- corrective pull deg/s
     local assistRange    = self.chainAimAssistRange        or 12.0
     local heightOffset   = self.chainAimAssistHeightOffset or 1.0
@@ -286,6 +330,18 @@ function M.updateAimAssist(self, dt, camX, camY, camZ)
                     end
                 end
             end
+        end
+    end
+
+    if CHAIN_DBG then
+        if bestEX then
+            local dx, dy, dz = bestEX - camX, bestEY - camY, bestEZ - camZ
+            cdbg(string.format(
+                "[ChainAim] best candidate at %.1fu, deviation %.1f deg, window %.0f -> %s",
+                math.sqrt(dx*dx + dy*dy + dz*dz), bestDeviation, assistAngle,
+                bestDeviation < assistAngle and "ASSISTED" or "REFUSED"))
+        else
+            cdbg("[ChainAim] no candidate: nothing in range with line of sight")
         end
     end
 
