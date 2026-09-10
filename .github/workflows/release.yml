@@ -89,8 +89,21 @@ jobs:
       run: |
         $ErrorActionPreference = "Stop"
         Push-Location "Build\EditorRelease"
+        if (-not (Test-Path ".\AssetCooker.exe")) {
+            Write-Error "AssetCooker.exe was not built into $(Get-Location)"
+            exit 1
+        }
         .\AssetCooker.exe --resources ..\..\Resources
-        if ($LASTEXITCODE -ne 0) { Write-Error "AssetCooker failed"; exit 1 }
+        $code = $LASTEXITCODE
+        if ($code -ne 0) {
+            # A missing runtime DLL kills the process before main() and prints
+            # nothing, so a silent non-zero exit needs the directory listing to
+            # be diagnosable at all.
+            Write-Host "AssetCooker exited $code. Contents of $(Get-Location):"
+            Get-ChildItem -Name | Sort-Object | ForEach-Object { Write-Host "  $_" }
+            Write-Error "AssetCooker failed with exit code $code"
+            exit 1
+        }
         Pop-Location
       working-directory: Project
 
