@@ -83,7 +83,7 @@ public:
     // compiles assets has no reason to open a window. Init() does both
     // together, which makes it unusable on a machine with no display, such as
     // a CI runner. Returns false if the platform could not be created.
-    static ENGINE_API bool InitPlatformOnly();
+    static bool InitPlatformOnly();
 
 
 private:
