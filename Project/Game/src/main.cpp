@@ -3,8 +3,20 @@
 #include <iostream>
 #include "Logging.hpp"
 
-// Comment out to hide console window
+// The console is a build option, not a code edit. GAME_CONSOLE is set by
+// Project/Game/CMakeLists.txt, which also picks the linker subsystem. The two
+// have to agree: the subsystem decides whether the process starts attached to
+// a console, this decides whether it creates one, and a GUI-subsystem build
+// that still calls AllocConsole gets its console straight back.
+//
+// Defaulted ON so a build that does not go through that option behaves as it
+// always did.
+#ifndef GAME_CONSOLE
+#define GAME_CONSOLE 1
+#endif
+#if GAME_CONSOLE
 #define SHOW_CONSOLE
+#endif
 
 #ifdef _WIN32
 #ifdef SHOW_CONSOLE
