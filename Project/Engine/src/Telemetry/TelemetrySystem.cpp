@@ -864,6 +864,25 @@ namespace Telemetry {
                 line += locked ? "true" : "false";
                 line += ",\"wall\":";
                 line += snapped ? "true" : "false";
+
+                // What the chain believes it hooked. A shot can report locked
+                // while the enemy carries on attacking, measured at 0 of 6
+                // hooks producing a Hooked state, and from outside there is no
+                // way to tell whether the hook event was never published or
+                // was published at an id no enemy matches. hooked_enemy is the
+                // id ChainBootstrap will publish, and hooked_tag is the tag
+                // that decides whether it sets that id at all.
+                double hookedEnemy = 0.0;
+                if (FieldNumber(L, chainRef, "_hookedEnemyEntityId", hookedEnemy)) {
+                    line += ",\"hooked_enemy\":";
+                    line += std::to_string(static_cast<long long>(hookedEnemy));
+                } else {
+                    line += ",\"hooked_enemy\":null";
+                }
+                std::string hookedTag;
+                if (FieldNestedString(L, chainRef, "controller", "hookedTag", hookedTag)) {
+                    line += ",\"hooked_tag\":"; AppendEscaped(line, hookedTag);
+                }
                 line += "}";
             }
         }
