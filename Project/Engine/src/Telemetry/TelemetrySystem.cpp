@@ -475,9 +475,20 @@ namespace {
         if (i < anim.clipGUIDs.size()) {
             const GUID_128 guid = anim.clipGUIDs[i];
             if (guid.high != 0 || guid.low != 0) {
-                const std::string byGuid =
-                    AssetManager::GetInstance().GetAssetPathFromGUID(guid);
-                if (!byGuid.empty()) return BaseName(byGuid);
+                // GetAssetPathFromGUID logs an error for every GUID it cannot
+                // resolve, and this runs for every clip of every actor on every
+                // sample. Twenty unresolvable clip GUIDs in the level turned
+                // into 2339 error lines in a single run, which buried the rest
+                // of the log. The answer for one GUID never changes within a
+                // run, so ask once and remember it.
+                static std::unordered_map<GUID_128, std::string> cache;
+                auto it = cache.find(guid);
+                if (it == cache.end()) {
+                    it = cache.emplace(
+                        guid,
+                        AssetManager::GetInstance().GetAssetPathFromGUID(guid)).first;
+                }
+                if (!it->second.empty()) return BaseName(it->second);
             }
         }
         if (i < anim.clipPaths.size()) return BaseName(anim.clipPaths[i]);
