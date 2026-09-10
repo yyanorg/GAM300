@@ -113,7 +113,64 @@ Texture::Texture() : ID(0), unit(-1), target(GL_TEXTURE_2D) {
 Texture::Texture(std::shared_ptr<TextureMeta> textureMeta) :
 	ID(0), unit(-1), target(GL_TEXTURE_2D), metaData(textureMeta) {}
 
+// Where the Android build of a texture is written. Kept next to
+// CompileToResource, which is the only other place that builds this path, so
+// the two cannot drift apart.
+static std::string AndroidOutputPathFor(const std::string& assetPath) {
+	std::filesystem::path p(assetPath);
+	std::string rel = (p.parent_path() / p.stem()).generic_string();
+	const size_t at = rel.find("Resources");
+	if (at == std::string::npos) return {};
+	rel = rel.substr(at);
+	std::string out =
+		(AssetManager::GetInstance().GetAndroidResourcesPath() / rel).generic_string()
+		+ "_android.ktx";
+	return FileUtilities::SanitizePathForAndroid(std::filesystem::path(out)).generic_string();
+}
+
 std::string Texture::CompileToResource(const std::string& assetPath, bool forAndroid) {
+	// Skip a texture whose Android build is already newer than its source.
+	//
+	// This is what makes the export resumable, and it has to be, because
+	// something inside the compressor holds on to roughly 8 MB per texture:
+	// the editor's RSS climbs steadily through the run and it is killed at
+	// around 2230 of some 2800 files, every time, at about 5.8 GB. Capping the
+	// compression pool at four threads and bounding the allocator's arenas
+	// each bought a few dozen files and neither addressed the cause.
+	//
+	// With this, running the export again continues from where it stopped
+	// instead of starting over, so a few passes complete it. It also makes an
+	// ordinary re-export cost only what has actually changed, which is the
+	// larger win: the export is otherwise a full rebuild every time.
+	//
+	// Deliberately conservative. It skips only when the output exists and is
+	// strictly newer than both the source and the source's .meta, so a
+	// touched texture is always rebuilt. The .meta matters as much as the
+	// image: it carries maxSize, flipUVs and the wrap mode, and changing one
+	// of those changes the output without touching the .png at all.
+	if (forAndroid) {
+		const std::string existing = AndroidOutputPathFor(assetPath);
+		std::error_code ec;
+		if (!existing.empty() && std::filesystem::exists(existing, ec) && !ec) {
+			const auto outTime = std::filesystem::last_write_time(existing, ec);
+			if (!ec) {
+				auto newest = std::filesystem::last_write_time(assetPath, ec);
+				if (!ec) {
+					const std::string metaPath = assetPath + ".meta";
+					std::error_code metaEc;
+					if (std::filesystem::exists(metaPath, metaEc) && !metaEc) {
+						const auto metaTime =
+							std::filesystem::last_write_time(metaPath, metaEc);
+						if (!metaEc && metaTime > newest) newest = metaTime;
+					}
+					if (outTime > newest) {
+						return existing;
+					}
+				}
+			}
+		}
+	}
+
 	// Stores the width, height, and the number of color channels of the image
 	int widthImg, heightImg, numColCh;
 	// Flips the image so it appears right side up
