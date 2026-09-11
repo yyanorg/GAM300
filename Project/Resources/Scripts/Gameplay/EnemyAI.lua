@@ -230,7 +230,7 @@ return Component {
         -- === Abilities / skills ===
         FeatherSkillBufferDuration   = 0.2,   -- Window (seconds) after a feather hit during which further
                                               -- feather hits don't re-trigger Hurt FSM state.
-        FeatherPrefabPath            = "Resources/Prefabs/Feather.prefab",
+        FeatherPrefabPath            = "Resources/Prefabs/EnemyHurtFeather.prefab",
         NumFeathersSpawnedPerHit     = 5,     -- Feather particles spawned per hit from the feather skill.
 
         -- === Animation clips ===
