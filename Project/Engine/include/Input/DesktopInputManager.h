@@ -125,7 +125,6 @@ private:
     glm::vec2 m_previousMousePos = glm::vec2(0.0f);
     glm::vec2 m_mouseDelta = glm::vec2(0.0f);
     bool m_firstMouseUpdate = true;
-    bool m_cursorWasLocked = false;
 
     // Pointer state tracking
     bool m_pointerPressed = false;

@@ -728,44 +728,6 @@ bool Engine::InitializeAssets() {
     return true;
 }
 
-bool Engine::WaitWhileInactive() {
-#if !defined(EDITOR) && !defined(ANDROID)
-    static bool suspended = false;
-    WindowManager::PollEvents();
-    auto* platform = WindowManager::GetPlatform();
-    if (platform && platform->ConsumeCloseRequest()) {
-        AudioManager::GetInstance().SetWindowSuspended(true);
-        suspended = true;
-        // No simulation runs while the native confirmation processes messages.
-        if (platform->ConfirmClose()) platform->SetShouldClose(true);
-        WindowManager::UpdateCursorState();
-    }
-    if (WindowManager::ShouldClose()) return true;
-    const bool inactive = !WindowManager::IsWindowFocused() || WindowManager::IsWindowMinimized();
-    if (inactive != suspended) {
-        AudioManager::GetInstance().SetWindowSuspended(inactive);
-        WindowManager::UpdateCursorState();
-        if (inactive && g_inputManager) g_inputManager->Update(0.0f);
-        if (!inactive) {
-            // Consume cursor recenter events before taking the new mouse baseline.
-            WindowManager::PollEvents();
-            TimeManager::ResetFrameClock();
-            // Discard mouse travel and button edges accumulated while away.
-            if (g_inputManager) {
-                g_inputManager->Update(0.0f);
-                g_inputManager->GetScrollY();
-            }
-        }
-        suspended = inactive;
-    }
-    if (inactive) {
-        WindowManager::WaitEvents(0.1);
-        return true;
-    }
-#endif
-    return false;
-}
-
 void Engine::Update() {
     PROFILE_FUNCTION();
 

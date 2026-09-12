@@ -18,6 +18,7 @@ prior written consent of DigiPen Institute of Technology is prohibited.
 
 #ifndef ANDROID
 #include <GLFW/glfw3.h>
+#include <GLFW/glfw3native.h>
 
 class DesktopPlatform : public IPlatform {
 private:
@@ -26,13 +27,11 @@ private:
     int windowedWidth, windowedHeight;
     int windowedPosX, windowedPosY;
     float m_scrollY = 0.0f;  // Accumulated scroll this frame; reset after read
-    bool m_closeRequested = false;
     
     // Static callbacks for GLFW
     static void ErrorCallback(int error, const char* description);
     static void FramebufferSizeCallback(GLFWwindow* window, int width, int height);
     static void FocusCallback(GLFWwindow* window, int focused);
-    static void CloseCallback(GLFWwindow* window);
 
     // Input callbacks for GLFW
     static void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods);
@@ -57,11 +56,8 @@ public:
     void ShowWindow() override;
     bool ShouldClose() override;
     void SetShouldClose(bool shouldClose) override;
-    bool ConsumeCloseRequest() override;
-    bool ConfirmClose() override;
     void SwapBuffers() override;
     void PollEvents() override;
-    void WaitEvents(double timeout) override;
     
     int GetWindowWidth() override;
     int GetWindowHeight() override;

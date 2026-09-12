@@ -16,13 +16,6 @@ prior written consent of DigiPen Institute of Technology is prohibited.
 
 #ifndef ANDROID
 #include "Platform/DesktopPlatform.h"
-#ifdef _WIN32
-#ifndef NOMINMAX
-#define NOMINMAX
-#endif
-#define GLFW_EXPOSE_NATIVE_WIN32
-#include <GLFW/glfw3native.h>
-#endif
 #include "Input/Keys.h"
 #include <glad/glad.h>
 #include <iostream>
@@ -86,9 +79,6 @@ bool DesktopPlatform::InitializeWindow(int width, int height, const char* title)
     // Set up callbacks
     glfwSetFramebufferSizeCallback(window, FramebufferSizeCallback);
     glfwSetWindowFocusCallback(window, FocusCallback);
-#if defined(_WIN32) && !defined(EDITOR)
-    glfwSetWindowCloseCallback(window, CloseCallback);
-#endif
 
     // Set up input callbacks for Engine's InputManager
     glfwSetKeyCallback(window, KeyCallback);
@@ -121,37 +111,6 @@ void DesktopPlatform::SetShouldClose(bool shouldClose) {
     }
 }
 
-void DesktopPlatform::CloseCallback(GLFWwindow* closingWindow) {
-    // OS close requests need confirmation. Confirmed menu exits set the flag
-    // directly and do not trigger this callback.
-    glfwSetWindowShouldClose(closingWindow, GLFW_FALSE);
-    if (s_instance) s_instance->m_closeRequested = true;
-}
-
-bool DesktopPlatform::ConsumeCloseRequest() {
-    const bool requested = m_closeRequested;
-    m_closeRequested = false;
-    return requested;
-}
-
-bool DesktopPlatform::ConfirmClose() {
-#ifdef _WIN32
-    if (!window) return true;
-    // Release capture before opening the native dialog. Keep exclusive
-    // fullscreen visible while focus moves to its owned confirmation window.
-    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
-    const int autoIconify = glfwGetWindowAttrib(window, GLFW_AUTO_ICONIFY);
-    glfwSetWindowAttrib(window, GLFW_AUTO_ICONIFY, GLFW_FALSE);
-    const int answer = MessageBoxW(glfwGetWin32Window(window),
-        L"Quit the game?\nUnsaved progress will be lost.", L"Kusane",
-        MB_OKCANCEL | MB_DEFBUTTON2 | MB_ICONWARNING);
-    glfwSetWindowAttrib(window, GLFW_AUTO_ICONIFY, autoIconify);
-    return answer == IDOK;
-#else
-    return true;
-#endif
-}
-
 void DesktopPlatform::SwapBuffers() {
     if (window) {
         glfwSwapBuffers(window);
@@ -160,10 +119,6 @@ void DesktopPlatform::SwapBuffers() {
 
 void DesktopPlatform::PollEvents() {
     glfwPollEvents();
-}
-
-void DesktopPlatform::WaitEvents(double timeout) {
-    glfwWaitEventsTimeout(timeout);
 }
 
 int DesktopPlatform::GetWindowWidth() {
@@ -273,16 +228,7 @@ void DesktopPlatform::GetMousePosition(double* x, double* y) {
 
 void DesktopPlatform::SetCursorLocked(bool locked) {
     if (window) {
-        int mode = GLFW_CURSOR_NORMAL;
-        if (IsWindowFocused() && !IsWindowMinimized()) {
-#ifndef EDITOR
-            mode = GLFW_CURSOR_CAPTURED;
-#endif
-            if (locked) mode = GLFW_CURSOR_DISABLED;
-        }
-        if (glfwGetInputMode(window, GLFW_CURSOR) != mode) {
-            glfwSetInputMode(window, GLFW_CURSOR, mode);
-        }
+        glfwSetInputMode(window, GLFW_CURSOR, locked ? GLFW_CURSOR_DISABLED : GLFW_CURSOR_NORMAL);
     }
 }
 

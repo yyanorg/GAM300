@@ -371,8 +371,7 @@ void DesktopInputManager::UpdateAxisStates(float deltaTime) {
     // Update mouse delta for MouseDelta axes
     glm::vec2 currentMousePos = GetMousePositionNormalized();
 
-    const bool cursorLocked = m_platform->IsCursorLocked();
-    if (m_firstMouseUpdate || cursorLocked != m_cursorWasLocked) {
+    if (m_firstMouseUpdate) {
         m_previousMousePos = currentMousePos;
         m_mouseDelta = glm::vec2(0.0f);
         m_firstMouseUpdate = false;
@@ -380,7 +379,6 @@ void DesktopInputManager::UpdateAxisStates(float deltaTime) {
         m_mouseDelta = currentMousePos - m_previousMousePos;
         m_previousMousePos = currentMousePos;
     }
-    m_cursorWasLocked = cursorLocked;
 }
 
 glm::vec2 DesktopInputManager::EvaluateKeyboardAxis(const AxisBinding& binding) {
