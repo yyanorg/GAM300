@@ -218,9 +218,14 @@ jobs:
       shell: cmd
 
     - name: Build installer
+      env:
+        GAME_RELEASE_VERSION: ${{ github.event.inputs.version }}
       run: |
-        "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" Installer\InstallScript.iss
-      shell: cmd
+        $ErrorActionPreference = "Stop"
+        $version = $env:GAME_RELEASE_VERSION -replace '^[vV](?=\d)', ''
+        & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" "/DGameVersion=$version" "Installer\InstallScript.iss"
+        if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      shell: pwsh
 
     - name: Verify installer download files
       shell: pwsh

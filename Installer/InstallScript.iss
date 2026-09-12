@@ -4,6 +4,10 @@
 ;   Remember to change the AppId
 ;   Thanks to Dan Weiss (dweiss@digipen.edu) for the original version.
 
+#ifndef GameVersion
+  #define GameVersion "1.0.0"
+#endif
+
 [Setup]
 ; !!NOTE!!: The value of AppId uniquely identifies this application.
 ; Do not use the same AppId value in installers for other applications.
@@ -14,6 +18,7 @@ AppId={{02F9FA09-A74B-42DA-BB97-6558B0A32FF3}
 ; !!NOTE!!: Replace all instances of "Kusane" with your game name.
 AppName=Kusane
 AppVerName=Kusane
+AppVersion={#GameVersion}
 AppPublisher=DigiPen Institute of Technology
 AppPublisherURL=http://www.digipen.edu/
 AppSupportURL=http://www.digipen.edu/
@@ -40,6 +45,7 @@ SetupIconFile=.\INSTALLERFILES\SetupIcon.ico
 ; Compression scheme for the installer. Check Inno Setup help files for more options.
 Compression=lzma
 SolidCompression=yes
+RestartIfNeededByRun=no
 
 ; GitHub limits each release asset to less than 2 GiB. Keep the payload in
 ; 1 GiB data files, installed by the same Setup executable. All files must
@@ -105,7 +111,7 @@ Name: {commondesktop}\Kusane; Filename: {app}\Kusane.exe; Tasks: desktopicon; Wo
 ;   the installer exits as required by the TCRs.
 [Run]
 ;Filename: {tmp}\vc_redist.x86.exe; Parameters: /q; StatusMsg: Installing Visual C++ 2015 Redistributable...
-Filename: {tmp}\VC_redist.x64.exe; Parameters: /q; StatusMsg: Installing Visual C++ 2022 Redistributable...
+Filename: {tmp}\VC_redist.x64.exe; Parameters: /install /quiet /norestart; StatusMsg: Installing Visual C++ 2022 Redistributable...
 ;Filename: {tmp}\dxwebsetup.exe; Parameters: /q; StatusMsg: Installing DirectX...
 Filename: {app}\Kusane.exe; Description: {cm:LaunchProgram,Kusane}; WorkingDir: {app}; Flags: nowait postinstall skipifsilent
 
