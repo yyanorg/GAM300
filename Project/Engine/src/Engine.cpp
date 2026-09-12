@@ -732,6 +732,14 @@ bool Engine::WaitWhileInactive() {
 #if !defined(EDITOR) && !defined(ANDROID)
     static bool suspended = false;
     WindowManager::PollEvents();
+    auto* platform = WindowManager::GetPlatform();
+    if (platform && platform->ConsumeCloseRequest()) {
+        AudioManager::GetInstance().SetWindowSuspended(true);
+        suspended = true;
+        // No simulation runs while the native confirmation processes messages.
+        if (platform->ConfirmClose()) platform->SetShouldClose(true);
+        WindowManager::UpdateCursorState();
+    }
     if (WindowManager::ShouldClose()) return true;
     const bool inactive = !WindowManager::IsWindowFocused() || WindowManager::IsWindowMinimized();
     if (inactive != suspended) {

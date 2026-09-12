@@ -79,6 +79,9 @@ bool DesktopPlatform::InitializeWindow(int width, int height, const char* title)
     // Set up callbacks
     glfwSetFramebufferSizeCallback(window, FramebufferSizeCallback);
     glfwSetWindowFocusCallback(window, FocusCallback);
+#if defined(_WIN32) && !defined(EDITOR)
+    glfwSetWindowCloseCallback(window, CloseCallback);
+#endif
 
     // Set up input callbacks for Engine's InputManager
     glfwSetKeyCallback(window, KeyCallback);
@@ -109,6 +112,37 @@ void DesktopPlatform::SetShouldClose(bool shouldClose) {
     if (window) {
         glfwSetWindowShouldClose(window, shouldClose ? GLFW_TRUE : GLFW_FALSE);
     }
+}
+
+void DesktopPlatform::CloseCallback(GLFWwindow* closingWindow) {
+    // OS close requests need confirmation. Confirmed menu exits set the flag
+    // directly and do not trigger this callback.
+    glfwSetWindowShouldClose(closingWindow, GLFW_FALSE);
+    if (s_instance) s_instance->m_closeRequested = true;
+}
+
+bool DesktopPlatform::ConsumeCloseRequest() {
+    const bool requested = m_closeRequested;
+    m_closeRequested = false;
+    return requested;
+}
+
+bool DesktopPlatform::ConfirmClose() {
+#ifdef _WIN32
+    if (!window) return true;
+    // Release capture before opening the native dialog. Keep exclusive
+    // fullscreen visible while focus moves to its owned confirmation window.
+    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+    const int autoIconify = glfwGetWindowAttrib(window, GLFW_AUTO_ICONIFY);
+    glfwSetWindowAttrib(window, GLFW_AUTO_ICONIFY, GLFW_FALSE);
+    const int answer = MessageBoxW(glfwGetWin32Window(window),
+        L"Quit the game?\nUnsaved progress will be lost.", L"Kusane",
+        MB_OKCANCEL | MB_DEFBUTTON2 | MB_ICONWARNING);
+    glfwSetWindowAttrib(window, GLFW_AUTO_ICONIFY, autoIconify);
+    return answer == IDOK;
+#else
+    return true;
+#endif
 }
 
 void DesktopPlatform::SwapBuffers() {
