@@ -13,6 +13,7 @@ SINGLE RESPONSIBILITY: Handle button interactions. Audio via event_bus.
 require("extension.engine_bootstrap")
 local event_bus = _G.event_bus
 local Component = require("extension.mono_helper")
+local ExitConfirmation = require("UI.PauseMenuSettings.ExitConfirmation")
 
 return Component {
     fields = {
@@ -85,6 +86,19 @@ return Component {
             end
         end
 
+        -- Follow the scene's pause-menu layout, including prefab overrides.
+        local mainEnt = Engine.GetEntityByName("MainMenuButton")
+        local quitEnt = Engine.GetEntityByName("QuitButton")
+        local mainTransform = mainEnt and GetComponent(mainEnt, "Transform")
+        local quitTransform = quitEnt and GetComponent(quitEnt, "Transform")
+        if mainTransform and quitTransform then
+            quitTransform.localPosition.x = mainTransform.localPosition.x
+            quitTransform.localPosition.y = mainTransform.localPosition.y - 105
+            quitTransform.localScale.x = mainTransform.localScale.x
+            quitTransform.localScale.y = mainTransform.localScale.y
+            quitTransform.isDirty = true
+        end
+
         -- Setup button data with sprite swapping support
         self._buttonData = {}
         local buttonMapping = {
@@ -92,6 +106,7 @@ return Component {
             { base = "ControlsButton", spriteGUIDs = self.ControlsSpriteGUIDs },
             { base = "SettingsButton", spriteGUIDs = self.SettingSpriteGUIDs },
             { base = "MainMenuButton", spriteGUIDs = self.MainMenuSpriteGUIDs },
+            { base = "QuitButton", spriteGUIDs = {} },
         }
 
         for index, config in ipairs(buttonMapping) do
@@ -167,6 +182,13 @@ return Component {
         for _, data in pairs(self._buttonData) do
             local isHovering = inputX >= data.minX and inputX <= data.maxX and
                                inputY >= data.minY and inputY <= data.maxY
+
+            if data.name == "QuitButton" and data.sprite then
+                local shade = isHovering and 0.3 or 0.12
+                data.sprite.color.x = shade
+                data.sprite.color.y = shade
+                data.sprite.color.z = shade
+            end
 
             if justBecameActive then
                 -- First frame page is visible: force-reset sprite to match the
@@ -270,22 +292,17 @@ return Component {
         end
     end,
 
+    OnClickQuitButton = function(self)
+        if event_bus then event_bus.publish("pause_menu.click", {}) end
+        ExitConfirmation.Open("quit")
+    end,
+
     OnClickMainMenuButton = function(self)
         -- Publish click event for PauseMenuAudio
         if event_bus and event_bus.publish then
             event_bus.publish("pause_menu.click", {})
         end
 
-        local pauseUIEntity = Engine.GetEntityByName("PauseMenuUI")
-        if pauseUIEntity then
-            local pauseComp = GetComponent(pauseUIEntity, "ActiveComponent")
-            if pauseComp then pauseComp.isActive = false end
-        end
-
-        local confirmUIEntity = Engine.GetEntityByName("ConfirmationPromptUI")
-        if confirmUIEntity then
-            local confirmComp = GetComponent(confirmUIEntity, "ActiveComponent")
-            if confirmComp then confirmComp.isActive = true end
-        end
+        ExitConfirmation.Open("main_menu")
     end,
 }
