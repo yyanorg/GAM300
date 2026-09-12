@@ -503,7 +503,11 @@ Mesh Model::ProcessMesh(aiMesh* mesh, const aiScene* scene)
 
     std::string materialPath = AssetManager::GetInstance().GetRootAssetDirectory() + "/Materials/" + modelName + "_" + sanitizedMatName + ".mat";
     material->SetName(modelName + "_" + sanitizedMatName);
-    if (forceReimportMaterials || !AssetManager::GetInstance().IsAssetCompiled(materialPath)) {
+    // Existing material files contain the artist's texture assignments and
+    // tuned properties. The asset registry may still be incomplete during a
+    // clean cook, and its saved paths may be relative to another build folder.
+    // Only create missing materials unless a reimport was explicitly requested.
+    if (forceReimportMaterials || !std::filesystem::exists(materialPath)) {
         AssetManager::GetInstance().CompileUpdatedMaterial(materialPath, material, true);
     }
 

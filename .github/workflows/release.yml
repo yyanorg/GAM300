@@ -81,6 +81,10 @@ jobs:
         cmake --build --preset editor-release --target AssetCooker --parallel
       working-directory: Project
 
+    - name: Verify authored materials survive cooking
+      run: python Tools/test_material_cooking.py --cooker Build/EditorRelease/AssetCooker.exe
+      working-directory: Project
+
     - name: Cook assets
       shell: pwsh
       # Run from the build directory: the .meta files store their source paths
