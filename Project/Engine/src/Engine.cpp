@@ -905,6 +905,7 @@ void Engine::Shutdown() {
 	GameSettingsManager::GetInstance().Shutdown();
 
 	RunBrainExitSystem(ECSRegistry::GetInstance().GetActiveECSManager());
+	SceneManager::GetInstance().ExitScene();
 	AudioManager::GetInstance().Shutdown();
 
 	// Cleanup unified input system
@@ -914,7 +915,6 @@ void Engine::Shutdown() {
 		ENGINE_LOG_INFO("Unified input system cleaned up");
 	}
 
-    SceneManager::GetInstance().ExitScene();
     PostProcessingManager::GetInstance().Shutdown();
     GraphicsManager::GetInstance().Shutdown();
 

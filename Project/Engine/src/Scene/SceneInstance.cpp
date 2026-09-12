@@ -302,15 +302,14 @@ void SceneInstance::Draw()
 
 void SceneInstance::Exit()
 {
-	// Exit systems.
-	// ECSRegistry::GetInstance().GetECSManager(scenePath).modelSystem->Exit();
-	// ECSRegistry::GetInstance().GetActiveECSManager().physicsSystem->Shutdown();
+	// OnDisable callbacks can still read physics, audio and other scene components.
+	// Release script instances before destroying the systems they reference.
+	ECSRegistry::GetInstance().GetECSManager(scenePath).scriptSystem->Shutdown();
 	ECSRegistry::GetInstance().GetECSManager(scenePath).characterControllerSystem->Shutdown();
 	ShutDownPhysics();
 	PostProcessingManager::GetInstance().Shutdown();
 	ECSRegistry::GetInstance().GetECSManager(scenePath).particleSystem->Shutdown();
 	ECSRegistry::GetInstance().GetECSManager(scenePath).dialogueSystem->Shutdown();
-	ECSRegistry::GetInstance().GetECSManager(scenePath).scriptSystem->Shutdown();
 	ECSRegistry::GetInstance().GetECSManager(scenePath).fogSystem->Shutdown();
 	systemOrchestrator.reset();
 	ENGINE_PRINT("TestScene Exited\n");
