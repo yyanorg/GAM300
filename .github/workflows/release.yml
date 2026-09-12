@@ -145,13 +145,12 @@ jobs:
         }
 
         # Copy the exe and every DLL the game needs (Engine, fmod, vcpkg DLLs)
-        Copy-Item -Path "Project\Build\Release\*.exe" -Destination $gamedir -Force
+        Copy-Item -Path "Project\Build\Release\Kusane.exe" -Destination $gamedir -Force
         Copy-Item -Path "Project\Build\Release\*.dll" -Destination $gamedir -Force
 
-        # Copy Resources DIRECTLY from source. POST_BUILD also copies them into
-        # Build\Release\Resources, but going to source is simpler, removes the dependency
-        # on POST_BUILD, and avoids xcopy quirks with large trees.
-        Copy-Item -Path "Project\Resources" -Destination $gamedir -Recurse -Force
+        # Keep cooked assets and metadata; validate every removed art source.
+        python Project/Tools/stage_resources.py --resources Project/Resources --destination "$gamedir/Resources"
+        if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
         # ProjectSettings holds TagsAndLayers.json. Without it the game falls back
         # to the eleven built-in tags, and the project defines 23: Throwables stop
@@ -160,7 +159,8 @@ jobs:
         # and Boss are built in, so it still starts and looks fine at a glance.
         # The shortcuts set WorkingDir to {app}, so the game's fallback lookup of
         # <cwd>\ProjectSettings\TagsAndLayers.json finds it here.
-        Copy-Item -Path "Project\ProjectSettings" -Destination $gamedir -Recurse -Force
+        New-Item -ItemType Directory -Force -Path "$gamedir\ProjectSettings" | Out-Null
+        Copy-Item -Path "Project\ProjectSettings\TagsAndLayers.json" -Destination "$gamedir\ProjectSettings" -Force
 
         # Verification — fail fast if something looks wrong so we catch it in CI, not in the wild.
         Write-Host "=== Staged top-level files ==="
@@ -205,7 +205,7 @@ jobs:
         Write-Host "  .mesh models:   $meshCount"
         Write-Host "  .font fonts:    $fontCount"
 
-        if ($ddsCount -eq 0 -or $meshCount -eq 0) {
+        if ($ddsCount -eq 0 -or $meshCount -eq 0 -or $fontCount -eq 0) {
             Write-Error "No compiled assets staged (.dds=$ddsCount, .mesh=$meshCount). The Cook assets step should have produced these, so it either failed or staged from the wrong place."
             exit 1
         }

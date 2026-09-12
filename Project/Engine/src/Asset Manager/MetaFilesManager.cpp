@@ -118,13 +118,15 @@ GUID_string MetaFilesManager::GetGUIDFromMetaFile(const std::string& metaFilePat
 		rapidjson::MemoryStream ms(reinterpret_cast<const char*>(metaFileData.data()), metaFileData.size());
 		doc.ParseStream(ms);
 	}
-	if (doc.HasParseError()) {
-		ENGINE_LOG_DEBUG("[MetaFilesManager]: Rapidjson parse error: " + metaFilePath);
+	if (doc.HasParseError() || !doc.IsObject() || !doc.HasMember("AssetMetaData") ||
+		!doc["AssetMetaData"].IsObject()) {
+		ENGINE_LOG_DEBUG("[MetaFilesManager]: Invalid metadata: " + metaFilePath);
+		return "";
 	}
 
 	const auto& assetMetaData = doc["AssetMetaData"];
 
-	if (assetMetaData.HasMember("guid")) {
+	if (assetMetaData.HasMember("guid") && assetMetaData["guid"].IsString()) {
 		GUID_string guid = assetMetaData["guid"].GetString();
 		return guid;
 	}
@@ -153,6 +155,22 @@ void MetaFilesManager::InitializeAssetMetaFiles(const std::string& rootAssetFold
 	//ENGINE_LOG_INFO("platform->ListAssets size: " + std::to_string(assetFiles.size()));
 
 	for (std::string assetPath : assetFiles) {
+#if !defined(EDITOR) && !defined(ANDROID)
+		// Packaged desktop builds keep metadata and cooked resources without
+		// the original art files. Discover assets from their metadata instead.
+		std::filesystem::path metaPath(assetPath);
+		if (metaPath.extension() != ".meta") continue;
+		metaPath.replace_extension();
+		const std::string sourceExtension = metaPath.extension().string();
+		const bool isShader = sourceExtension.empty() &&
+			platform->FileExists(metaPath.generic_string() + ".vert");
+		if (!isShader && !AssetManager::GetInstance().IsAssetExtensionSupported(sourceExtension)) continue;
+		const GUID_string guid = GetGUIDFromMetaFile(assetPath);
+		if (guid.empty()) continue;
+		assetPath = metaPath.generic_string();
+		AddGUID128Mapping(assetPath, GUIDUtilities::ConvertStringToGUID128(guid));
+		AssetManager::GetInstance().AddAssetMetaToMap(assetPath);
+#else
 		std::filesystem::path filePath(assetPath);
 		std::string extension = filePath.extension().string();
 		extension.erase(std::remove_if(extension.begin(), extension.end(), ::isspace), extension.end());
@@ -253,6 +271,7 @@ void MetaFilesManager::InitializeAssetMetaFiles(const std::string& rootAssetFold
 		else {
 			//ENGINE_LOG_INFO("no");
 		}
+#endif
 	}
 }
 
