@@ -130,6 +130,11 @@ return Component {
         self._wasSettingsActive = isActive
         if not isActive then return end
 
+        if Input.IsActionPressed("Pause") then
+            self:OnClickCloseButton()
+            return
+        end
+
         self:_updateHover()
     end,
 
