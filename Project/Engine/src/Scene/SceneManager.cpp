@@ -530,15 +530,15 @@ void SceneManager::UpdateAsyncLoad() {
         ECSManager& ecs = ECSRegistry::GetInstance().GetECSManager(asyncScenePath);
         const auto& ents = asyncDoc["entities"];
 
-        rapidjson::SizeType end = std::min(
-            asyncEntityIndex + static_cast<rapidjson::SizeType>(entitiesPerChunk),
-            asyncEntityTotal);
-
-        for (; asyncEntityIndex < end; ++asyncEntityIndex) {
-            const auto& entObj = ents[asyncEntityIndex];
+        // Use spare time in this frame instead of requiring a rendered frame
+        // for every entity. Return regularly to draw and process window events.
+        const auto deadline = std::chrono::steady_clock::now() + std::chrono::milliseconds(4);
+        while (asyncEntityIndex < asyncEntityTotal) {
+            const auto& entObj = ents[asyncEntityIndex++];
             if (entObj.IsObject()) {
                 Serializer::DeserializeEntity(ecs, entObj);
             }
+            if (std::chrono::steady_clock::now() >= deadline) break;
         }
 
         // Restore loading screen as active
