@@ -50,6 +50,7 @@ int main() {
     GameManager::Initialize();
 
     while (Engine::IsRunning()) {
+        if (Engine::WaitWhileInactive()) continue;
 
         Engine::Update();
         GameManager::Update();

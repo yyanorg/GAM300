@@ -57,6 +57,7 @@ public:
     void SetShouldClose(bool shouldClose) override;
     void SwapBuffers() override;
     void PollEvents() override;
+    void WaitEvents(double timeout) override;
     
     int GetWindowWidth() override;
     int GetWindowHeight() override;
