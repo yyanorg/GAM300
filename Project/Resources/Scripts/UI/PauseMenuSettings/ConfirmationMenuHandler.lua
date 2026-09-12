@@ -12,7 +12,6 @@ SINGLE RESPONSIBILITY: Handle button interactions. Audio via event_bus.
 
 require("extension.engine_bootstrap")
 local Component = require("extension.mono_helper")
-local ExitConfirmation = require("UI.PauseMenuSettings.ExitConfirmation")
 
 local event_bus = _G.event_bus
 
@@ -144,12 +143,7 @@ return Component {
             event_bus.publish("pause_menu.click", {})
         end
 
-        if ExitConfirmation.IsQuit() then
-            Screen.RequestClose()
-            return
-        end
-
-        -- Return after confirmation, restoring the normal scene state.
+        --print("[ConfirmationMenuHandler] Returning to main menu")
         Time.SetPaused(false)  -- Reset pause state before loading scene
         Time.SetTimeScale(1.0)  -- Reset time scale to normal
         Audio.SetBusPaused("BGM", false)  -- Unpause game buses before scene load

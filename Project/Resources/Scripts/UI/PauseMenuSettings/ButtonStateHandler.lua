@@ -29,7 +29,7 @@ return Component {
 
         -- Define the button-to-menu mapping
         local menuMapping = {
-            { names = {"ContinueButton", "ControlsButton", "SettingsButton", "MainMenuButton", "QuitButton"}, storage = self._pauseButtons },
+            { names = {"ContinueButton", "ControlsButton", "SettingsButton", "MainMenuButton"}, storage = self._pauseButtons },
             { names = {"BackButton", "ResetButton"}, storage = self._settingButtons },
             { names = {"ControlsBackButton"}, storage = self._controlsButtons },
             { names = {"YesButton", "NoButton"}, storage = self._confirmButtons }

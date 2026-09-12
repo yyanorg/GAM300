@@ -76,7 +76,7 @@ return Component {
         -- Cache pause menu button components for direct control
         -- This ensures buttons are enabled in the same callback that opens the menu
         self._pauseButtons = {}
-        local pauseButtonNames = {"ContinueButton", "ControlsButton", "SettingsButton", "MainMenuButton", "QuitButton"}
+        local pauseButtonNames = {"ContinueButton", "ControlsButton", "SettingsButton", "MainMenuButton"}
         for _, name in ipairs(pauseButtonNames) do
             local buttonEntity = Engine.GetEntityByName(name)
             if buttonEntity then
