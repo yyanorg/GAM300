@@ -4,6 +4,7 @@
 #include "spdlog/spdlog.h"
 #include "spdlog/sinks/stdout_color_sinks.h"
 #include "spdlog/sinks/basic_file_sink.h"
+#include "Utilities/UserPaths.hpp"
 #include "spdlog/sinks/base_sink.h"
 #include "spdlog/pattern_formatter.h"
 
@@ -169,11 +170,18 @@ namespace EngineLogging {
             console_sink->set_pattern("[%Y-%m-%d %H:%M:%S.%e] [%l] %v");
             sinks.push_back(console_sink);
 
-            // Try to create logs directory and file logging (may fail if working directory is wrong)
+            // Standalone builds store logs per user; the install directory may
+            // be read-only. Editor logs stay with the development build.
             try {
-                std::filesystem::create_directories("logs");
-                if (std::filesystem::exists("logs")) {
-                    auto file_sink = std::make_shared<spdlog::sinks::basic_file_sink_mt>("logs/engine.log", true);
+#ifdef EDITOR
+                const std::filesystem::path logDirectory = "logs";
+#else
+                const auto stateDirectory = UserPaths::StateDirectory();
+                const auto logDirectory = stateDirectory.empty() ? stateDirectory : stateDirectory / "logs";
+#endif
+                if (!logDirectory.empty()) {
+                    std::filesystem::create_directories(logDirectory);
+                    auto file_sink = std::make_shared<spdlog::sinks::basic_file_sink_mt>((logDirectory / "engine.log").string(), true);
                     if (file_sink) {
                         file_sink->set_level(ActiveSpdlogLevel());
                         file_sink->set_pattern("[%Y-%m-%d %H:%M:%S.%e] [%l] %v");

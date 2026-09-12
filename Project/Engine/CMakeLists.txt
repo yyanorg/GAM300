@@ -327,6 +327,9 @@ else()
     elseif(WIN32)
         target_link_libraries(Engine PRIVATE
             ${CMAKE_SOURCE_DIR}/Libraries/FMOD/core/lib/x64/fmod_vc.lib
+            shell32
+            ole32
+            uuid
         )
 
         # Windows: Link prebuilt Compressonator static library for Editor builds

@@ -54,10 +54,9 @@ DiskSpanning=yes
 DiskSliceSize=1073741824
 SlicesPerDisk=1
 
-; This allows the installer to run without admin privileges, which means you can't install
-; in the Program Files, or change the registry. This is done to allow installation on Sandbox
-; or other intermediate directory
-PrivilegesRequired=none
+; Program Files and the machine-wide VC runtime require elevation. The game
+; itself runs as the original user and stores preferences in that user's profile.
+PrivilegesRequired=admin
 
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"

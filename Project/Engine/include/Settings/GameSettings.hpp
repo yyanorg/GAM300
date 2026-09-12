@@ -2,6 +2,7 @@
 
 #include <string>
 #include <mutex>
+#include <filesystem>
 
 // GameSettingsData - contains all persistent game settings
 struct GameSettingsData {
@@ -159,7 +160,7 @@ private:
     GameSettingsManager& operator=(const GameSettingsManager&) = delete;
 
     // Settings file path
-    std::string GetSettingsFilePath() const;
+    std::filesystem::path GetSettingsFilePath() const;
 
     // Current settings
     GameSettingsData m_settings;

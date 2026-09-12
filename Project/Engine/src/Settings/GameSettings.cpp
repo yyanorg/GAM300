@@ -5,6 +5,7 @@
 #include "Graphics/PostProcessing/PostProcessingManager.hpp"
 #include "WindowManager.hpp"
 #include "Platform/IPlatform.h"
+#include "Utilities/UserPaths.hpp"
 
 #include "rapidjson/document.h"
 #include "rapidjson/prettywriter.h"
@@ -41,6 +42,7 @@ void GameSettingsManager::Initialize() {
 
     // Copy defaults to current settings
     m_settings = m_defaults;
+    m_dirty = false;
 
     // Try to load saved settings (no disk I/O if file doesn't exist)
     LoadSettings();
@@ -49,7 +51,6 @@ void GameSettingsManager::Initialize() {
     ApplySettings();
 
     m_initialized = true;
-    m_dirty = false; // Just loaded, not dirty
 
     ENGINE_PRINT(EngineLogging::LogLevel::Info, "[GameSettings] Initialized");
 }
@@ -65,24 +66,43 @@ void GameSettingsManager::Shutdown() {
     m_initialized = false;
 }
 
-std::string GameSettingsManager::GetSettingsFilePath() const {
+std::filesystem::path GameSettingsManager::GetSettingsFilePath() const {
     namespace fs = std::filesystem;
 #ifdef ANDROID
     IPlatform* platform = WindowManager::GetPlatform();
     std::string writableRoot = platform ? platform->GetWritablePath() : "";
-    fs::path base = writableRoot.empty() ? fs::current_path() : fs::path(writableRoot);
-#else
+    if (writableRoot.empty()) return {};
+    fs::path base(writableRoot);
+#elif defined(EDITOR)
     fs::path base = fs::current_path();
+#else
+    const fs::path base = UserPaths::ConfigDirectory();
+    return base.empty() ? base : base / SETTINGS_FILENAME;
 #endif
-    return (base / "Resources" / SETTINGS_FILENAME).string();
+#if defined(ANDROID) || defined(EDITOR)
+    return base / "Resources" / SETTINGS_FILENAME;
+#endif
 }
 
 bool GameSettingsManager::LoadSettings() {
     namespace fs = std::filesystem;
     std::lock_guard<std::mutex> lock(m_mutex);
 
-    std::string filePath = GetSettingsFilePath();
-    if (!fs::exists(filePath)) return false;
+    fs::path filePath = GetSettingsFilePath();
+    if (filePath.empty()) return false;
+    std::error_code error;
+    bool migrate = false;
+    if (!fs::exists(filePath, error)) {
+#if !defined(ANDROID) && !defined(EDITOR)
+        // Older builds saved beside the game. Read those preferences once;
+        // every subsequent save goes to the user's configuration directory.
+        filePath = fs::path("Resources") / SETTINGS_FILENAME;
+        if (!fs::exists(filePath, error)) return false;
+        migrate = true;
+#else
+        return false;
+#endif
+    }
 
     std::ifstream inFile(filePath, std::ios::binary);
     if (!inFile.is_open()) return false;
@@ -92,7 +112,7 @@ bool GameSettingsManager::LoadSettings() {
 
     rapidjson::Document doc;
     doc.Parse(jsonContent.c_str());
-    if (doc.HasParseError()) return false;
+    if (doc.HasParseError() || !doc.IsObject()) return false;
 
     // Audio
     if (doc.HasMember("masterVolume") && doc["masterVolume"].IsNumber()) m_settings.masterVolume = std::clamp(doc["masterVolume"].GetFloat(), 0.0f, 1.0f);
@@ -140,6 +160,7 @@ bool GameSettingsManager::LoadSettings() {
     if (doc.HasMember("ssaoBias") && doc["ssaoBias"].IsNumber()) m_settings.ssaoBias = doc["ssaoBias"].GetFloat();
     if (doc.HasMember("ssaoIntensity") && doc["ssaoIntensity"].IsNumber()) m_settings.ssaoIntensity = doc["ssaoIntensity"].GetFloat();
 
+    m_dirty = migrate;
     return true;
 }
 
@@ -147,7 +168,8 @@ bool GameSettingsManager::SaveSettings() {
     namespace fs = std::filesystem;
     std::lock_guard<std::mutex> lock(m_mutex);
 
-    std::string filePath = GetSettingsFilePath();
+    const fs::path filePath = GetSettingsFilePath();
+    if (filePath.empty()) return false;
     try {
         fs::create_directories(fs::path(filePath).parent_path());
     } catch (const std::filesystem::filesystem_error& e) {
@@ -200,6 +222,7 @@ bool GameSettingsManager::SaveSettings() {
     if (!outFile.is_open()) return false;
     outFile << buffer.GetString();
     outFile.close();
+    if (!outFile) return false;
 
     m_dirty = false;
     return true;
