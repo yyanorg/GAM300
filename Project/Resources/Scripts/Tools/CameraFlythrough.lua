@@ -16,6 +16,7 @@
 --   EaseInOut       – apply smooth acceleration/deceleration
 
 require("extension.engine_bootstrap")
+local debugControls = os and os.getenv and os.getenv("GAM300_DEBUG") == "1"
 local Component = require("extension.mono_helper")
 local TransformMixin = require("extension.transform_mixin")
 
@@ -179,6 +180,7 @@ return Component {
     end,
 
     Start = function(self)
+        if not debugControls then return end
         self:_buildWaypoints()
         if self._waypoints then
             print("[CameraFlythrough] Ready — " .. #self._waypoints .. " waypoints, F" .. self.FKey)
@@ -203,6 +205,7 @@ return Component {
     end,
 
     Update = function(self, dt)
+        if not debugControls then return end
         -- One-time debug dump
         if not self._debugPrinted then
             self._debugPrinted = true

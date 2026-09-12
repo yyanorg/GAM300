@@ -68,6 +68,7 @@ VERSION: 3.0
 --]]
 
 require("extension.engine_bootstrap")
+local debugControls = os and os.getenv and os.getenv("GAM300_DEBUG") == "1"
 _G.CHAIN_DEBUG = _G.CHAIN_DEBUG ~= nil and _G.CHAIN_DEBUG or false
 local function dbg(...) if _G.CHAIN_DEBUG then print(...) end end
 local Component      = require("extension.mono_helper")
@@ -817,7 +818,7 @@ return Component {
         -- self._digitWasHeld = oneHeld
         -- ── [END KEYBOARD INPUT NUMBER TEST] ──────────────────────────────────
 
-        if Keyboard.IsDigitPressed(5) then
+        if debugControls and Keyboard.IsDigitPressed(5) then
             self:RespawnPlayer()
         end
 

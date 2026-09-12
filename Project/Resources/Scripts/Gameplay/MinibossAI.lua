@@ -1,5 +1,6 @@
 -- Resources/Scripts/Gameplay/MinibossAI.lua
 require("extension.engine_bootstrap")
+local debugControls = os and os.getenv and os.getenv("GAM300_DEBUG") == "1"
 local Component      = require("extension.mono_helper")
 local TransformMixin = require("extension.transform_mixin")
 
@@ -519,15 +520,15 @@ return Component {
             self:_ForceBackInsideArena(dtSec)
         end
 
-        if Keyboard.IsDigitPressed(2) then
+        if debugControls and Keyboard.IsDigitPressed(2) then
             self:ApplyHook(self.HookedDuration)
         end
 
-        if Keyboard.IsDigitPressed(4) then
+        if debugControls and Keyboard.IsDigitPressed(4) then
             self:ApplyHit(10)
         end
 
-        if Keyboard.IsDigitPressed(6) then
+        if debugControls and Keyboard.IsDigitPressed(6) then
             self:ForceNextPhase()
         end
 

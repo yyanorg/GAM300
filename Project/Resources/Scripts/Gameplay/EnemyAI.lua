@@ -1,5 +1,6 @@
 -- Resources/Scripts/GamePlay/EnemyAI.lua
 require("extension.engine_bootstrap")
+local debugControls = os and os.getenv and os.getenv("GAM300_DEBUG") == "1"
 local Component      = require("extension.mono_helper")
 local TransformMixin = require("extension.transform_mixin")
 
@@ -609,21 +610,21 @@ return Component {
 
         self._motionID = self._rb and self._rb.motionID or nil
 
-        if Input.IsActionPressed("Interact") then
+        if debugControls and Input.IsActionPressed("Interact") then
             self:ApplyHook(self.HookedDuration)
         end
 
-        if Keyboard.IsDigitPressed(1) then
+        if debugControls and Keyboard.IsDigitPressed(1) then
             self:ApplyHook(self.HookedDuration)
         end
-        if Keyboard.IsDigitPressed(3) then
+        if debugControls and Keyboard.IsDigitPressed(3) then
             self:ApplyHit(10)
         end
-        if Keyboard.IsDigitPressed(7) then
+        if debugControls and Keyboard.IsDigitPressed(7) then
             self.IsPassive = not self.IsPassive
         end
 
-        if Keyboard.IsDigitPressed(9) and not self:IsFlying() then
+        if debugControls and Keyboard.IsDigitPressed(9) and not self:IsFlying() then
             self:ApplyHit(1, "KNOCKUP", 0)
         end
 
