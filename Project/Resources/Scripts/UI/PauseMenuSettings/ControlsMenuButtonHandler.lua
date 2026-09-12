@@ -19,6 +19,7 @@ return Component {
     fields = {
         -- Sprite GUIDs: [1] = normal, [2] = hover
         BackSpriteGUIDs = {},
+        audioEventPrefix = "pause_menu",
     },
 
     Start = function(self)
@@ -32,7 +33,7 @@ return Component {
         -- Reset hover sprites when any pause-menu button is clicked, BEFORE the
         -- popup is deactivated. Prevents stale hover sprite flash on reopen.
         if event_bus and event_bus.subscribe then
-            self._clickResetSub = event_bus.subscribe("pause_menu.click", function()
+            self._clickResetSub = event_bus.subscribe(self.audioEventPrefix .. ".click", function()
                 if not self._buttonData then return end
                 for _, data in pairs(self._buttonData) do
                     if data.sprite and data.spriteGUIDs and data.spriteGUIDs[1] then
@@ -128,7 +129,7 @@ return Component {
                 if isHovering and not data.wasHovered then
                     -- Publish hover event for PauseMenuAudio
                     if event_bus and event_bus.publish then
-                        event_bus.publish("pause_menu.hover", {})
+                        event_bus.publish(self.audioEventPrefix .. ".hover", {})
                     end
                     -- Switch to hover sprite
                     if data.sprite and data.spriteGUIDs and data.spriteGUIDs[2] then

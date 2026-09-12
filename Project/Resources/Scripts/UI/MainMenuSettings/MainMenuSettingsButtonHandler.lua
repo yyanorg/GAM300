@@ -1,8 +1,8 @@
 require("extension.engine_bootstrap")
 local Component = require("extension.mono_helper")
 
-local MAIN_MENU_BUTTONS = {"PlayGame", "Credits", "ExitGame", "Settings"}
-local MAIN_MENU_TEXTS   = {"PlayGameText", "SettingText", "CreditsText", "ExitGameText"}
+local MAIN_MENU_BUTTONS = {"PlayGame", "Credits", "ExitGame", "Settings", "Controls"}
+local MAIN_MENU_TEXTS   = {"PlayGameText", "SettingText", "CreditsText", "ExitGameText", "ControlsText"}
 
 local function setButtonsInteractable(interactable)
     for _, name in ipairs(MAIN_MENU_BUTTONS) do
