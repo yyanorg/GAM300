@@ -13,6 +13,7 @@ public:
     // Window management
     virtual bool InitializeWindow(int width, int height, const char* title) = 0;
     virtual void DestroyWindow() = 0;
+    virtual void ShowWindow() {}
     virtual bool ShouldClose() = 0;
     virtual void SetShouldClose(bool shouldClose) = 0;
     virtual void SwapBuffers() = 0;

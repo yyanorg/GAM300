@@ -59,6 +59,11 @@ namespace {
 #if !defined(EDITOR) && !defined(ANDROID) && defined(NDEBUG)
 namespace {
     void UpdateStandaloneWindowTitleWithFps() {
+        static const bool enabled = [] {
+            const char* value = std::getenv("GAM300_SHOW_FPS");
+            return value && std::string(value) == "1";
+        }();
+        if (!enabled) return;
         static double titleUpdateTimer = 0.0;
         static int lastDisplayedFps = -1;
 
@@ -135,6 +140,9 @@ bool Engine::Initialize() {
 	// Note: This is called early but ApplySettings() for graphics is deferred
 	// until PostProcessingManager is initialized (in InitializeGraphicsResources)
 	GameSettingsManager::GetInstance().Initialize();
+#if !defined(EDITOR) && !defined(ANDROID)
+	if (auto* platform = WindowManager::GetPlatform()) platform->ShowWindow();
+#endif
     TagsLayersSettings::GetInstance().LoadSettings();
 	ENGINE_PRINT("[Engine] GameSettings initialized\n");
 

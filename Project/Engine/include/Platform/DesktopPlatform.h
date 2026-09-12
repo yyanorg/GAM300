@@ -53,6 +53,7 @@ public:
     // IPlatform interface
     bool InitializeWindow(int width, int height, const char* title) override;
     void DestroyWindow() override;
+    void ShowWindow() override;
     bool ShouldClose() override;
     void SetShouldClose(bool shouldClose) override;
     void SwapBuffers() override;

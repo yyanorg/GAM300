@@ -584,7 +584,8 @@ void VideoSystem::Update(float dt)
             // Tap input — suppressed while a skip is fading out (inputLocked set
             // by SkipHighlight.lua). Without this block the player can still tap
             // through dialogue boards while the screen is fading to black.
-            if (!vc.inputLocked && g_inputManager->IsPointerJustPressed())
+            if (!vc.inputLocked && g_inputManager &&
+                (g_inputManager->IsPointerJustPressed() || g_inputManager->IsActionPressed("AdvanceCutscene")))
             {
                 if (!IsTypewriterFinished(vc))
                 {

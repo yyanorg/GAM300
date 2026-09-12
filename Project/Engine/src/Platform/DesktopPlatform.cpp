@@ -59,6 +59,10 @@ bool DesktopPlatform::InitializeWindow(int width, int height, const char* title)
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 5);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
     glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
+#ifndef EDITOR
+    // Apply the saved display mode before exposing the window.
+    glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
+#endif
 
     // Create window
     window = glfwCreateWindow(width, height, title, nullptr, nullptr);
@@ -83,6 +87,10 @@ bool DesktopPlatform::InitializeWindow(int width, int height, const char* title)
     glfwSetScrollCallback(window, ScrollCallback);
 
     return true;
+}
+
+void DesktopPlatform::ShowWindow() {
+    if (window) glfwShowWindow(window);
 }
 
 void DesktopPlatform::DestroyWindow() {

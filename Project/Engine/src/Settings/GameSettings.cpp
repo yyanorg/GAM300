@@ -33,7 +33,11 @@ void GameSettingsManager::Initialize() {
     m_defaults.exposure = 1.3f;
     m_defaults.toneMappingMode = 2;
     m_defaults.vsync = true;
+#if defined(EDITOR) || defined(ANDROID)
     m_defaults.fullscreen = false;
+#else
+    m_defaults.fullscreen = true;
+#endif
     m_defaults.bloomEnabled = true;
     m_defaults.bloomThreshold = 1.0f;
     m_defaults.bloomIntensity = 1.0f;
