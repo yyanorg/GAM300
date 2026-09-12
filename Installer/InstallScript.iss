@@ -41,6 +41,13 @@ SetupIconFile=.\INSTALLERFILES\SetupIcon.ico
 Compression=lzma
 SolidCompression=yes
 
+; GitHub limits each release asset to less than 2 GiB. Keep the payload in
+; 1 GiB data files, installed by the same Setup executable. All files must
+; be downloaded into one folder before running Setup.
+DiskSpanning=yes
+DiskSliceSize=1073741824
+SlicesPerDisk=1
+
 ; This allows the installer to run without admin privileges, which means you can't install
 ; in the Program Files, or change the registry. This is done to allow installation on Sandbox
 ; or other intermediate directory

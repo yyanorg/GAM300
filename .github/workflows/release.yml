@@ -222,11 +222,31 @@ jobs:
         "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" Installer\InstallScript.iss
       shell: cmd
 
+    - name: Verify installer download files
+      shell: pwsh
+      run: |
+        $ErrorActionPreference = "Stop"
+        $setup = Get-Item "Installer\INSTALLER\Kusane_Setup.exe"
+        $data = @(Get-ChildItem "Installer\INSTALLER\Kusane_Setup-*.bin" -File)
+        if ($data.Count -eq 0) {
+            throw "Installer data files are missing. Setup.exe alone cannot install the game."
+        }
+        $files = @($setup) + $data
+        $files | Select-Object Name, Length | Format-Table -AutoSize
+        foreach ($file in $files) {
+            if ($file.Length -eq 0 -or $file.Length -ge 2GB) {
+                throw "$($file.Name) must be non-empty and below GitHub's 2 GiB release-asset limit."
+            }
+        }
+
     - name: Upload installer artifact
       uses: actions/upload-artifact@v4
       with:
         name: windows-release
-        path: Installer/INSTALLER/Kusane_Setup.exe
+        path: |
+          Installer/INSTALLER/Kusane_Setup.exe
+          Installer/INSTALLER/Kusane_Setup-*.bin
+        if-no-files-found: error
         retention-days: 1
 
   # ── Android APK Build ──────────────────────────────────────────────
@@ -297,6 +317,7 @@ jobs:
       uses: softprops/action-gh-release@v2
       with:
         tag_name: ${{ github.event.inputs.version }}
+        target_commitish: ${{ github.sha }}
         name: ${{ github.event.inputs.release_name }}
         body: |
           ## ${{ github.event.inputs.release_name }}
@@ -306,11 +327,12 @@ jobs:
           ${{ github.event.inputs.changelog }}
 
           ### Downloads
-          - **Windows** — `Kusane_Setup.exe` (installer)
+          - **Windows** — download `Kusane_Setup.exe` and **all** `Kusane_Setup-*.bin` files into the same folder, then run `Kusane_Setup.exe`.
           - **Android** — `Kusane.apk`
 
           ---
           *Built automatically from `${{ github.sha }}` on `${{ github.ref_name }}`*
         files: release-files/*
+        fail_on_unmatched_files: true
         draft: false
         prerelease: false
