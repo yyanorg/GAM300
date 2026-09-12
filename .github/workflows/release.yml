@@ -256,24 +256,72 @@ jobs:
       run: |
         $ErrorActionPreference = "Stop"
         $version = $env:GAME_RELEASE_VERSION -replace '^[vV](?=\d)', ''
+        if (Test-Path "Installer\INSTALLER") {
+            Remove-Item "Installer\INSTALLER" -Recurse -Force
+        }
         & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" "/DGameVersion=$version" "Installer\InstallScript.iss"
         if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       shell: pwsh
 
-    - name: Verify installer download files
+    - name: Verify single-file installer
       shell: pwsh
       run: |
         $ErrorActionPreference = "Stop"
         $setup = Get-Item "Installer\INSTALLER\Kusane_Setup.exe"
-        $data = @(Get-ChildItem "Installer\INSTALLER\Kusane_Setup-*.bin" -File)
-        if ($data.Count -eq 0) {
-            throw "Installer data files are missing. Setup.exe alone cannot install the game."
+        $files = @(Get-ChildItem "Installer\INSTALLER" -File -Recurse)
+        if ($files.Count -ne 1 -or $files[0].FullName -ne $setup.FullName) {
+            throw "Windows release must contain only Kusane_Setup.exe."
         }
-        $files = @($setup) + $data
-        $files | Select-Object Name, Length | Format-Table -AutoSize
-        foreach ($file in $files) {
-            if ($file.Length -eq 0 -or $file.Length -ge 2GB) {
-                throw "$($file.Name) must be non-empty and below GitHub's 2 GiB release-asset limit."
+        $setup | Select-Object Name, Length | Format-Table -AutoSize
+        if ($setup.Length -eq 0 -or $setup.Length -ge 2GB) {
+            throw "Kusane_Setup.exe must be non-empty and below GitHub's 2 GiB release-asset limit."
+        }
+
+    - name: Test installation from the single executable
+      shell: pwsh
+      timeout-minutes: 10
+      run: |
+        $ErrorActionPreference = "Stop"
+        $downloadDir = Join-Path $env:RUNNER_TEMP "kusane-download"
+        $installDir = Join-Path $env:RUNNER_TEMP "Kusane Install Test"
+        $installLog = Join-Path $env:RUNNER_TEMP "kusane-install.log"
+        New-Item -ItemType Directory -Path $downloadDir | Out-Null
+        Copy-Item "Installer\INSTALLER\Kusane_Setup.exe" $downloadDir
+        $setup = Join-Path $downloadDir "Kusane_Setup.exe"
+        $uninstaller = Join-Path $installDir "unins000.exe"
+        try {
+            $arguments = @("/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART", "/SP-",
+                           "/DIR=`"$installDir`"", "/LOG=`"$installLog`"")
+            $process = Start-Process -FilePath $setup -ArgumentList $arguments -WorkingDirectory $downloadDir -Wait -PassThru
+            if ($process.ExitCode -ne 0) {
+                throw "Installer failed with exit code $($process.ExitCode)."
+            }
+
+            $sourceDir = (Resolve-Path "Installer\GAMEDIRECTORY").Path
+            $sourceFiles = @(Get-ChildItem $sourceDir -File -Recurse)
+            foreach ($source in $sourceFiles) {
+                $relative = [System.IO.Path]::GetRelativePath($sourceDir, $source.FullName)
+                $installed = Join-Path $installDir $relative
+                if (-not (Test-Path -LiteralPath $installed -PathType Leaf)) {
+                    throw "Installation is missing $relative"
+                }
+                if ((Get-FileHash -LiteralPath $source.FullName).Hash -ne (Get-FileHash -LiteralPath $installed).Hash) {
+                    throw "Installed file does not match the packaged file: $relative"
+                }
+            }
+            if (-not (Test-Path -LiteralPath $uninstaller)) {
+                throw "Installation did not create an uninstaller."
+            }
+            Write-Host "Verified all $($sourceFiles.Count) installed files from Kusane_Setup.exe alone."
+        } catch {
+            if (Test-Path -LiteralPath $installLog) { Get-Content $installLog -Tail 80 }
+            throw
+        } finally {
+            if (Test-Path -LiteralPath $uninstaller) {
+                $process = Start-Process -FilePath $uninstaller -ArgumentList "/VERYSILENT /SUPPRESSMSGBOXES /NORESTART" -Wait -PassThru
+                if ($process.ExitCode -ne 0) {
+                    throw "Uninstaller failed with exit code $($process.ExitCode)."
+                }
             }
         }
 
@@ -281,9 +329,7 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: windows-release
-        path: |
-          Installer/INSTALLER/Kusane_Setup.exe
-          Installer/INSTALLER/Kusane_Setup-*.bin
+        path: Installer/INSTALLER/Kusane_Setup.exe
         if-no-files-found: error
         retention-days: 1
 
@@ -365,12 +411,14 @@ jobs:
           ${{ github.event.inputs.changelog }}
 
           ### Downloads
-          - **Windows** — download `Kusane_Setup.exe` and **all** `Kusane_Setup-*.bin` files into the same folder, then run `Kusane_Setup.exe`.
+          - **Windows** — download and run `Kusane_Setup.exe`.
           - **Android** — `Kusane.apk`
 
           ---
           *Built automatically from `${{ github.sha }}` on `${{ github.ref_name }}`*
-        files: release-files/*
+        files: |
+          release-files/Kusane_Setup.exe
+          release-files/Kusane.apk
         fail_on_unmatched_files: true
         draft: false
         prerelease: false

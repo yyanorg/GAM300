@@ -43,16 +43,12 @@ LicenseFile=INSTALLERFILES\DigiPen_EULA.txt
 SetupIconFile=.\INSTALLERFILES\SetupIcon.ico
 
 ; Compression scheme for the installer. Check Inno Setup help files for more options.
-Compression=lzma
+Compression=lzma2/ultra64
 SolidCompression=yes
 RestartIfNeededByRun=no
 
-; GitHub limits each release asset to less than 2 GiB. Keep the payload in
-; 1 GiB data files, installed by the same Setup executable. All files must
-; be downloaded into one folder before running Setup.
-DiskSpanning=yes
-DiskSliceSize=1073741824
-SlicesPerDisk=1
+; Bundle the game and VC runtime in one offline installer.
+DiskSpanning=no
 
 ; Program Files and the machine-wide VC runtime require elevation. The game
 ; itself runs as the original user and stores preferences in that user's profile.
