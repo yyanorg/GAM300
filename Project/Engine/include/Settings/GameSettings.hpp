@@ -62,6 +62,7 @@ public:
     // Initialization - call once at game startup
     void Initialize();
     void Shutdown();
+    void SetLaunchWindowed(bool windowed) { m_launchWindowed = windowed; }
 
     // Load/Save settings from/to JSON file
     // Load is called automatically during Initialize()
@@ -165,6 +166,8 @@ private:
     // Current settings
     GameSettingsData m_settings;
     GameSettingsData m_defaults;
+    // A command-line override applies to this run without overwriting saved preferences.
+    bool m_launchWindowed = false;
 
     // Thread safety
     mutable std::mutex m_mutex;

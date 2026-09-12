@@ -260,7 +260,7 @@ void GameSettingsManager::ApplySettings() {
 
     // Window
     WindowManager::SetVSync(m_settings.vsync);
-    WindowManager::SetFullscreen(m_settings.fullscreen);
+    WindowManager::SetFullscreen(GetFullscreen());
 
     // Gamma + Tone mapping mode.
     // The tone mapping mode MUST be pushed from GameSettings because HDREffect's
@@ -331,7 +331,7 @@ void GameSettingsManager::SetGamma(float gamma) { { std::lock_guard<std::mutex> 
 void GameSettingsManager::SetExposure(float exposure) { { std::lock_guard<std::mutex> lock(m_mutex); m_settings.exposure = std::clamp(exposure, 0.1f, 5.0f); MarkDirty(); } if (auto* hdr = PostProcessingManager::GetInstance().GetHDREffect()) hdr->SetExposure(m_settings.exposure); }
 void GameSettingsManager::SetToneMappingMode(int mode) { { std::lock_guard<std::mutex> lock(m_mutex); m_settings.toneMappingMode = std::clamp(mode, 0, 2); MarkDirty(); } if (auto* hdr = PostProcessingManager::GetInstance().GetHDREffect()) hdr->SetToneMappingMode(static_cast<HDREffect::ToneMappingMode>(m_settings.toneMappingMode)); }
 void GameSettingsManager::SetVSync(bool enabled) { { std::lock_guard<std::mutex> lock(m_mutex); m_settings.vsync = enabled; MarkDirty(); } WindowManager::SetVSync(enabled); }
-void GameSettingsManager::SetFullscreen(bool enabled) { { std::lock_guard<std::mutex> lock(m_mutex); m_settings.fullscreen = enabled; MarkDirty(); } WindowManager::SetFullscreen(enabled); }
+void GameSettingsManager::SetFullscreen(bool enabled) { { std::lock_guard<std::mutex> lock(m_mutex); m_launchWindowed = false; m_settings.fullscreen = enabled; MarkDirty(); } WindowManager::SetFullscreen(enabled); }
 
 void GameSettingsManager::SetBloomEnabled(bool enabled) { { std::lock_guard<std::mutex> lock(m_mutex); m_settings.bloomEnabled = enabled; MarkDirty(); } }
 void GameSettingsManager::SetBloomThreshold(float threshold) { { std::lock_guard<std::mutex> lock(m_mutex); m_settings.bloomThreshold = threshold; MarkDirty(); } if (auto* b = PostProcessingManager::GetInstance().GetBloomEffect()) b->SetThreshold(threshold); }
@@ -366,4 +366,4 @@ float GameSettingsManager::GetGamma() const { std::lock_guard<std::mutex> lock(m
 float GameSettingsManager::GetExposure() const { std::lock_guard<std::mutex> lock(m_mutex); return m_settings.exposure; }
 int GameSettingsManager::GetToneMappingMode() const { std::lock_guard<std::mutex> lock(m_mutex); return m_settings.toneMappingMode; }
 bool GameSettingsManager::GetVSync() const { std::lock_guard<std::mutex> lock(m_mutex); return m_settings.vsync; }
-bool GameSettingsManager::GetFullscreen() const { std::lock_guard<std::mutex> lock(m_mutex); return m_settings.fullscreen; }
+bool GameSettingsManager::GetFullscreen() const { std::lock_guard<std::mutex> lock(m_mutex); return !m_launchWindowed && m_settings.fullscreen; }

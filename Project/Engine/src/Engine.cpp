@@ -61,7 +61,7 @@ namespace {
     void UpdateStandaloneWindowTitleWithFps() {
         static const bool enabled = [] {
             const char* value = std::getenv("GAM300_SHOW_FPS");
-            return value && std::string(value) == "1";
+            return !value || std::string(value) != "0";
         }();
         if (!enabled) return;
         static double titleUpdateTimer = 0.0;
@@ -91,7 +91,7 @@ GameState Engine::currentGameState = GameState::EDIT_MODE;
 const unsigned int SCR_WIDTH = 1600;
 const unsigned int SCR_HEIGHT = 900;
 
-bool Engine::Initialize() {
+bool Engine::Initialize(bool startWindowed) {
 	// Initialize logging system first
 	if (!EngineLogging::Initialize()) {
         ENGINE_PRINT(EngineLogging::LogLevel::Error, "[Engine] Failed to initialize logging system!\n");
@@ -139,6 +139,7 @@ bool Engine::Initialize() {
 	// Initialize GameSettings (loads saved settings and applies to audio/graphics)
 	// Note: This is called early but ApplySettings() for graphics is deferred
 	// until PostProcessingManager is initialized (in InitializeGraphicsResources)
+	GameSettingsManager::GetInstance().SetLaunchWindowed(startWindowed);
 	GameSettingsManager::GetInstance().Initialize();
 #if !defined(EDITOR) && !defined(ANDROID)
 	if (auto* platform = WindowManager::GetPlatform()) platform->ShowWindow();

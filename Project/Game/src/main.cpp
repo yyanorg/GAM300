@@ -1,6 +1,7 @@
 #include "Engine.h"
 #include "GameManager.h"
 #include <iostream>
+#include <string_view>
 #include "Logging.hpp"
 
 // The console is a build option, not a code edit. GAME_CONSOLE is set by
@@ -35,7 +36,7 @@ extern "C" {
 }
 #endif
 
-int main() {
+int main(int argc, char* argv[]) {
 #ifdef _WIN32
 #ifdef SHOW_CONSOLE
     AllocConsole();
@@ -45,7 +46,11 @@ int main() {
 #endif
     ENGINE_PRINT("=== GAME BUILD ===\n");
 
-    Engine::Initialize();
+    bool startWindowed = false;
+    for (int i = 1; i < argc; ++i) {
+        if (std::string_view(argv[i]) == "--windowed") startWindowed = true;
+    }
+    Engine::Initialize(startWindowed);
     Engine::InitializeGraphicsResources(); // Load scenes and setup graphics
     GameManager::Initialize();
 
