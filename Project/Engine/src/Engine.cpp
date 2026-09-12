@@ -139,7 +139,13 @@ bool Engine::Initialize(bool startWindowed) {
 	// Initialize GameSettings (loads saved settings and applies to audio/graphics)
 	// Note: This is called early but ApplySettings() for graphics is deferred
 	// until PostProcessingManager is initialized (in InitializeGraphicsResources)
+#if !defined(EDITOR) && !defined(ANDROID)
+	// Installed shortcuts and direct launches always start fullscreen unless
+	// --windowed was explicitly supplied for this run.
 	GameSettingsManager::GetInstance().SetLaunchWindowed(startWindowed);
+#else
+	(void)startWindowed;
+#endif
 	GameSettingsManager::GetInstance().Initialize();
 #if !defined(EDITOR) && !defined(ANDROID)
 	if (auto* platform = WindowManager::GetPlatform()) platform->ShowWindow();

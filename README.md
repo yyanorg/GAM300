@@ -18,7 +18,7 @@ Run setup-vcpkg.bat and setup-android-dev.bat to set up all development requirem
 
 There is no solution files anymore as this is the modern way of using cmake with Visual Studios.
 
-For standalone testing, run `Kusane.exe --windowed` on Windows or `./Kusane --windowed` on Linux. This starts the game in a window without changing the saved fullscreen preference. You can also add `--windowed` to a shortcut's arguments. The window title shows FPS by default; set `GAM300_SHOW_FPS=0` to hide it.
+Standalone launches, including installer shortcuts, always start fullscreen. For standalone testing, run `Kusane.exe --windowed` on Windows or `./Kusane --windowed` on Linux. This starts the game in a window without changing the saved fullscreen preference. You can also add `--windowed` to a shortcut's arguments. The window title shows FPS by default; set `GAM300_SHOW_FPS=0` to hide it.
 
 ## Project Structure
 

@@ -3,6 +3,7 @@
 #include <string>
 #include <mutex>
 #include <filesystem>
+#include <optional>
 
 // GameSettingsData - contains all persistent game settings
 struct GameSettingsData {
@@ -166,8 +167,9 @@ private:
     // Current settings
     GameSettingsData m_settings;
     GameSettingsData m_defaults;
-    // A command-line override applies to this run without overwriting saved preferences.
-    bool m_launchWindowed = false;
+    // Standalone launches select a window mode for this run. Explicit in-game
+    // changes clear the override and resume using the saved preference.
+    std::optional<bool> m_launchWindowed;
 
     // Thread safety
     mutable std::mutex m_mutex;
