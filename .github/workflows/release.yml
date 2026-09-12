@@ -130,6 +130,11 @@ jobs:
             exit 1
         }
 
+    - name: Prepare and test packaging tools
+      run: |
+        python -m pip install soundfile==0.13.1
+        python -m unittest discover -s Project/Tools -p "test_*.py"
+
     - name: Stage game files for installer
       shell: pwsh
       run: |
@@ -144,12 +149,40 @@ jobs:
             exit 1
         }
 
-        # Copy the exe and every DLL the game needs (Engine, fmod, vcpkg DLLs)
-        Copy-Item -Path "Project\Build\Release\Kusane.exe" -Destination $gamedir -Force
-        Copy-Item -Path "Project\Build\Release\*.dll" -Destination $gamedir -Force
+        # Follow imports recursively so editor-only DLLs are not installed.
+        $buildDir = "Project\Build\Release"
+        $pending = [System.Collections.Generic.Queue[string]]::new()
+        $copied = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::OrdinalIgnoreCase)
+        $pending.Enqueue("Kusane.exe")
+        while ($pending.Count -gt 0) {
+            $name = $pending.Dequeue()
+            if (-not $copied.Add($name)) { continue }
+            $binary = Join-Path $buildDir $name
+            Copy-Item -LiteralPath $binary -Destination $gamedir -Force
+            $imports = & dumpbin /nologo /dependents $binary
+            if ($LASTEXITCODE -ne 0) { throw "Cannot inspect dependencies of $name" }
+            foreach ($line in $imports) {
+                if ($line -notmatch '^\s+([^\s]+\.dll)\s*$') { continue }
+                $dependency = $Matches[1]
+                if ($dependency -match '^(MSVCP\d+D|VCRUNTIME\d+(?:_\d+)?D|ucrtbased)\.dll$') {
+                    throw "Debug runtime dependency in ${name}: $dependency"
+                }
+                if (Test-Path -LiteralPath (Join-Path $buildDir $dependency)) {
+                    $pending.Enqueue($dependency)
+                } elseif ($dependency -match '^(api-ms-|ext-ms-)' -or
+                          (Test-Path -LiteralPath (Join-Path "$env:WINDIR\System32" $dependency))) {
+                    # Windows system APIs and the installed VC redistributable.
+                    continue
+                } else {
+                    throw "Missing dependency of ${name}: $dependency"
+                }
+            }
+        }
 
         # Keep cooked assets and metadata; validate every removed art source.
         python Project/Tools/stage_resources.py --resources Project/Resources --destination "$gamedir/Resources"
+        if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+        python Project/Tools/compress_audio.py --game-directory "$gamedir"
         if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
         # ProjectSettings holds TagsAndLayers.json. Without it the game falls back
